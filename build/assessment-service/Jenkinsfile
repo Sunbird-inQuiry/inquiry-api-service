@@ -17,27 +17,52 @@ node('build-slave') {
                 }
 
                 cleanWs()
-                checkout scm
-                commit_hash = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
-                build_tag = sh(script: "echo " + params.github_release_tag.split('/')[-1] + "_" + commit_hash + "_" + env.BUILD_NUMBER, returnStdout: true).trim()
-                echo "build_tag: " + build_tag
+                if(params.core_release_tag != "") {
+                 dir('knowlg-core') {
+                     stage('Checkout Core Components') {
+                        checkout([$class: 'GitSCM', branches: [[name: params.core_release_tag]], doGenerateSubmoduleConfigurations: false, extensions: [[$class: 'CloneOption', depth: 0, noTags: false, reference: '', shallow: true]], submoduleCfg: [], userRemoteConfigs: [[url: params.core_repo_link]]])
+                        core_repo_commit_hash = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+                     }
 
-                stage('Build') {
-                    env.NODE_ENV = "build"
-                    print "Environment will be : ${env.NODE_ENV}"
-                    sh 'mvn clean install -DskipTests=true '
+                     stage('Build Core Components') {
+                        env.NODE_ENV = "build"
+                        print "Environment will be : ${env.NODE_ENV}"
+                        dir('platform-core') {
+                            sh 'mvn clean install -DskipTests=true'
+                        }
+                        dir('ontology-engine') {
+                            sh 'mvn clean install -DskipTests=true'
+                        }
+                        dir('platform-modules/import-manager') {
+                            sh 'mvn clean install -DskipTests=true'
+                        }
+                     }
+                 }
                 }
+                echo "Processing Inquiry Service Components"
+                dir('inquiry-service') {
+                    checkout scm
+                    commit_hash = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+                    build_tag = sh(script: "echo " + params.github_release_tag.split('/')[-1] + "_" + commit_hash + "_" + env.BUILD_NUMBER, returnStdout: true).trim()
+                    echo "build_tag: " + build_tag
 
-                stage('Package') {
-                    dir('assessment-api') {
-                        sh 'mvn play2:dist -pl assessment-service'
+                    stage('Build') {
+                        env.NODE_ENV = "build"
+                        print "Environment will be : ${env.NODE_ENV}"
+                        sh 'mvn clean install -DskipTests=true'
                     }
-                    sh('chmod 777 build/build.sh')
-                    sh("build/build.sh ${build_tag} ${"assessment-service"} ${env.NODE_NAME} ${hub_org}")
-                }
-                stage('ArchiveArtifacts') {
-                    archiveArtifacts "metadata.json"
-                    currentBuild.description = "${build_tag}"
+
+                    stage('Package') {
+                        dir('assessment-api') {
+                            sh 'mvn play2:dist -pl assessment-service'
+                        }
+                        sh('chmod 777 build/build.sh')
+                        sh("build/build.sh ${build_tag} ${"assessment-service"} ${env.NODE_NAME} ${hub_org}")
+                    }
+                    stage('ArchiveArtifacts') {
+                        archiveArtifacts "metadata.json"
+                        currentBuild.description = "${build_tag}"
+                    }
                 }
             }
         }
