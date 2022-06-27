@@ -27,15 +27,7 @@ node('build-slave') {
                      stage('Build Core Components') {
                         env.NODE_ENV = "build"
                         print "Environment will be : ${env.NODE_ENV}"
-                        dir('platform-core') {
-                            sh 'mvn clean install -DskipTests=true'
-                        }
-                        dir('ontology-engine') {
-                            sh 'mvn clean install -DskipTests=true'
-                        }
-                        dir('platform-modules/import-manager') {
-                            sh 'mvn clean install -DskipTests=true'
-                        }
+                        sh 'mvn clean install -DskipTests=true -Pknowlg-core'
                      }
                  }
                 }
