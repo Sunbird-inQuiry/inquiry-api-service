@@ -35,9 +35,9 @@ jobs:
       - run:
           name: Setup environment and run tests
           command: |
-          git clone $core_repo_url knowlg-core -b $core_release_tag
-          cd ~/inquiry-api-service-test/knowlg-core && mvn clean install -DskipTests -Pknowlg-core
-          cd ~/inquiry-api-service-test && bash vmsetup.sh
+            git clone $core_repo_url knowlg-core -b $core_release_tag
+            cd ~/inquiry-api-service-test/knowlg-core && mvn clean install -DskipTests -Pknowlg-core
+            cd ~/inquiry-api-service-test && bash vmsetup.sh
       - run:
           name: Save test results
           command: |
