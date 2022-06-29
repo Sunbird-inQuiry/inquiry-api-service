@@ -28,7 +28,7 @@ jobs:
       - image: circleci/redis:latest
     parallelism: 1
     steps:
-      - checkout
+      - checkout:
           path: ~/inquiry-api-service-test
       - restore_cache:
           key: inquiry-api-service-test-cache-{{ checksum "pom.xml" }}
