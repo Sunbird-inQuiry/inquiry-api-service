@@ -2,7 +2,6 @@ package org.sunbird.utils
 
 import org.apache.commons.lang3.StringUtils
 import org.sunbird.common.dto.Request
-
 import java.util
 import scala.collection.JavaConverters._
 import scala.collection.JavaConversions.{asScalaBuffer}
