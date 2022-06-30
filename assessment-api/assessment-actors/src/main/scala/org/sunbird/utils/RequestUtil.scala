@@ -17,6 +17,7 @@ object RequestUtil {
 	def restrictProperties(request: Request)(implicit oec: OntologyEngineContext, ec: ExecutionContext): Unit = {
 		val graphId = request.getContext.getOrDefault("graph_id","").asInstanceOf[String]
 		val version = request.getContext.getOrDefault("version","").asInstanceOf[String]
+		println("version:: "+version)
 		val objectType = request.getContext.getOrDefault("objectType", "").asInstanceOf[String]
 		val schemaName = request.getContext.getOrDefault("schemaName","").asInstanceOf[String]
 		val operation = request.getOperation.toLowerCase.replace(objectType.toLowerCase, "")

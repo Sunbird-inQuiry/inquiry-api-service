@@ -240,6 +240,7 @@ object HierarchyManager {
 
     def validateRequest(request: Request, operation: String)(implicit ec: ExecutionContext) = {
         val rootId = request.get("rootId").asInstanceOf[String]
+        println(" rootId :: "+rootId)
         val children = request.get("children").asInstanceOf[java.util.List[String]]
         val branchingLogic = request.getRequest.getOrDefault(HierarchyConstants.BRANCHING_LOGIC, new util.HashMap[String, AnyRef]()).asInstanceOf[java.util.Map[String, AnyRef]]
         if (StringUtils.isBlank(rootId)) {

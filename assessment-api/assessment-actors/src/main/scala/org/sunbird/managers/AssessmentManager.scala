@@ -26,6 +26,7 @@ object AssessmentManager {
 
 	def create(request: Request, errCode: String)(implicit oec: OntologyEngineContext, ec: ExecutionContext): Future[Response] = {
 		val visibility: String = request.getRequest.getOrDefault("visibility", "").asInstanceOf[String]
+		println("visibility ::: "+visibility)
 		if (StringUtils.isNotBlank(visibility) && StringUtils.equalsIgnoreCase(visibility, "Parent"))
 			throw new ClientException(errCode, "Visibility cannot be Parent!")
 		RequestUtil.restrictProperties(request)
@@ -39,6 +40,7 @@ object AssessmentManager {
 	def read(request: Request, resName: String)(implicit oec: OntologyEngineContext, ec: ExecutionContext): Future[Response] = {
 		val fields: util.List[String] = JavaConverters.seqAsJavaListConverter(request.get("fields").asInstanceOf[String].split(",").filter(field => StringUtils.isNotBlank(field) && !StringUtils.equalsIgnoreCase(field, "null"))).asJava
 		request.getRequest.put("fields", fields)
+		println("fields :: "+fields)
 		DataNode.read(request).map(node => {
 			val metadata: util.Map[String, AnyRef] = NodeUtil.serialize(node, fields, node.getObjectType.toLowerCase.replace("Image", ""), request.getContext.get("version").asInstanceOf[String])
 			metadata.put("identifier", node.getIdentifier.replace(".img", ""))
