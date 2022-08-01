@@ -9,6 +9,7 @@ import scala.collection.JavaConversions.{asScalaBuffer}
 object BranchingUtil {
 
 	def generateBranchingRecord(nodesModified: util.HashMap[String, AnyRef]): util.HashMap[String, AnyRef] = {
+		if(nodesModified == null) return new util.HashMap[String, AnyRef]()
 		val idSet = nodesModified.keySet().asScala.toList
 		val branchingRecord = new util.HashMap[String, AnyRef]()
 		idSet.map(id => {
