@@ -714,6 +714,10 @@
     },
     "migrationVersion": {
       "type": "number"
+    },
+    "artifactUrl": {
+      "type": "string",
+      "format": "url"
     }
   },
   "additionalProperties": false
