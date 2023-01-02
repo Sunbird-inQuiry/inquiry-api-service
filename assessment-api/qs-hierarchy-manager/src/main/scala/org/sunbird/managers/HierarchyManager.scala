@@ -402,7 +402,11 @@ object HierarchyManager {
         val children =  hierarchy.get("children").asInstanceOf[java.util.List[java.util.Map[String, AnyRef]]]
         val leafNodeIds = request.get("children").asInstanceOf[java.util.List[String]]
         val childNodes = new java.util.ArrayList[String]()
-        childNodes.addAll(rootNode.getMetadata.getOrDefault("childNodes", Array[String]()).asInstanceOf[Array[String]].toList)
+        val nodeChildNodes: List[String] = rootNode.getMetadata.getOrDefault("childNodes", Array[String]()) match {
+            case x: Array[String] => x.asInstanceOf[Array[String]].toList
+            case y: util.List[String] => y.asInstanceOf[util.List[String]].toList
+        }
+        childNodes.addAll(nodeChildNodes)
         if("add".equalsIgnoreCase(operation)){
             val leafNodesMap:java.util.List[java.util.Map[String, AnyRef]] = convertNodeToMap(leafNodes)
             addChildrenToUnit(children, unitId, leafNodesMap, leafNodeIds, request)
