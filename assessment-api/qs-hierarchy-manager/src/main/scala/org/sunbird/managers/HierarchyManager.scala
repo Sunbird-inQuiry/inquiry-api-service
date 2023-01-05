@@ -51,7 +51,11 @@ object HierarchyManager {
             val unitId = request.getRequest.getOrDefault("collectionId", "").asInstanceOf[String]
             if (StringUtils.isBlank(unitId)) attachLeafToRootNode(request, rootNode, "add") else {
                 val rootNodeMap =  NodeUtil.serialize(rootNode, java.util.Arrays.asList("childNodes", "originData"), schemaName, schemaVersion)
-                if(!rootNodeMap.get("childNodes").asInstanceOf[Array[String]].toList.contains(unitId)) {
+                val childNodes: List[String] = rootNodeMap.get("childNodes") match {
+                    case x: Array[String] => x.asInstanceOf[Array[String]].toList
+                    case y: util.List[String] => y.asInstanceOf[util.List[String]].toList
+                }
+                if(!childNodes.contains(unitId)) {
                     Future{ResponseHandler.ERROR(ResponseCode.RESOURCE_NOT_FOUND, ResponseCode.RESOURCE_NOT_FOUND.name(), "collectionId " + unitId + " does not exist")}
                 }else {
                     val hierarchyFuture = fetchHierarchy(request, rootNode.getIdentifier)
@@ -76,7 +80,11 @@ object HierarchyManager {
             val unitId = request.getRequest.getOrDefault("collectionId", "").asInstanceOf[String]
             if (StringUtils.isBlank(unitId)) attachLeafToRootNode(request, rootNode, "remove") else {
                 val rootNodeMap =  NodeUtil.serialize(rootNode, java.util.Arrays.asList("childNodes", "originData"), schemaName, schemaVersion)
-                if(!rootNodeMap.get("childNodes").asInstanceOf[Array[String]].toList.contains(unitId)) {
+                val childNodes: List[String] = rootNodeMap.get("childNodes") match {
+                    case x: Array[String] => x.asInstanceOf[Array[String]].toList
+                    case y: util.List[String] => y.asInstanceOf[util.List[String]].toList
+                }
+                if(!childNodes.contains(unitId)) {
                     Future{ResponseHandler.ERROR(ResponseCode.RESOURCE_NOT_FOUND, ResponseCode.RESOURCE_NOT_FOUND.name(), "collectionId " + unitId + " does not exist")}
                 }else {
                     val hierarchyFuture = fetchHierarchy(request, rootNode.getIdentifier)
@@ -394,7 +402,11 @@ object HierarchyManager {
         val children =  hierarchy.get("children").asInstanceOf[java.util.List[java.util.Map[String, AnyRef]]]
         val leafNodeIds = request.get("children").asInstanceOf[java.util.List[String]]
         val childNodes = new java.util.ArrayList[String]()
-        childNodes.addAll(rootNode.getMetadata.getOrDefault("childNodes", Array[String]()).asInstanceOf[Array[String]].toList)
+        val nodeChildNodes: List[String] = rootNode.getMetadata.getOrDefault("childNodes", Array[String]()) match {
+            case x: Array[String] => x.asInstanceOf[Array[String]].toList
+            case y: util.List[String] => y.asInstanceOf[util.List[String]].toList
+        }
+        childNodes.addAll(nodeChildNodes)
         if("add".equalsIgnoreCase(operation)){
             val leafNodesMap:java.util.List[java.util.Map[String, AnyRef]] = convertNodeToMap(leafNodes)
             addChildrenToUnit(children, unitId, leafNodesMap, leafNodeIds, request)
