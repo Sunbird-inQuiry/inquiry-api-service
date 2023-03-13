@@ -1,8 +1,8 @@
 package org.sunbird.managers
 
-import org.apache.commons.collections.CollectionUtils
+import org.apache.commons.collections4.CollectionUtils
 import org.apache.commons.collections4.MapUtils
-import org.apache.commons.lang.StringUtils
+import org.apache.commons.lang3.StringUtils
 import org.sunbird.common.{JsonUtils, Platform}
 import org.sunbird.common.dto.{Request, Response, ResponseHandler}
 import org.sunbird.common.exception.{ClientException, ServerException}
@@ -69,6 +69,8 @@ object CopyManager {
       val req = new Request(request)
       req.put(AssessmentConstants.ROOT_ID, request.get(AssessmentConstants.IDENTIFIER))
       req.put(AssessmentConstants.MODE, request.get(AssessmentConstants.MODE))
+      if(!StringUtils.equalsIgnoreCase(originNode.getMetadata.get(AssessmentConstants.STATUS).asInstanceOf[String],"Live"))
+        req.put(AssessmentConstants.MODE, "edit")
       HierarchyManager.getHierarchy(req).map(response => {
         val originHierarchy = response.getResult.getOrDefault(AssessmentConstants.QUESTIONSET, new util.HashMap[String, AnyRef]()).asInstanceOf[java.util.Map[String, AnyRef]]
         copyType match {

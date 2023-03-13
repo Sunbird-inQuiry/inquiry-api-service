@@ -598,6 +598,9 @@
     "downloadUrl": {
       "type": "string",
       "format": "url"
+    },
+    "migrationVersion": {
+      "type": "number"
     }
   },
   "additionalProperties": false

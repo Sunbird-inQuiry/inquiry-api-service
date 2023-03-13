@@ -1,8 +1,7 @@
 package org.sunbird.utils
 
-import org.apache.commons.lang.StringUtils
+import org.apache.commons.lang3.StringUtils
 import org.sunbird.common.dto.Request
-
 import java.util
 import scala.collection.JavaConverters._
 import scala.collection.JavaConversions.{asScalaBuffer}
@@ -10,6 +9,7 @@ import scala.collection.JavaConversions.{asScalaBuffer}
 object BranchingUtil {
 
 	def generateBranchingRecord(nodesModified: util.HashMap[String, AnyRef]): util.HashMap[String, AnyRef] = {
+		if(nodesModified == null) return new util.HashMap[String, AnyRef]()
 		val idSet = nodesModified.keySet().asScala.toList
 		val branchingRecord = new util.HashMap[String, AnyRef]()
 		idSet.map(id => {
