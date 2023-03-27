@@ -36,8 +36,8 @@ object RequestUtil {
 	def validateListRequest(request: Request): Unit = {
 		if (request.get("identifiers") == null || request.get("identifiers").asInstanceOf[java.util.List[String]].isEmpty)
 			throw new ClientException(ErrorCodes.ERR_BAD_REQUEST.name(), "Required field identifier is missing or empty.")
-
-		if (request.get("identifiers").asInstanceOf[java.util.List[String]].length > questionListLimit)
-			throw new ClientException(ErrorCodes.ERR_BAD_REQUEST.name(), "Request contains more than the permissible limit of identifier: 20.")
+		val reqSize = request.get("identifiers").asInstanceOf[java.util.List[String]].length
+		if (reqSize > questionListLimit)
+			throw new ClientException(ErrorCodes.ERR_BAD_REQUEST.name(), "Request contains more than the permissible limit of identifiers: " + reqSize + ". Permissible limit is: "+questionListLimit)
 	}
 }
