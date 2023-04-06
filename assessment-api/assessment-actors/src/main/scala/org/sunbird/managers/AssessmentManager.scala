@@ -122,7 +122,6 @@ object AssessmentManager {
 		val jsonProps = DefinitionNode.fetchJsonProps(node.getGraphId, request.getContext().get("version").toString, node.getObjectType.toLowerCase().replace("image", ""), objectCategoryDefinition)
 		val metadata:util.Map[String, AnyRef] = metadataMap.entrySet().asScala.filter(entry => null != entry.getValue).map((entry: util.Map.Entry[String, AnyRef]) => handleKeyNames(entry, extPropNameList) ->  convertJsonProperties(entry, jsonProps)).toMap.asJava
 		val identifier = node.getIdentifier
-		println("validateQuestionNodeForReview :: updated node metadata : "+metadata)
 		if (metadata.getOrElse("body", "").asInstanceOf[String].isEmpty) messages += s"""There is no body available for : $identifier"""
 		if (metadata.getOrElse("editorState", new util.HashMap()).asInstanceOf[util.Map[String, AnyRef]].isEmpty) messages += s"""There is no editorState available for : $identifier"""
 		if (null != metadata.get("interactionTypes")) {
@@ -200,10 +199,11 @@ object AssessmentManager {
 			  && !StringUtils.equals(rootUserId, content.getOrDefault("createdBy", "").asInstanceOf[String]))
 			  && !StringUtils.equalsIgnoreCase(content.getOrDefault("status", "").asInstanceOf[String], "Live"))
 				throw new ClientException("ERR_QUESTION_SET", "Object with identifier: " + content.get("identifier") + " is not Live. Please Publish it.")
-			println("validateChildrenRecursive :: validating question with visibility parent or default created by same creator")
-			if((StringUtils.equalsAnyIgnoreCase(content.getOrDefault("visibility", "").asInstanceOf[String], "Parent")
+			if((StringUtils.equalsAnyIgnoreCase("application/vnd.sunbird.question", content.get("mimeType").toString) &&
+			  StringUtils.equalsAnyIgnoreCase(content.getOrDefault("visibility", "").asInstanceOf[String], "Parent")
 			  && !StringUtils.equalsIgnoreCase(content.getOrDefault("status", "").asInstanceOf[String], "Live"))
-			  || (StringUtils.equalsAnyIgnoreCase(content.getOrDefault("visibility", "").asInstanceOf[String], "Default")
+			  || (StringUtils.equalsAnyIgnoreCase("application/vnd.sunbird.question", content.get("mimeType").toString)
+			  && StringUtils.equalsAnyIgnoreCase(content.getOrDefault("visibility", "").asInstanceOf[String], "Default")
 			  && StringUtils.equals(rootUserId, content.getOrDefault("createdBy", "").asInstanceOf[String])
 			  && !StringUtils.equalsIgnoreCase(content.getOrDefault("status", "").asInstanceOf[String], "Live"))) {
 				val extPropNameList:util.List[String] = DefinitionNode.getExternalProps(request.getContext.get("graph_id").asInstanceOf[String], request.getContext.get("version").asInstanceOf[String], request.getContext.get("schemaName").asInstanceOf[String]).asJava
@@ -215,7 +215,6 @@ object AssessmentManager {
 					val messages = validateQuestionNodeForReview(request, node)
 					messages
 				}), Duration.apply("30 seconds"))
-				println(s"validation message for identifier ${content.get("identifier").toString}:: "+messages)
 				if(messages.nonEmpty)
 					throw new ClientException("ERR_QUESTIONSET_REVIEW", "Children Validation Failed. | " + messages.mkString(", "))
 			}
