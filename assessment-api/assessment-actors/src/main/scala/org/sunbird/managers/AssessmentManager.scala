@@ -208,7 +208,7 @@ object AssessmentManager {
 			  && !StringUtils.equalsIgnoreCase(content.getOrDefault("status", "").asInstanceOf[String], "Live"))) {
 				val extPropNameList:util.List[String] = DefinitionNode.getExternalProps(request.getContext.get("graph_id").asInstanceOf[String], request.getContext.get("version").asInstanceOf[String], request.getContext.get("schemaName").asInstanceOf[String]).asJava
 				val readReq = new Request(request)
-				request.getRequest.put("identifier", content.get("identifier").toString)
+				readReq.getRequest.put("identifier", content.get("identifier").toString)
 				readReq.put("mode", "edit")
 				readReq.put("fields", extPropNameList)
 				val messages:List[String] = Await.result(DataNode.read(readReq).map(node => {
