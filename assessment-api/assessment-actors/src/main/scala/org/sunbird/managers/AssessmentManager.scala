@@ -124,7 +124,7 @@ object AssessmentManager {
 		println("validateQuestionNodeForReview :: updated node metadata : "+metadata)
 		if (metadata.getOrElse("body", "").asInstanceOf[String].isEmpty) messages += s"""There is no body available for : $identifier"""
 		if (metadata.getOrElse("editorState", new util.HashMap()).asInstanceOf[util.Map[String, AnyRef]].isEmpty) messages += s"""There is no editorState available for : $identifier"""
-		val interactionTypes = metadata.getOrElse("interactionTypes", new util.ArrayList[String]()).asInstanceOf[util.List[String]].asScala.toList
+		val interactionTypes:List[String] = if(null!=interactionTypes) util.Arrays.asList(metadata.get("interactionTypes")).asScala.toList
 		if (interactionTypes.nonEmpty) {
 			if (metadata.getOrElse("responseDeclaration", new util.HashMap()).asInstanceOf[util.Map[String, AnyRef]].isEmpty) messages += s"""There is no responseDeclaration available for : $identifier"""
 			if (metadata.getOrElse("interactions", new util.HashMap()).asInstanceOf[util.Map[String, AnyRef]].isEmpty) messages += s"""There is no interactions available for : $identifier"""
