@@ -16,11 +16,12 @@ import org.sunbird.telemetry.logger.TelemetryManager
 import org.sunbird.telemetry.util.LogTelemetryEventUtil
 import org.sunbird.utils.RequestUtil
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.collection.JavaConversions._
 import scala.collection.JavaConverters
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ListBuffer
+import scala.concurrent.duration.Duration
 
 object AssessmentManager {
 
@@ -210,13 +211,13 @@ object AssessmentManager {
 				request.getRequest.put("identifier", content.get("identifier").toString)
 				readReq.put("mode", "edit")
 				readReq.put("fields", extPropNameList)
-				val node = DataNode.read(readReq).map(node => {
+				val messages:List[String] = Await.result(DataNode.read(readReq).map(node => {
 					val messages = validateQuestionNodeForReview(request, node)
-					println(s"validation message for identifier ${node.getIdentifier}:: "+messages)
-					if(messages.nonEmpty)
-						throw new ClientException("ERR_QUESTIONSET_REVIEW", "Children Validation Failed. | " + messages.mkString(", "))
-					else node
-				})
+					messages
+				}), Duration.apply("30 seconds"))
+				println(s"validation message for identifier ${content.get("identifier").toString}:: "+messages)
+				if(messages.nonEmpty)
+					throw new ClientException("ERR_QUESTIONSET_REVIEW", "Children Validation Failed. | " + messages.mkString(", "))
 			}
 			validateChildrenRecursive(request, content.getOrDefault("children", new util.ArrayList[Map[String, AnyRef]]).asInstanceOf[util.List[util.Map[String, AnyRef]]], rootUserId)
 		})
