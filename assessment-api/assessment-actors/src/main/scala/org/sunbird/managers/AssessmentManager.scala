@@ -212,6 +212,7 @@ object AssessmentManager {
 				readReq.put("fields", extPropNameList)
 				val node = DataNode.read(readReq).map(node => {
 					val messages = validateQuestionNodeForReview(request, node)
+					println(s"validation message for identifier ${node.getIdentifier}:: "+messages)
 					if(messages.nonEmpty)
 						throw new ClientException("ERR_QUESTIONSET_REVIEW", "Children Validation Failed. | " + messages.mkString(", "))
 					else node
