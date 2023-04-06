@@ -9,7 +9,9 @@ import org.sunbird.common.exception.{ClientException, ResourceNotFoundException,
 import org.sunbird.graph.OntologyEngineContext
 import org.sunbird.graph.dac.model.{Node, Relation}
 import org.sunbird.graph.nodes.DataNode
+import org.sunbird.graph.schema.{DefinitionNode, ObjectCategoryDefinition}
 import org.sunbird.graph.utils.NodeUtil
+import org.sunbird.graph.utils.NodeUtil.{convertJsonProperties, handleKeyNames}
 import org.sunbird.telemetry.logger.TelemetryManager
 import org.sunbird.telemetry.util.LogTelemetryEventUtil
 import org.sunbird.utils.RequestUtil
@@ -18,6 +20,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.collection.JavaConversions._
 import scala.collection.JavaConverters
 import scala.collection.JavaConverters._
+import scala.collection.mutable.ListBuffer
 
 object AssessmentManager {
 
@@ -92,6 +95,44 @@ object AssessmentManager {
 		})
 	}
 
+	def getValidatedQuestionNodeForReview(request: Request, errCode: String)(implicit ec: ExecutionContext, oec: OntologyEngineContext): Future[Node] = {
+		val extPropNameList:util.List[String] = DefinitionNode.getExternalProps(request.getContext.get("graph_id").asInstanceOf[String], request.getContext.get("version").asInstanceOf[String], request.getContext.get("schemaName").asInstanceOf[String]).asJava
+		val readReq = new Request(request)
+		readReq.put("mode", "edit")
+		readReq.put("fields", extPropNameList)
+		DataNode.read(readReq).map(node => {
+			if (StringUtils.equalsIgnoreCase(node.getMetadata.getOrDefault("visibility", "").asInstanceOf[String], "Parent"))
+				throw new ClientException(errCode, s"${node.getObjectType.replace("Image", "")} with visibility Parent, can't be sent for review individually.")
+			if (!StringUtils.equalsAnyIgnoreCase(node.getMetadata.getOrDefault("status", "").asInstanceOf[String], "Draft"))
+				throw new ClientException(errCode, s"${node.getObjectType.replace("Image", "")} with status other than Draft can't be sent for review.")
+			val messages = validateQuestionNodeForReview(request, node)
+			if(messages.nonEmpty)
+				throw new ClientException(errCode, messages.mkString(", "))
+			else node
+		})
+	}
+
+	def validateQuestionNodeForReview(request: Request, node: Node)(implicit ec: ExecutionContext, oec: OntologyEngineContext): List[String] = {
+		val messages = ListBuffer[String]()
+		val metadataMap = node.getMetadata
+		val extPropNameList:util.List[String] = DefinitionNode.getExternalProps(request.getContext.get("graph_id").asInstanceOf[String], request.getContext.get("version").asInstanceOf[String], request.getContext.get("schemaName").asInstanceOf[String]).asJava
+		val objectCategoryDefinition: ObjectCategoryDefinition = DefinitionNode.getObjectCategoryDefinition(node.getMetadata.getOrDefault("primaryCategory", "").asInstanceOf[String], node.getObjectType.toLowerCase().replace("image", ""), node.getMetadata.getOrDefault("channel","all").asInstanceOf[String])
+		val jsonProps = DefinitionNode.fetchJsonProps(node.getGraphId, request.getContext().get("version").toString, node.getObjectType.toLowerCase().replace("image", ""), objectCategoryDefinition)
+		val metadata:util.Map[String, AnyRef] = metadataMap.entrySet().asScala.filter(entry => null != entry.getValue).map((entry: util.Map.Entry[String, AnyRef]) => handleKeyNames(entry, extPropNameList) ->  convertJsonProperties(entry, jsonProps)).toMap.asJava
+		val identifier = node.getIdentifier
+		println("validateQuestionNodeForReview :: updated node metadata : "+metadata)
+		if (metadata.getOrElse("body", "").asInstanceOf[String].isEmpty) messages += s"""There is no body available for : $identifier"""
+		if (metadata.getOrElse("editorState", new util.HashMap()).asInstanceOf[util.Map[String, AnyRef]].isEmpty) messages += s"""There is no editorState available for : $identifier"""
+		val interactionTypes = metadata.getOrElse("interactionTypes", new util.ArrayList[String]()).asInstanceOf[util.List[String]].asScala.toList
+		if (interactionTypes.nonEmpty) {
+			if (metadata.getOrElse("responseDeclaration", new util.HashMap()).asInstanceOf[util.Map[String, AnyRef]].isEmpty) messages += s"""There is no responseDeclaration available for : $identifier"""
+			if (metadata.getOrElse("interactions", new util.HashMap()).asInstanceOf[util.Map[String, AnyRef]].isEmpty) messages += s"""There is no interactions available for : $identifier"""
+		} else {
+			if (metadata.getOrElse("answer", "").asInstanceOf[String].isEmpty) messages += s"""There is no answer available for : $identifier"""
+		}
+		messages.toList
+	}
+
 	def getValidatedNodeForPublish(request: Request, errCode: String)(implicit ec: ExecutionContext, oec: OntologyEngineContext): Future[Node] = {
 		request.put("mode", "edit")
 		DataNode.read(request).map(node => {
@@ -131,14 +172,14 @@ object AssessmentManager {
 		})
 	}
 
-	def validateQuestionSetHierarchy(hierarchyString: String, rootUserId: String)(implicit ec: ExecutionContext, oec: OntologyEngineContext): Unit = {
+	def validateQuestionSetHierarchy(request: Request, hierarchyString: String, rootUserId: String)(implicit ec: ExecutionContext, oec: OntologyEngineContext): Unit = {
 		if (!skipValidation) {
 			val hierarchy = if (!hierarchyString.asInstanceOf[String].isEmpty) {
 				JsonUtils.deserialize(hierarchyString.asInstanceOf[String], classOf[java.util.Map[String, AnyRef]])
 			} else
 				new java.util.HashMap[String, AnyRef]()
 			val children = hierarchy.getOrDefault("children", new util.ArrayList[java.util.Map[String, AnyRef]]).asInstanceOf[util.List[java.util.Map[String, AnyRef]]]
-			validateChildrenRecursive(children, rootUserId)
+			validateChildrenRecursive(request, children, rootUserId)
 		}
 	}
 
@@ -152,13 +193,31 @@ object AssessmentManager {
 		})
 	}
 
-	private def validateChildrenRecursive(children: util.List[util.Map[String, AnyRef]], rootUserId: String): Unit = {
+	private def validateChildrenRecursive(request: Request, children: util.List[util.Map[String, AnyRef]], rootUserId: String)(implicit ec: ExecutionContext, oec: OntologyEngineContext): Unit = {
 		children.toList.foreach(content => {
 			if ((StringUtils.equalsAnyIgnoreCase(content.getOrDefault("visibility", "").asInstanceOf[String], "Default")
 			  && !StringUtils.equals(rootUserId, content.getOrDefault("createdBy", "").asInstanceOf[String]))
 			  && !StringUtils.equalsIgnoreCase(content.getOrDefault("status", "").asInstanceOf[String], "Live"))
 				throw new ClientException("ERR_QUESTION_SET", "Object with identifier: " + content.get("identifier") + " is not Live. Please Publish it.")
-			validateChildrenRecursive(content.getOrDefault("children", new util.ArrayList[Map[String, AnyRef]]).asInstanceOf[util.List[util.Map[String, AnyRef]]], rootUserId)
+			println("validateChildrenRecursive :: validating question with visibility parent or default created by same creator")
+			if((StringUtils.equalsAnyIgnoreCase(content.getOrDefault("visibility", "").asInstanceOf[String], "Parent")
+			  && !StringUtils.equalsIgnoreCase(content.getOrDefault("status", "").asInstanceOf[String], "Live"))
+			  || (StringUtils.equalsAnyIgnoreCase(content.getOrDefault("visibility", "").asInstanceOf[String], "Default")
+			  && StringUtils.equals(rootUserId, content.getOrDefault("createdBy", "").asInstanceOf[String])
+			  && !StringUtils.equalsIgnoreCase(content.getOrDefault("status", "").asInstanceOf[String], "Live"))) {
+				val extPropNameList:util.List[String] = DefinitionNode.getExternalProps(request.getContext.get("graph_id").asInstanceOf[String], request.getContext.get("version").asInstanceOf[String], request.getContext.get("schemaName").asInstanceOf[String]).asJava
+				val readReq = new Request(request)
+				request.getRequest.put("identifier", content.get("identifier").toString)
+				readReq.put("mode", "edit")
+				readReq.put("fields", extPropNameList)
+				val node = DataNode.read(readReq).map(node => {
+					val messages = validateQuestionNodeForReview(request, node)
+					if(messages.nonEmpty)
+						throw new ClientException("ERR_QUESTIONSET_REVIEW", "Children Validation Failed. | " + messages.mkString(", "))
+					else node
+				})
+			}
+			validateChildrenRecursive(request, content.getOrDefault("children", new util.ArrayList[Map[String, AnyRef]]).asInstanceOf[util.List[util.Map[String, AnyRef]]], rootUserId)
 		})
 	}
 

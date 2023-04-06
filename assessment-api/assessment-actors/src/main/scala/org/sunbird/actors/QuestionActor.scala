@@ -49,7 +49,7 @@ class QuestionActor @Inject()(implicit oec: OntologyEngineContext) extends BaseA
 
 	def review(request: Request): Future[Response] = {
 		request.getRequest.put("identifier", request.getContext.get("identifier"))
-		AssessmentManager.getValidatedNodeForReview(request, "ERR_QUESTION_REVIEW").flatMap(node => {
+		AssessmentManager.getValidatedQuestionNodeForReview(request, "ERR_QUESTION_REVIEW").flatMap(node => {
 			val updateRequest = new Request(request)
 			updateRequest.getContext.put("identifier", request.get("identifier"))
 			updateRequest.putAll(Map("versionKey" -> node.getMetadata.get("versionKey"), "prevStatus" -> "Draft", "status" -> "Review", "lastStatusChangedOn" -> DateUtils.formatCurrentDate).asJava)
