@@ -98,6 +98,7 @@ object AssessmentManager {
 	def getValidatedQuestionNodeForReview(request: Request, errCode: String)(implicit ec: ExecutionContext, oec: OntologyEngineContext): Future[Node] = {
 		val extPropNameList:util.List[String] = DefinitionNode.getExternalProps(request.getContext.get("graph_id").asInstanceOf[String], request.getContext.get("version").asInstanceOf[String], request.getContext.get("schemaName").asInstanceOf[String]).asJava
 		val readReq = new Request(request)
+		readReq.put("identifier", request.get("identifier").toString)
 		readReq.put("mode", "edit")
 		readReq.put("fields", extPropNameList)
 		DataNode.read(readReq).map(node => {
