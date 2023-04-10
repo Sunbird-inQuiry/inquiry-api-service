@@ -1,10 +1,11 @@
 package org.sunbird.actors
 
 import java.util
+
 import akka.actor.Props
 import org.scalamock.scalatest.MockFactory
 import org.sunbird.common.HttpUtil
-import org.sunbird.common.dto.{Property, Request, Response, ResponseHandler}
+import org.sunbird.common.dto.{Property, Request, Response, ResponseHandler, ResponseParams}
 import org.sunbird.common.exception.ResponseCode
 import org.sunbird.graph.dac.model.{Node, Relation, SearchCriteria}
 import org.sunbird.graph.nodes.DataNode.getRelationMap
@@ -13,8 +14,8 @@ import org.sunbird.graph.{GraphService, OntologyEngineContext}
 import org.sunbird.kafka.client.KafkaClient
 import org.sunbird.managers.CopyManager
 import org.sunbird.utils.{AssessmentConstants, BranchingUtil, JavaJsonUtils}
-
 import java.util
+
 import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -606,6 +607,101 @@ class QuestionSetActorTest extends BaseSpec with MockFactory {
         val expectedResult = CopySpec.generateUpdateRequest(true, "do_11351201604857856013")
         assert(result.getRequest.get(AssessmentConstants.NODES_MODIFIED) == expectedResult.getRequest.get(AssessmentConstants.NODES_MODIFIED))
         assert(result.getRequest.get(AssessmentConstants.HIERARCHY) == expectedResult.getRequest.get(AssessmentConstants.HIERARCHY))
+    }
+
+    it should "return success response for 'reviewQuestionSet' having all data of children" in {
+        implicit val oec: OntologyEngineContext = mock[OntologyEngineContext]
+        val graphDB = mock[GraphService]
+        (oec.graphService _).expects().returns(graphDB).anyNumberOfTimes()
+        val nodes: util.List[Node] = getCategoryNode()
+        (graphDB.getNodeByUniqueIds(_: String, _: SearchCriteria)).expects(*, *).returns(Future(nodes)).anyNumberOfTimes()
+
+        val qsNode = getNode("QuestionSet", None)
+        qsNode.setIdentifier("do_213771312330227712135")
+        qsNode.getMetadata.putAll(mapAsJavaMap(Map("name" -> "QuestionSet-1",
+            "visibility" -> "Default",
+            "identifier" -> "do_213771312330227712135",
+            "objectType" -> "QuestionSet",
+            "code" -> "sunbird.qs.1",
+            "allowSkip" -> "Yes",
+            "requiresSubmit" -> "No",
+            "shuffle" -> true.asInstanceOf[AnyRef],
+            "showFeedback" -> "No",
+            "showSolutions" -> "No",
+            "showHints" -> "No",
+            "versionKey" -> "1681066321610",
+            "mimeType" -> "application/vnd.sunbird.questionset",
+            "createdBy" -> "sunbird-user-1",
+            "primaryCategory" -> "Practice Question Set")))
+
+        val qNode1 = getNode("Question", None)
+        qNode1.setIdentifier("do_213771313474650112136")
+        qNode1.getMetadata.putAll(mapAsJavaMap(Map("name" -> "Question-1",
+            "visibility" -> "Parent",
+            "code" -> "sunbird.q.parent.1",
+            "identifier" -> "do_213771313474650112136",
+            "description" -> "Question-1",
+            "objectType" -> "Question",
+            "mimeType" -> "application/vnd.sunbird.question",
+            "createdBy" -> "sunbird-user-1",
+            "primaryCategory" -> "Multiple Choice Question",
+            "interactionTypes"->List("choice").asJava)))
+
+        val qNode2 = getNode("Question", None)
+        qNode2.setIdentifier("do_213771313474830336138")
+        qNode2.getMetadata.putAll(mapAsJavaMap(Map("name" -> "Question-2",
+            "visibility" -> "Default",
+            "identifier" -> "do_213771313474830336138",
+            "objectType" -> "Question",
+            "code" -> "sunbird.q.default.2",
+            "mimeType" -> "application/vnd.sunbird.question",
+            "createdBy" -> "sunbird-user-1",
+            "primaryCategory" -> "Multiple Choice Question",
+            "interactionTypes"->List("choice").asJava)))
+
+        (graphDB.upsertNode(_: String, _: Node, _: Request)).expects(*, qsNode, *).returns(Future(qsNode))
+        (graphDB.getNodeByUniqueId(_: String, _: String, _: Boolean, _: Request)).expects(*, "do_213771312330227712135.img", *, *).returns(Future(qsNode)).atLeastOnce()
+        (graphDB.getNodeByUniqueId(_: String, _: String, _: Boolean, _: Request)).expects(*, "do_213771312330227712135", *, *).returns(Future(qsNode)).atLeastOnce()
+        //(graphDB.getNodeByUniqueId(_: String, _: String, _: Boolean, _: Request)).expects(*, "do_213771313474650112136", *, *).returns(Future(qNode1)).atLeastOnce()
+        //(graphDB.getNodeByUniqueId(_: String, _: String, _: Boolean, _: Request)).expects(*, "do_213771313474830336138", *, *).returns(Future(qNode2)).atLeastOnce()
+        (graphDB.readExternalProps(_: Request, _: List[String])).expects(*, List("objectMetadata")).returns(Future(getSuccessfulResponse())).anyNumberOfTimes()
+        (graphDB.readExternalProps(_: Request, _: List[String])).expects(*, List("solutions","body","editorState","interactions","hints","responseDeclaration","media","answer","instructions")).returns(Future(getReadPropsResponseForQuestion())).anyNumberOfTimes()
+        (graphDB.readExternalProps(_: Request, _: List[String])).expects(*, List("hierarchy")).returns(Future(getQuestionSetHierarchy())).anyNumberOfTimes
+        (graphDB.updateExternalProps(_: Request)).expects(*).returns(Future(new Response())).anyNumberOfTimes
+        (graphDB.updateNodes(_:String, _:util.List[String], _: util.Map[String, AnyRef])).expects(*, *, *).returns(Future(Map[String, Node]().asJava)).anyNumberOfTimes
+        val request = getQuestionSetRequest()
+        request.getContext.put("identifier", "do_213771312330227712135")
+        request.setOperation("reviewQuestionSet")
+        val response = callActor(request, Props(new QuestionSetActor()))
+        assert("successful".equals(response.getParams.getStatus))
+    }
+
+    def getReadPropsResponseForQuestion(): Response = {
+        val response = getSuccessfulResponse()
+        response.put("body", "<div class='question-body' tabindex='-1'><div class='mcq-title' tabindex='0'><p><span style=\"background-color:#ffffff;color:#202124;\">Which of the following crops is a commercial crop?</span></p></div><div data-choice-interaction='response1' class='mcq-vertical'></div></div>")
+        response.put("editorState", "{\n                \"options\": [\n                    {\n                        \"answer\": false,\n                        \"value\": {\n                            \"body\": \"<p>Wheat</p>\",\n                            \"value\": 0\n                        }\n                    },\n                    {\n                        \"answer\": false,\n                        \"value\": {\n                            \"body\": \"<p>Barley</p>\",\n                            \"value\": 1\n                        }\n                    },\n                    {\n                        \"answer\": false,\n                        \"value\": {\n                            \"body\": \"<p>Maize</p>\",\n                            \"value\": 2\n                        }\n                    },\n                    {\n                        \"answer\": true,\n                        \"value\": {\n                            \"body\": \"<p>Tea</p>\",\n                            \"value\": 3\n                        }\n                    }\n                ],\n                \"question\": \"<p><span style=\\\"background-color:#ffffff;color:#202124;\\\">Which of the following crops is a commercial crop?</span></p>\",\n                \"solutions\": [\n                    {\n                        \"id\": \"f8e65cff-1451-4353-b281-3ceaf874b5b8\",\n                        \"type\": \"html\",\n                        \"value\": \"<p>Tea is the <span style=\\\"background-color:#ffffff;color:#202124;\\\">commercial crop</span></p><figure class=\\\"image image-style-align-left\\\"><img src=\\\"/assets/public/content/assets/do_2137498365362995201237/tea.jpeg\\\" alt=\\\"tea\\\" data-asset-variable=\\\"do_2137498365362995201237\\\"></figure>\"\n                    }\n                ]\n            }")
+        response.put("responseDeclaration", "{\n                \"response1\": {\n                    \"maxScore\": 1,\n                    \"cardinality\": \"single\",\n                    \"type\": \"integer\",\n                    \"correctResponse\": {\n                        \"value\": \"3\",\n                        \"outcomes\": {\n                            \"SCORE\": 1\n                        }\n                    },\n                    \"mapping\": [\n                        {\n                            \"response\": 3,\n                            \"outcomes\": {\n                                \"score\": 1\n                            }\n                        }\n                    ]\n                }\n            }")
+        response.put("interactions","{\n                \"response1\": {\n                    \"type\": \"choice\",\n                    \"options\": [\n                        {\n                            \"label\": \"<p>Wheat</p>\",\n                            \"value\": 0\n                        },\n                        {\n                            \"label\": \"<p>Barley</p>\",\n                            \"value\": 1\n                        },\n                        {\n                            \"label\": \"<p>Maize</p>\",\n                            \"value\": 2\n                        },\n                        {\n                            \"label\": \"<p>Tea</p>\",\n                            \"value\": 3\n                        }\n                    ]\n                },\n                \"validation\": {\n                    \"required\": \"Yes\"\n                }\n            }")
+        response.put("answer","")
+        //response.put("solutions", "[\n                    {\n                        \"id\": \"f8e65cff-1451-4353-b281-3ceaf874b5b8\",\n                        \"type\": \"html\",\n                        \"value\": \"<p>Tea is the <span style=\\\"background-color:#ffffff;color:#202124;\\\">commercial crop</span></p><figure class=\\\"image image-style-align-left\\\"><img src=\\\"/assets/public/content/assets/do_2137498365362995201237/tea.jpeg\\\" alt=\\\"tea\\\" data-asset-variable=\\\"do_2137498365362995201237\\\"></figure>\"\n                    }\n                ]")
+        response.put("instructions", null)
+        response.put("media", "[\n                {\n                    \"id\": \"do_2137498365362995201237\",\n                    \"type\": \"image\",\n                    \"src\": \"/assets/public/content/assets/do_2137498365362995201237/tea.jpeg\",\n                    \"baseUrl\": \"https://dev.inquiry.sunbird.org\"\n                }\n            ]")
+        response
+    }
+
+    def getSuccessfulResponse(): Response = {
+        val response = new Response
+        val responseParams = new ResponseParams
+        responseParams.setStatus("successful")
+        response.setParams(responseParams)
+        response.setResponseCode(ResponseCode.OK)
+        response
+    }
+
+    def getQuestionSetHierarchy(): Response = {
+        val hierarchyString: String = """{"code":"sunbird.qs.1","allowSkip":"Yes","containsUserData":"No","language":["English"],"mimeType":"application/vnd.sunbird.questionset","showHints":"No","createdOn":"2023-04-09T19:26:39.714+0000","objectType":"QuestionSet","scoreCutoffType":"AssessmentLevel","primaryCategory":"Practice Question Set","children":[{"parent":"do_213771312330227712135","code":"sunbird.q.parent.1","description":"Question-1","language":["English"],"mimeType":"application/vnd.sunbird.question","createdOn":"2023-04-09T19:28:59.386+0000","objectType":"Question","primaryCategory":"Multiple Choice question","contentDisposition":"inline","lastUpdatedOn":"2023-04-09T19:28:59.386+0000","contentEncoding":"gzip","showSolutions":"No","allowAnonymousAccess":"Yes","identifier":"do_213771313474650112136","lastStatusChangedOn":"2023-04-09T19:28:59.386+0000","visibility":"Parent","showTimer":"No","index":1,"languageCode":["en"],"version":1,"versionKey":"1681068539409","showFeedback":"No","license":"CC BY 4.0","interactionTypes":["choice"],"depth":1,"createdBy":"sunbird-user-1","compatibilityLevel":4,"name":"Question-1","status":"Draft"},{"parent":"do_213771312330227712135","code":"sunbird.q.default.2","description":"Question-2","language":["English"],"mimeType":"application/vnd.sunbird.question","createdOn":"2023-04-09T19:28:59.408+0000","objectType":"Question","primaryCategory":"Multiple Choice question","contentDisposition":"inline","lastUpdatedOn":"2023-04-09T19:28:59.414+0000","contentEncoding":"gzip","showSolutions":"No","allowAnonymousAccess":"Yes","identifier":"do_213771313474830336138","lastStatusChangedOn":"2023-04-09T19:28:59.408+0000","visibility":"Default","showTimer":"No","index":2,"languageCode":["en"],"version":1,"versionKey":"1681068539414","showFeedback":"No","license":"CC BY 4.0","interactionTypes":["choice"],"depth":1,"createdBy":"sunbird-user-1","compatibilityLevel":4,"name":"Question-2","status":"Draft"}],"contentDisposition":"inline","lastUpdatedOn":"2023-04-09T19:28:59.482+0000","contentEncoding":"gzip","generateDIALCodes":"No","showSolutions":"No","trackable":{"enabled":"No","autoBatch":"No"},"allowAnonymousAccess":"Yes","identifier":"do_213771312330227712135","lastStatusChangedOn":"2023-04-09T19:26:39.714+0000","requiresSubmit":"No","visibility":"Default","showTimer":"No","childNodes":["do_213771313474650112136","do_213771313474830336138"],"setType":"materialised","languageCode":["en"],"version":1,"versionKey":"1681068539482","showFeedback":"No","license":"CC BY 4.0","depth":0,"createdBy":"sunbird-user-1","compatibilityLevel":5,"name":"QuestionSet-1","navigationMode":"non-linear","allowBranching":"No","shuffle":true,"status":"Draft"}"""
+        val response = new Response
+        response.put("hierarchy", hierarchyString)
     }
 
     private def getQuestionSetRequest(): Request = {
