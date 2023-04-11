@@ -56,7 +56,7 @@ class QuestionSetActor @Inject()(implicit oec: OntologyEngineContext) extends Ba
 		request.getRequest.put("mode", "edit")
 		AssessmentManager.getValidatedNodeForReview(request, "ERR_QUESTION_SET_REVIEW").flatMap(node => {
 			AssessmentManager.getQuestionSetHierarchy(request, node).flatMap(hierarchyString => {
-				AssessmentManager.validateQuestionSetHierarchy(hierarchyString.asInstanceOf[String], node.getMetadata.getOrDefault("createdBy", "").asInstanceOf[String])
+				AssessmentManager.validateQuestionSetHierarchy(request, hierarchyString.asInstanceOf[String], node.getMetadata.getOrDefault("createdBy", "").asInstanceOf[String])
 				val (updatedHierarchy, nodeIds) = AssessmentManager.updateHierarchy(hierarchyString.asInstanceOf[String], "Review", node.getMetadata.getOrDefault("createdBy", "").asInstanceOf[String])
 				val updateReq = new Request(request)
 				val date = DateUtils.formatCurrentDate
@@ -72,7 +72,7 @@ class QuestionSetActor @Inject()(implicit oec: OntologyEngineContext) extends Ba
 		request.put("mode", "edit")
 		AssessmentManager.getValidatedNodeForPublish(request, "ERR_QUESTION_SET_PUBLISH").flatMap(node => {
 			AssessmentManager.getQuestionSetHierarchy(request, node).map(hierarchyString => {
-				AssessmentManager.validateQuestionSetHierarchy(hierarchyString.asInstanceOf[String], node.getMetadata.getOrDefault("createdBy", "").asInstanceOf[String])
+				AssessmentManager.validateQuestionSetHierarchy(request, hierarchyString.asInstanceOf[String], node.getMetadata.getOrDefault("createdBy", "").asInstanceOf[String])
 				if(StringUtils.isNotBlank(lastPublishedBy))
 					node.getMetadata.put("lastPublishedBy", lastPublishedBy)
 				AssessmentManager.pushInstructionEvent(node.getIdentifier, node)
@@ -99,7 +99,7 @@ class QuestionSetActor @Inject()(implicit oec: OntologyEngineContext) extends Ba
 		request.getRequest.put("mode", "edit")
 		AssessmentManager.getValidateNodeForReject(request, "ERR_QUESTION_SET_REJECT").flatMap(node => {
 			AssessmentManager.getQuestionSetHierarchy(request, node).flatMap(hierarchyString => {
-				AssessmentManager.validateQuestionSetHierarchy(hierarchyString.asInstanceOf[String], node.getMetadata.getOrDefault("createdBy", "").asInstanceOf[String])
+				//AssessmentManager.validateQuestionSetHierarchy(hierarchyString.asInstanceOf[String], node.getMetadata.getOrDefault("createdBy", "").asInstanceOf[String])
 				val (updatedHierarchy, nodeIds) = AssessmentManager.updateHierarchy(hierarchyString.asInstanceOf[String], "Draft", node.getMetadata.getOrDefault("createdBy", "").asInstanceOf[String])
 				val updateReq = new Request(request)
 				val date = DateUtils.formatCurrentDate

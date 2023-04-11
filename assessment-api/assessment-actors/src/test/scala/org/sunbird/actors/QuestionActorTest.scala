@@ -1,10 +1,10 @@
 package org.sunbird.actors
 import java.util
+
 import akka.actor.Props
 import org.scalamock.scalatest.MockFactory
 import org.sunbird.common.HttpUtil
-import org.sunbird.common.dto.ResponseHandler
-import org.sunbird.common.dto.{Property, Request, Response}
+import org.sunbird.common.dto.{Property, Request, Response, ResponseHandler, ResponseParams}
 import org.sunbird.common.exception.ResponseCode
 import org.sunbird.graph.dac.model.{Node, SearchCriteria}
 import org.sunbird.graph.utils.ScalaJsonUtils
@@ -155,8 +155,10 @@ class QuestionActorTest extends BaseSpec with MockFactory {
 		implicit val oec: OntologyEngineContext = mock[OntologyEngineContext]
 		val graphDB = mock[GraphService]
 		(oec.graphService _).expects().returns(graphDB).anyNumberOfTimes()
+		(graphDB.readExternalProps(_: Request, _: List[String])).expects(*, List("solutions","body","editorState","interactions","hints","responseDeclaration","media","answer","instructions")).returns(Future(getReadPropsResponseForQuestion())).anyNumberOfTimes()
+		(graphDB.readExternalProps(_: Request, _: List[String])).expects(*, List("objectMetadata")).returns(Future(getSuccessfulResponse())).anyNumberOfTimes()
 		val node = getNode("Question", None)
-		node.getMetadata.putAll(Map("versionKey" -> "1234", "primaryCategory" -> "Multiple Choice Question", "name" -> "Updated New Content", "code" -> "1234", "mimeType"-> "application/vnd.sunbird.question").asJava)
+		node.getMetadata.putAll(Map("versionKey" -> "1234", "primaryCategory" -> "Multiple Choice Question", "name" -> "Updated New Content", "code" -> "1234", "mimeType"-> "application/vnd.sunbird.question", "interactionTypes"->List("choice").asJava).asJava)
 		(graphDB.upsertNode(_: String, _: Node, _: Request)).expects(*, *, *).returns(Future(node))
 		(graphDB.getNodeByUniqueId(_: String, _: String, _: Boolean, _: Request)).expects(*, *, *, *).returns(Future(node)).atLeastOnce()
 		(graphDB.getNodeProperty(_: String, _: String, _: String)).expects(*, *, *).returns(Future(new Property("versionKey", new org.neo4j.driver.internal.value.StringValue("1234"))))
@@ -377,5 +379,27 @@ class QuestionActorTest extends BaseSpec with MockFactory {
 		node.setMetadata(mapAsJavaMap(
 			ScalaJsonUtils.deserialize[Map[String,AnyRef]]("{\n    \"objectCategoryDefinition\": {\n      \"name\": \"Learning Resource\",\n      \"description\": \"Content Playlist\",\n      \"categoryId\": \"obj-cat:practice_question_set\",\n      \"targetObjectType\": \"Content\",\n      \"objectMetadata\": {\n        \"config\": {},\n        \"schema\": {\n          \"required\": [\n            \"author\",\n            \"copyright\",\n            \"license\",\n            \"audience\"\n          ],\n          \"properties\": {\n            \"audience\": {\n              \"type\": \"array\",\n              \"items\": {\n                \"type\": \"string\",\n                \"enum\": [\n                  \"Student\",\n                  \"Teacher\"\n                ]\n              },\n              \"default\": [\n                \"Student\"\n              ]\n            },\n            \"mimeType\": {\n              \"type\": \"string\",\n              \"enum\": [\n                \"application/pdf\"\n              ]\n            }\n          }\n        }\n      }\n    }\n  }")))
 		node
+	}
+
+	def getReadPropsResponseForQuestion(): Response = {
+		val response = getSuccessfulResponse()
+		response.put("body", "<div class='question-body' tabindex='-1'><div class='mcq-title' tabindex='0'><p><span style=\"background-color:#ffffff;color:#202124;\">Which of the following crops is a commercial crop?</span></p></div><div data-choice-interaction='response1' class='mcq-vertical'></div></div>")
+		response.put("editorState", "{\n                \"options\": [\n                    {\n                        \"answer\": false,\n                        \"value\": {\n                            \"body\": \"<p>Wheat</p>\",\n                            \"value\": 0\n                        }\n                    },\n                    {\n                        \"answer\": false,\n                        \"value\": {\n                            \"body\": \"<p>Barley</p>\",\n                            \"value\": 1\n                        }\n                    },\n                    {\n                        \"answer\": false,\n                        \"value\": {\n                            \"body\": \"<p>Maize</p>\",\n                            \"value\": 2\n                        }\n                    },\n                    {\n                        \"answer\": true,\n                        \"value\": {\n                            \"body\": \"<p>Tea</p>\",\n                            \"value\": 3\n                        }\n                    }\n                ],\n                \"question\": \"<p><span style=\\\"background-color:#ffffff;color:#202124;\\\">Which of the following crops is a commercial crop?</span></p>\",\n                \"solutions\": [\n                    {\n                        \"id\": \"f8e65cff-1451-4353-b281-3ceaf874b5b8\",\n                        \"type\": \"html\",\n                        \"value\": \"<p>Tea is the <span style=\\\"background-color:#ffffff;color:#202124;\\\">commercial crop</span></p><figure class=\\\"image image-style-align-left\\\"><img src=\\\"/assets/public/content/assets/do_2137498365362995201237/tea.jpeg\\\" alt=\\\"tea\\\" data-asset-variable=\\\"do_2137498365362995201237\\\"></figure>\"\n                    }\n                ]\n            }")
+		response.put("responseDeclaration", "{\n                \"response1\": {\n                    \"maxScore\": 1,\n                    \"cardinality\": \"single\",\n                    \"type\": \"integer\",\n                    \"correctResponse\": {\n                        \"value\": \"3\",\n                        \"outcomes\": {\n                            \"SCORE\": 1\n                        }\n                    },\n                    \"mapping\": [\n                        {\n                            \"response\": 3,\n                            \"outcomes\": {\n                                \"score\": 1\n                            }\n                        }\n                    ]\n                }\n            }")
+		response.put("interactions","{\n                \"response1\": {\n                    \"type\": \"choice\",\n                    \"options\": [\n                        {\n                            \"label\": \"<p>Wheat</p>\",\n                            \"value\": 0\n                        },\n                        {\n                            \"label\": \"<p>Barley</p>\",\n                            \"value\": 1\n                        },\n                        {\n                            \"label\": \"<p>Maize</p>\",\n                            \"value\": 2\n                        },\n                        {\n                            \"label\": \"<p>Tea</p>\",\n                            \"value\": 3\n                        }\n                    ]\n                },\n                \"validation\": {\n                    \"required\": \"Yes\"\n                }\n            }")
+		response.put("answer","")
+		//response.put("solutions", "[\n                    {\n                        \"id\": \"f8e65cff-1451-4353-b281-3ceaf874b5b8\",\n                        \"type\": \"html\",\n                        \"value\": \"<p>Tea is the <span style=\\\"background-color:#ffffff;color:#202124;\\\">commercial crop</span></p><figure class=\\\"image image-style-align-left\\\"><img src=\\\"/assets/public/content/assets/do_2137498365362995201237/tea.jpeg\\\" alt=\\\"tea\\\" data-asset-variable=\\\"do_2137498365362995201237\\\"></figure>\"\n                    }\n                ]")
+		response.put("instructions", null)
+		response.put("media", "[\n                {\n                    \"id\": \"do_2137498365362995201237\",\n                    \"type\": \"image\",\n                    \"src\": \"/assets/public/content/assets/do_2137498365362995201237/tea.jpeg\",\n                    \"baseUrl\": \"https://dev.inquiry.sunbird.org\"\n                }\n            ]")
+		response
+	}
+
+	def getSuccessfulResponse(): Response = {
+		val response = new Response
+		val responseParams = new ResponseParams
+		responseParams.setStatus("successful")
+		response.setParams(responseParams)
+		response.setResponseCode(ResponseCode.OK)
+		response
 	}
 }
