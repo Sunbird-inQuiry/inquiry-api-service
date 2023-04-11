@@ -1,18 +1,14 @@
 package org.sunbird.actors
 
-import java.util
-
 import akka.actor.Props
 import org.scalamock.scalatest.MockFactory
 import org.sunbird.common.HttpUtil
-import org.sunbird.common.dto.{Property, Request, Response, ResponseHandler, ResponseParams}
-import org.sunbird.common.exception.{ResourceNotFoundException, ResponseCode}
-import org.sunbird.graph.dac.model.{Node, Relation, SearchCriteria}
-import org.sunbird.graph.nodes.DataNode.getRelationMap
+import org.sunbird.common.dto.{Request, Response, ResponseHandler, ResponseParams}
+import org.sunbird.common.exception.ResponseCode
+import org.sunbird.graph.dac.model.{Node, SearchCriteria}
 import org.sunbird.graph.utils.ScalaJsonUtils
 import org.sunbird.graph.{GraphService, OntologyEngineContext}
 import org.sunbird.kafka.client.KafkaClient
-import org.sunbird.managers.CopyManager
 import org.sunbird.utils.{AssessmentConstants, BranchingUtil, JavaJsonUtils}
 import java.util
 
@@ -257,32 +253,59 @@ class QuestionSetActorTest extends BaseSpec with MockFactory {
         val kfClient = mock[KafkaClient]
         (oec.kafkaClient _).expects().returns(kfClient).anyNumberOfTimes()
         (oec.graphService _).expects().returns(graphDB).anyNumberOfTimes()
-        val node = getNode("do_11348469558523494411","QuestionSet", None)
-        node.getMetadata.putAll(mapAsJavaMap(Map("name" -> "question_1",
+
+        val qsNode = getNode("QuestionSet", None)
+        qsNode.setIdentifier("do_213771312330227712135")
+        qsNode.getMetadata.putAll(mapAsJavaMap(Map("name" -> "QuestionSet-1",
             "visibility" -> "Default",
-            "code" -> "finemanfine",
-            "navigationMode" -> "linear",
+            "identifier" -> "do_213771312330227712135",
+            "objectType" -> "QuestionSet",
+            "code" -> "sunbird.qs.1",
             "allowSkip" -> "Yes",
             "requiresSubmit" -> "No",
             "shuffle" -> true.asInstanceOf[AnyRef],
-            "showFeedback" -> "Yes",
-            "showSolutions" -> "Yes",
-            "showHints" -> "Yes",
-            "summaryType" -> "Complete",
+            "showFeedback" -> "No",
+            "showSolutions" -> "No",
+            "showHints" -> "No",
+            "versionKey" -> "1681066321610",
             "mimeType" -> "application/vnd.sunbird.questionset",
-            "createdBy" -> "g-001",
+            "createdBy" -> "sunbird-user-1",
             "primaryCategory" -> "Practice Question Set")))
-        val nodeList = new util.ArrayList[Node]() {{
-            add(getNode("do_11348469662446387212","Question", Some(Map("visibility"-> "Parent", "createdBy"-> "g-001"))))
-            add(getNode("do_11348469662607769614","Question", Some(Map("visibility"-> "Default", "createdBy"-> "g-002"))))
-        }}
-        (graphDB.getNodeByUniqueId(_: String, _: String, _: Boolean, _: Request)).expects(*, *, *, *).returns(Future(node)).atLeastOnce()
-        (graphDB.getNodeByUniqueIds(_ :String, _: SearchCriteria)).expects(*, *).returns(Future(nodeList)).atLeastOnce()
-        (graphDB.readExternalProps(_: Request, _: List[String])).expects(*, *).returns(Future(getDraftCassandraHierarchy)).anyNumberOfTimes
+
+        val qNode1 = getNode("Question", None)
+        qNode1.setIdentifier("do_213771313474650112136")
+        qNode1.getMetadata.putAll(mapAsJavaMap(Map("name" -> "Question-1",
+            "visibility" -> "Parent",
+            "code" -> "sunbird.q.parent.1",
+            "identifier" -> "do_213771313474650112136",
+            "description" -> "Question-1",
+            "objectType" -> "Question",
+            "mimeType" -> "application/vnd.sunbird.question",
+            "createdBy" -> "sunbird-user-1",
+            "primaryCategory" -> "Multiple Choice Question",
+            "interactionTypes"->List("choice").asJava)))
+
+        val qNode2 = getNode("Question", None)
+        qNode2.setIdentifier("do_213771313474830336138")
+        qNode2.getMetadata.putAll(mapAsJavaMap(Map("name" -> "Question-2",
+            "visibility" -> "Default",
+            "identifier" -> "do_213771313474830336138",
+            "objectType" -> "Question",
+            "code" -> "sunbird.q.default.2",
+            "mimeType" -> "application/vnd.sunbird.question",
+            "createdBy" -> "sunbird-user-1",
+            "primaryCategory" -> "Multiple Choice Question",
+            "interactionTypes"->List("choice").asJava)))
+        (graphDB.getNodeByUniqueIds(_: String, _: SearchCriteria)).expects(*, *).returns(Future(util.Arrays.asList(qNode2))).anyNumberOfTimes()
+        (graphDB.getNodeByUniqueId(_: String, _: String, _: Boolean, _: Request)).expects(*, "do_213771312330227712135.img", *, *).returns(Future(qsNode)).atLeastOnce()
+        (graphDB.getNodeByUniqueId(_: String, _: String, _: Boolean, _: Request)).expects(*, "do_213771313474650112136.img", *, *).returns(Future(qNode1)).atLeastOnce()
+        (graphDB.getNodeByUniqueId(_: String, _: String, _: Boolean, _: Request)).expects(*, "do_213771313474830336138.img", *, *).returns(Future(qNode2)).atLeastOnce()
+        (graphDB.readExternalProps(_: Request, _: List[String])).expects(*, List("objectMetadata")).returns(Future(getSuccessfulResponse())).anyNumberOfTimes()
+        (graphDB.readExternalProps(_: Request, _: List[String])).expects(*, List("solutions","body","editorState","interactions","hints","responseDeclaration","media","answer","instructions")).returns(Future(getReadPropsResponseForQuestion())).anyNumberOfTimes()
+        (graphDB.readExternalProps(_: Request, _: List[String])).expects(*, List("hierarchy")).returns(Future(getQuestionSetHierarchy())).anyNumberOfTimes
         (kfClient.send(_: String, _: String)).expects(*, *).once()
         val request = getQuestionSetRequest()
-        request.getContext.put("identifier", "do1234")
-        request.putAll(mapAsJavaMap(Map("versionKey" -> "1234", "description" -> "updated desc")))
+        request.getContext.put("identifier", "do_213771312330227712135")
         request.setOperation("publishQuestionSet")
         val response = callActor(request, Props(new QuestionSetActor()))
         assert("successful".equals(response.getParams.getStatus))
