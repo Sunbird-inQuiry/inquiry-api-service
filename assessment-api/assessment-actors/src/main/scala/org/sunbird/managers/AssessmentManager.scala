@@ -109,7 +109,7 @@ object AssessmentManager {
 				throw new ClientException(errCode, s"${node.getObjectType.replace("Image", "")} with status other than Draft can't be sent for review.")
 			val messages = validateQuestionNodeForReview(request, node)
 			if(messages.nonEmpty)
-				throw new ClientException(errCode, messages.mkString(", "))
+				throw new ClientException("ERR_MANDATORY_FIELD_VALIDATION", s"Mandatory Fields ${messages.asJava} Missing for ${node.getIdentifier.replace(".img", "")}")
 			else node
 		})
 	}
@@ -122,13 +122,13 @@ object AssessmentManager {
 		val jsonProps = DefinitionNode.fetchJsonProps(node.getGraphId, request.getContext().get("version").toString, node.getObjectType.toLowerCase().replace("image", ""), objectCategoryDefinition)
 		val metadata:util.Map[String, AnyRef] = metadataMap.entrySet().asScala.filter(entry => null != entry.getValue).map((entry: util.Map.Entry[String, AnyRef]) => handleKeyNames(entry, extPropNameList) ->  convertJsonProperties(entry, jsonProps)).toMap.asJava
 		val identifier = node.getIdentifier
-		if (metadata.getOrElse("body", "").asInstanceOf[String].isEmpty) messages += s"""There is no body available for : $identifier"""
-		if (metadata.getOrElse("editorState", new util.HashMap()).asInstanceOf[util.Map[String, AnyRef]].isEmpty) messages += s"""There is no editorState available for : $identifier"""
+		if (metadata.getOrElse("body", "").asInstanceOf[String].isEmpty) messages += s"""body"""
+		if (metadata.getOrElse("editorState", new util.HashMap()).asInstanceOf[util.Map[String, AnyRef]].isEmpty) messages += s"""editorState"""
 		if (null != metadata.get("interactionTypes")) {
-			if (metadata.getOrElse("responseDeclaration", new util.HashMap()).asInstanceOf[util.Map[String, AnyRef]].isEmpty) messages += s"""There is no responseDeclaration available for : $identifier"""
-			if (metadata.getOrElse("interactions", new util.HashMap()).asInstanceOf[util.Map[String, AnyRef]].isEmpty) messages += s"""There is no interactions available for : $identifier"""
+			if (metadata.getOrElse("responseDeclaration", new util.HashMap()).asInstanceOf[util.Map[String, AnyRef]].isEmpty) messages += s"""responseDeclaration"""
+			if (metadata.getOrElse("interactions", new util.HashMap()).asInstanceOf[util.Map[String, AnyRef]].isEmpty) messages += s"""interactions"""
 		} else {
-			if (metadata.getOrElse("answer", "").asInstanceOf[String].isEmpty) messages += s"""There is no answer available for : $identifier"""
+			if (metadata.getOrElse("answer", "").asInstanceOf[String].isEmpty) messages += s"""answer"""
 		}
 		messages.toList
 	}
@@ -209,6 +209,9 @@ object AssessmentManager {
 				val extPropNameList:util.List[String] = DefinitionNode.getExternalProps(request.getContext.get("graph_id").asInstanceOf[String], request.getContext.get("version").asInstanceOf[String], content.getOrDefault("objectType", "Question").asInstanceOf[String].toLowerCase.replace("image","")).asJava
 				val readReq = new Request(request)
 				readReq.getRequest.put("identifier", content.get("identifier").toString)
+				readReq.getContext.put("identifier", content.get("identifier").toString)
+				readReq.getContext.put("objectType", content.get("objectType").toString)
+				readReq.getContext.put("schemaName", content.get("objectType").toString.toLowerCase().replace("image",""))
 				readReq.put("mode", "edit")
 				readReq.put("fields", extPropNameList)
 				val messages:List[String] = Await.result(DataNode.read(readReq).map(node => {
@@ -216,7 +219,7 @@ object AssessmentManager {
 					messages
 				}), Duration.apply("30 seconds"))
 				if(messages.nonEmpty)
-					throw new ClientException("ERR_QUESTIONSET_REVIEW", "Children Validation Failed. | " + messages.mkString(", "))
+					throw new ClientException("ERR_MANDATORY_FIELD_VALIDATION", s"Mandatory Fields ${messages.asJava} Missing for ${content.get("identifier").toString}")
 			}
 			validateChildrenRecursive(request, content.getOrDefault("children", new util.ArrayList[Map[String, AnyRef]]).asInstanceOf[util.List[util.Map[String, AnyRef]]], rootUserId)
 		})

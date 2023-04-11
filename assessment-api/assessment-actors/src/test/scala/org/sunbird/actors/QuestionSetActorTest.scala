@@ -6,7 +6,7 @@ import akka.actor.Props
 import org.scalamock.scalatest.MockFactory
 import org.sunbird.common.HttpUtil
 import org.sunbird.common.dto.{Property, Request, Response, ResponseHandler, ResponseParams}
-import org.sunbird.common.exception.ResponseCode
+import org.sunbird.common.exception.{ResourceNotFoundException, ResponseCode}
 import org.sunbird.graph.dac.model.{Node, Relation, SearchCriteria}
 import org.sunbird.graph.nodes.DataNode.getRelationMap
 import org.sunbird.graph.utils.ScalaJsonUtils
@@ -613,9 +613,6 @@ class QuestionSetActorTest extends BaseSpec with MockFactory {
         implicit val oec: OntologyEngineContext = mock[OntologyEngineContext]
         val graphDB = mock[GraphService]
         (oec.graphService _).expects().returns(graphDB).anyNumberOfTimes()
-        val nodes: util.List[Node] = getCategoryNode()
-        (graphDB.getNodeByUniqueIds(_: String, _: SearchCriteria)).expects(*, *).returns(Future(nodes)).anyNumberOfTimes()
-
         val qsNode = getNode("QuestionSet", None)
         qsNode.setIdentifier("do_213771312330227712135")
         qsNode.getMetadata.putAll(mapAsJavaMap(Map("name" -> "QuestionSet-1",
@@ -658,12 +655,12 @@ class QuestionSetActorTest extends BaseSpec with MockFactory {
             "createdBy" -> "sunbird-user-1",
             "primaryCategory" -> "Multiple Choice Question",
             "interactionTypes"->List("choice").asJava)))
-
+        (graphDB.getNodeByUniqueIds(_: String, _: SearchCriteria)).expects(*, *).returns(Future(util.Arrays.asList(qNode2))).anyNumberOfTimes()
         (graphDB.upsertNode(_: String, _: Node, _: Request)).expects(*, qsNode, *).returns(Future(qsNode))
-        (graphDB.getNodeByUniqueId(_: String, _: String, _: Boolean, _: Request)).expects(*, "do_213771312330227712135.img", *, *).returns(Future(qsNode)).atLeastOnce()
         (graphDB.getNodeByUniqueId(_: String, _: String, _: Boolean, _: Request)).expects(*, "do_213771312330227712135", *, *).returns(Future(qsNode)).atLeastOnce()
-        //(graphDB.getNodeByUniqueId(_: String, _: String, _: Boolean, _: Request)).expects(*, "do_213771313474650112136", *, *).returns(Future(qNode1)).atLeastOnce()
-        //(graphDB.getNodeByUniqueId(_: String, _: String, _: Boolean, _: Request)).expects(*, "do_213771313474830336138", *, *).returns(Future(qNode2)).atLeastOnce()
+        (graphDB.getNodeByUniqueId(_: String, _: String, _: Boolean, _: Request)).expects(*, "do_213771312330227712135.img", *, *).returns(Future(qsNode)).atLeastOnce()
+        (graphDB.getNodeByUniqueId(_: String, _: String, _: Boolean, _: Request)).expects(*, "do_213771313474650112136.img", *, *).returns(Future(qNode1)).atLeastOnce()
+        (graphDB.getNodeByUniqueId(_: String, _: String, _: Boolean, _: Request)).expects(*, "do_213771313474830336138.img", *, *).returns(Future(qNode2)).atLeastOnce()
         (graphDB.readExternalProps(_: Request, _: List[String])).expects(*, List("objectMetadata")).returns(Future(getSuccessfulResponse())).anyNumberOfTimes()
         (graphDB.readExternalProps(_: Request, _: List[String])).expects(*, List("solutions","body","editorState","interactions","hints","responseDeclaration","media","answer","instructions")).returns(Future(getReadPropsResponseForQuestion())).anyNumberOfTimes()
         (graphDB.readExternalProps(_: Request, _: List[String])).expects(*, List("hierarchy")).returns(Future(getQuestionSetHierarchy())).anyNumberOfTimes
