@@ -144,11 +144,10 @@ object AssessmentManager {
 	}
 
 	def getValidatedQuestionNodeForPublish(request: Request, errCode: String)(implicit ec: ExecutionContext, oec: OntologyEngineContext): Future[Node] = {
-		val readReq = new Request(request)
 		val extPropNameList:util.List[String] = DefinitionNode.getExternalProps(request.getContext.get("graph_id").asInstanceOf[String], request.getContext.get("version").asInstanceOf[String], request.getContext.get("schemaName").asInstanceOf[String]).asJava
-		readReq.put("mode", "edit")
-		readReq.put("fields", extPropNameList)
-		DataNode.read(readReq).map(node => {
+		request.put("mode", "edit")
+		request.put("fields", extPropNameList)
+		DataNode.read(request).map(node => {
 			if (StringUtils.equalsIgnoreCase(node.getMetadata.getOrDefault("visibility", "").asInstanceOf[String], "Parent"))
 				throw new ClientException(errCode, s"${node.getObjectType.replace("Image", "")} with visibility Parent, can't be sent for publish individually.")
 			if (StringUtils.equalsAnyIgnoreCase(node.getMetadata.getOrDefault("status", "").asInstanceOf[String], "Processing"))
