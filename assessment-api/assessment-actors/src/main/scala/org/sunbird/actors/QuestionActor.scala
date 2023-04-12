@@ -60,7 +60,7 @@ class QuestionActor @Inject()(implicit oec: OntologyEngineContext) extends BaseA
 	def publish(request: Request): Future[Response] = {
 		val lastPublishedBy: String = request.getRequest.getOrDefault("lastPublishedBy", "").asInstanceOf[String]
 		request.getRequest.put("identifier", request.getContext.get("identifier"))
-		AssessmentManager.getValidatedNodeForPublish(request, "ERR_QUESTION_PUBLISH").map(node => {
+		AssessmentManager.getValidatedQuestionNodeForPublish(request, "ERR_QUESTION_PUBLISH").map(node => {
 			if(StringUtils.isNotBlank(lastPublishedBy))
 				node.getMetadata.put("lastPublishedBy", lastPublishedBy)
 			AssessmentManager.pushInstructionEvent(node.getIdentifier, node)

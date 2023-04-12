@@ -193,15 +193,16 @@ class QuestionActorTest extends BaseSpec with MockFactory {
 		implicit val oec: OntologyEngineContext = mock[OntologyEngineContext]
 		val graphDB = mock[GraphService]
 		val kfClient = mock[KafkaClient]
+		val node = getNode("do_1234", "Question", None)
+		node.getMetadata.putAll(Map("identifier"-> "do1234", "versionKey" -> "1234", "primaryCategory" -> "Multiple Choice Question", "name" -> "Updated New Content", "code" -> "1234", "mimeType"-> "application/vnd.sunbird.question", "interactionTypes"->List("choice").asJava).asJava)
 		(oec.kafkaClient _).expects().returns(kfClient).anyNumberOfTimes()
 		(oec.graphService _).expects().returns(graphDB).anyNumberOfTimes()
-		val node = getNode("Question", None)
-		node.getMetadata.putAll(Map("versionKey" -> "1234", "primaryCategory" -> "Practice Question Set", "name" -> "Updated New Content", "code" -> "1234", "mimeType"-> "application/vnd.sunbird.question").asJava)
 		(graphDB.getNodeByUniqueId(_: String, _: String, _: Boolean, _: Request)).expects(*, *, *, *).returns(Future(node)).atLeastOnce()
-		(kfClient.send(_:String, _:String)).expects(*,*).once()
+		(graphDB.readExternalProps(_: Request, _: List[String])).expects(*, List("solutions","body","editorState","interactions","hints","responseDeclaration","media","answer","instructions")).returns(Future(getReadPropsResponseForQuestion())).anyNumberOfTimes()
+		(graphDB.readExternalProps(_: Request, _: List[String])).expects(*, List("objectMetadata")).returns(Future(getSuccessfulResponse())).anyNumberOfTimes()
 		val request = getQuestionRequest()
 		request.getContext.put("identifier", "do1234")
-		request.putAll(mapAsJavaMap(Map( "versionKey" -> "1234", "description" -> "updated desc")))
+		(kfClient.send(_:String, _:String)).expects(*,*).once()
 		request.setOperation("publishQuestion")
 		val response = callActor(request, Props(new QuestionActor()))
 		assert("successful".equals(response.getParams.getStatus))
