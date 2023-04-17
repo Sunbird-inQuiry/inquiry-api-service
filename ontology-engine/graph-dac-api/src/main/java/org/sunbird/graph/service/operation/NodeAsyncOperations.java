@@ -72,8 +72,10 @@ public class NodeAsyncOperations {
                 org.neo4j.driver.v1.types.Node neo4JNode = record.get(DEFAULT_CYPHER_NODE_OBJECT).asNode();
                 String versionKey = (String) neo4JNode.get(GraphDACParams.versionKey.name()).asString();
                 String identifier = (String) neo4JNode.get(SystemProperties.IL_UNIQUE_ID.name()).asString();
+                Boolean iSEvaluable = (Boolean) neo4JNode.get(GraphDACParams.evaluable.name()).asBoolean();
                 node.setGraphId(graphId);
                 node.setIdentifier(identifier);
+                node.setEvaluable(iSEvaluable);
                 if (StringUtils.isNotBlank(versionKey))
                     node.getMetadata().put(GraphDACParams.versionKey.name(), versionKey);
                 return node;
@@ -128,8 +130,10 @@ public class NodeAsyncOperations {
                         org.neo4j.driver.v1.types.Node neo4JNode = record.get(DEFAULT_CYPHER_NODE_OBJECT).asNode();
                         String versionKey = (String) neo4JNode.get(GraphDACParams.versionKey.name()).asString();
                         String identifier = (String) neo4JNode.get(SystemProperties.IL_UNIQUE_ID.name()).asString();
+                        Boolean iSEvaluable = (Boolean) neo4JNode.get(GraphDACParams.evaluable.name()).asBoolean();
                         node.setGraphId(graphId);
                         node.setIdentifier(identifier);
+                        node.setEvaluable(iSEvaluable);
                         if (StringUtils.isNotBlank(versionKey))
                             node.getMetadata().put(GraphDACParams.versionKey.name(), versionKey);
                         return node;
