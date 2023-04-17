@@ -26,6 +26,7 @@ public class Node implements Serializable {
 	private List<Relation> deletedRelations;
     private Map<String, Node> relationNodes;
 	private Map<String, Object> externalData;
+    private Boolean evaluable;
 
     public Node() {
         addedRelations = new ArrayList<>();
@@ -171,6 +172,14 @@ public class Node implements Serializable {
 
     public String getArtifactUrl() {
         return (String) this.metadata.getOrDefault("artifactUrl", "");
+    }
+
+    public Boolean getEvaluable() {
+        return evaluable;
+    }
+
+    public void setEvaluable(Boolean evaluable) {
+        this.evaluable = evaluable;
     }
 
 }
