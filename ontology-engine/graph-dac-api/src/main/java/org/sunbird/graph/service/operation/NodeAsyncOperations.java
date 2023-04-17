@@ -286,7 +286,6 @@ public class NodeAsyncOperations {
 
     private static Node setPrimitiveData(Node node) {
         Map<String, Object> metadata = node.getMetadata();
-        System.out.println("printing metadata "+metadata);
         metadata.entrySet().stream()
                 .map(entry -> {
                     Object value = entry.getValue();
