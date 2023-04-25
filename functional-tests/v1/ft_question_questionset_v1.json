@@ -7166,7 +7166,7 @@
 															"    pm.collectionVariables.set(\"children_question_id_2\",jsonData.result.identifiers.q2)",
 															"    pm.collectionVariables.set(\"number_of_childrens\", 2)",
 															"});",
-															"postman.setNextRequest(\"read_questionset_hierarchy_and_validate_1\")",
+															"postman.setNextRequest(\"read_questionset_hierarchy_and_validate_for_update_hierarchy_1\")",
 															""
 														],
 														"type": "text/javascript"
@@ -7212,7 +7212,7 @@
 											"response": []
 										},
 										{
-											"name": "read_questionset_hierarchy_and_validate_1",
+											"name": "read_questionset_hierarchy_and_validate_for_update_hierarchy_1",
 											"event": [
 												{
 													"listen": "test",
@@ -7358,7 +7358,7 @@
 															"    pm.collectionVariables.set(\"children_question_id_2\",jsonData.result.identifiers.q2)",
 															"    pm.collectionVariables.set(\"number_of_childrens\", 2)",
 															"});",
-															"postman.setNextRequest(\"read_questionset_hierarchy_and_validate_2\")",
+															"postman.setNextRequest(\"read_questionset_hierarchy_and_validate_for_update_hierarchy_2\")",
 															""
 														],
 														"type": "text/javascript"
@@ -7404,7 +7404,7 @@
 											"response": []
 										},
 										{
-											"name": "read_questionset_hierarchy_and_validate_2",
+											"name": "read_questionset_hierarchy_and_validate_for_update_hierarchy_2",
 											"event": [
 												{
 													"listen": "test",
@@ -7784,7 +7784,7 @@
 															"    pm.expect(jsonData.result.identifiers).not.null",
 															"    pm.collectionVariables.set(\"number_of_childrens\", 3)",
 															"});",
-															"postman.setNextRequest(\"read_questionset_hierarchy_and_validate_3\")",
+															"postman.setNextRequest(\"read_questionset_hierarchy_and_validate_for_update_hierarchy_3\")",
 															""
 														],
 														"type": "text/javascript"
@@ -7830,7 +7830,7 @@
 											"response": []
 										},
 										{
-											"name": "read_questionset_hierarchy_and_validate_3",
+											"name": "read_questionset_hierarchy_and_validate_for_update_hierarchy_3",
 											"event": [
 												{
 													"listen": "test",
@@ -11412,7 +11412,7 @@
 													"    pm.expect(jsonData.result.identifier).to.eql(pm.collectionVariables.get(\"questionset_identifier_for_retire\"));",
 													"    pm.expect(jsonData.result.versionKey).not.null",
 													"});",
-													"postman.setNextRequest(\"read_questionset_and_validate_1\")",
+													"postman.setNextRequest(\"read_questionset_and_validate_for_retire_1\")",
 													""
 												],
 												"type": "text/javascript"
@@ -11453,7 +11453,7 @@
 									"response": []
 								},
 								{
-									"name": "read_questionset_and_validate_1",
+									"name": "read_questionset_and_validate_for_retire_1",
 									"event": [
 										{
 											"listen": "test",
@@ -11853,7 +11853,7 @@
 													"    pm.expect(jsonData.result.identifier).to.eql(pm.collectionVariables.get(\"questionset_identifier_for_retire\"));",
 													"    pm.expect(jsonData.result.versionKey).not.null",
 													"});",
-													"postman.setNextRequest(\"read_questionset_and_validate_2\")",
+													"postman.setNextRequest(\"read_questionset_and_validate_for_retire_2\")",
 													""
 												],
 												"type": "text/javascript"
@@ -11894,7 +11894,7 @@
 									"response": []
 								},
 								{
-									"name": "read_questionset_and_validate_2",
+									"name": "read_questionset_and_validate_for_retire_2",
 									"event": [
 										{
 											"listen": "test",
@@ -16008,7 +16008,7 @@
 													"    pm.expect(jsonData.result.children.length).to.eql(1);",
 													"    pm.expect(jsonData.result.children).contains(pm.collectionVariables.get(\"children_identfier_to_be_removed\"))",
 													"});",
-													"postman.setNextRequest(\"read_questionset_hierarchy_and_validate_2\")",
+													"postman.setNextRequest(\"read_questionset_hierarchy_and_validate_for_remove_2\")",
 													""
 												],
 												"type": "text/javascript"
@@ -16048,7 +16048,7 @@
 									"response": []
 								},
 								{
-									"name": "read_questionset_hierarchy_and_validate_2",
+									"name": "read_questionset_hierarchy_and_validate_for_remove_2",
 									"event": [
 										{
 											"listen": "test",
