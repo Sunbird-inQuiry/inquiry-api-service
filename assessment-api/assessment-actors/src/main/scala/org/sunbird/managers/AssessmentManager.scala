@@ -85,6 +85,27 @@ object AssessmentManager {
 		})
 	}
 
+	def getValidatedNodeForUpdateComment(request: Request, errCode: String)(implicit ec: ExecutionContext, oec: OntologyEngineContext): Future[Request] = {
+		val newReq = new Request(request)
+		newReq.getContext.remove("comments")
+
+		if (request.getRequest.get("comments").asInstanceOf[java.util.ArrayList[java.util.Map[String, Object]]].size == 0)
+			throw new ClientException(errCode, "comments key is missing in the request body")
+		request.getRequest.get("comments").asInstanceOf[java.util.ArrayList[java.util.Map[String, Object]]].map(
+			x => {
+				newReq.getRequest.putAll(Map("identifier" -> x.get("identifier"), "mode" -> "read").asJava)
+				newReq.getContext.remove("identifier")
+
+				if (x.get("identifier").asInstanceOf[String] == null)
+					throw new ClientException(errCode, "identifier key is missing in the request body")
+				if (x.get("comment").asInstanceOf[String] == null)
+					throw new ClientException(errCode, "comment key is missing in the request body")
+				DataNode.read(newReq).map(node =>node)
+			})
+			Future(request)
+	}
+
+
 	def getValidatedNodeForReview(request: Request, errCode: String)(implicit ec: ExecutionContext, oec: OntologyEngineContext): Future[Node] = {
 		request.put("mode", "edit")
 		DataNode.read(request).map(node => {
@@ -298,5 +319,24 @@ object AssessmentManager {
 				put("metadata", eventMetadata.asJava)
 			}}
 		(actor, context, objData, eData)
+	}
+
+	def readComment(request: Request, resName: String)(implicit oec: OntologyEngineContext, ec: ExecutionContext): Future[Response] = {
+		val fields: util.List[String] = JavaConverters.seqAsJavaListConverter(request.get("fields").asInstanceOf[String].split(",").filter(field => StringUtils.isNotBlank(field) && !StringUtils.equalsIgnoreCase(field, "null"))).asJava
+		request.getRequest.put("fields", fields)
+		val res = new java.util.ArrayList[java.util.Map[String, AnyRef]] {}
+		DataNode.read(request).map(node => {
+			val metadata = new java.util.HashMap().asInstanceOf[java.util.Map[String, AnyRef]]
+			metadata.put("identifier", node.getIdentifier.replace(".img", ""))
+			metadata.put("comment", node.getMetadata.get("rejectComment"))
+
+			res.add(metadata)
+			if(!StringUtils.equalsIgnoreCase(metadata.get("visibility").asInstanceOf[String],"Private")) {
+				ResponseHandler.OK.put(resName, res)
+			}
+			else {
+				throw new ClientException("ERR_ACCESS_DENIED", s"$resName visibility is private, hence access denied")
+			}
+		})
 	}
 }

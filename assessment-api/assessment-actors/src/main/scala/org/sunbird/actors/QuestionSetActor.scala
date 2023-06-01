@@ -1,7 +1,6 @@
 package org.sunbird.actors
 
 import java.util
-
 import javax.inject.Inject
 import org.apache.commons.collections4.CollectionUtils
 import org.apache.commons.lang3.StringUtils
@@ -10,13 +9,14 @@ import org.sunbird.actor.core.BaseActor
 import org.sunbird.cache.impl.RedisCache
 import org.sunbird.common.{DateUtils, Platform}
 import org.sunbird.common.dto.{Request, Response, ResponseHandler}
-import org.sunbird.graph.OntologyEngineContext
+import org.sunbird.graph.{OntologyEngineContext, nodes}
 import org.sunbird.graph.nodes.DataNode
 import org.sunbird.graph.dac.model.Node
 import org.sunbird.managers.HierarchyManager.hierarchyPrefix
 import org.sunbird.managers.{AssessmentManager, CopyManager, HierarchyManager, UpdateHierarchyManager}
 import org.sunbird.utils.RequestUtil
 
+import scala.collection.JavaConversions.asScalaBuffer
 import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -42,6 +42,8 @@ class QuestionSetActor @Inject()(implicit oec: OntologyEngineContext) extends Ba
 		case "importQuestionSet" => importQuestionSet(request)
 		case "systemUpdateQuestionSet" => systemUpdate(request)
 		case "copyQuestionSet" => copy(request)
+		case "updateCommentQuestionSet" => updateComment(request)
+		case "readCommentQuestionSet" => AssessmentManager.readComment(request, "comments")
 		case _ => ERROR(request.getOperation)
 	}
 
@@ -166,4 +168,42 @@ class QuestionSetActor @Inject()(implicit oec: OntologyEngineContext) extends Ba
 		RequestUtil.restrictProperties(request)
 		CopyManager.copy(request)
 	}
+	def updateComment(request: Request): Future[Response] = {
+		AssessmentManager.getValidatedNodeForUpdateComment(request, "ERR_QUESTION_SET_UPDATE_COMMENT").flatMap(_ => updateInnerComment(request))
+	}
+	def updateInnerComment(request: Request): Future[Response] = {
+		val newReq = new Request(request)
+		val finalReq = new Request(request)
+
+		newReq.getRequest.remove("comments")
+		finalReq.getRequest.remove("comments")
+
+		request.getRequest.get("comments").asInstanceOf[java.util.ArrayList[java.util.Map[String, Object]]].map(
+			x => {
+				System.out.println(x)
+				val identifier = x.get("identifier").asInstanceOf[String]
+
+				if(Platform.getBoolean("questionset.cache.enable", false))
+					RedisCache.delete(hierarchyPrefix + identifier)
+
+				finalReq.getRequest.put("rejectComment", x.get("comment"))
+				RequestUtil.validateRequest(finalReq)
+
+
+				val identifiers = new util.ArrayList[String](){{
+					add(identifier)
+					if (!identifier.endsWith(".img"))
+						add(identifier.concat(".img"))
+				}}
+				newReq.put("identifiers", identifiers)
+
+				DataNode.list(newReq).flatMap(response => {
+					System.out.println(response.isEmpty)
+					DataNode.systemUpdate(finalReq, response,"questionSet", Some(HierarchyManager.getHierarchy))
+				}).map(node => node)
+			})
+			Future(ResponseHandler.OK.put("identifier", finalReq.getContext.get("identifier")))
+
+	}
+
 }

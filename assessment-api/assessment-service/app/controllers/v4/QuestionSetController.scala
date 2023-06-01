@@ -55,7 +55,6 @@ class QuestionSetController @Inject()(@Named(ActorNames.QUESTION_SET_ACTOR) ques
 		questionSetRequest.getContext.put("identifier", identifier)
 		getResult(ApiId.UPDATE_QUESTION_SET, questionSetActor, questionSetRequest)
 	}
-
 	def review(identifier: String) = Action.async { implicit request =>
 		val headers = commonHeaders()
 		val body = requestBody()
@@ -168,5 +167,32 @@ class QuestionSetController @Inject()(@Named(ActorNames.QUESTION_SET_ACTOR) ques
 		val questionSetRequest = getRequest(questionSet, headers, QuestionSetOperations.copyQuestionSet.toString)
 		setRequestContext(questionSetRequest, version, objectType, schemaName)
 		getResult(ApiId.COPY_QUESTION_SET, questionSetActor, questionSetRequest)
+	}
+
+	def updateComment(identifier: String) = Action.async { implicit request =>
+		val headers = commonHeaders()
+		val body = requestBody()
+
+		val commentList = body.getOrDefault("comments", new java.util.ArrayList[java.util.Map[String, Object]] {})
+		val questionSet = new java.util.HashMap().asInstanceOf[java.util.Map[String, Object]];
+		questionSet.putAll(headers)
+		questionSet.put("comments", commentList)
+
+		val questionSetRequest = getRequest(questionSet, headers, QuestionSetOperations.updateCommentQuestionSet.toString)
+		setRequestContext(questionSetRequest, version, objectType, schemaName)
+		questionSetRequest.getContext.put("identifier", identifier)
+		getResult(ApiId.UPDATE_COMMENT_QUESTION_SET, questionSetActor, questionSetRequest)
+
+
+	}
+
+	def readComment(identifier: String, mode: Option[String], fields: Option[String]) = Action.async { implicit request =>
+		val headers = commonHeaders()
+		val questionSet = new java.util.HashMap().asInstanceOf[java.util.Map[String, Object]]
+		questionSet.putAll(headers)
+		questionSet.putAll(Map("identifier" -> identifier, "fields" -> fields.getOrElse(""), "mode" -> mode.getOrElse("read")).asJava)
+		val questionSetRequest = getRequest(questionSet, headers, QuestionSetOperations.readCommentQuestionSet.toString)
+		setRequestContext(questionSetRequest, version, objectType, schemaName)
+		getResult(ApiId.READ_COMMENT_QUESTION_SET, questionSetActor, questionSetRequest)
 	}
 }

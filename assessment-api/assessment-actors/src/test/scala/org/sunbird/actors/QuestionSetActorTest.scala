@@ -696,6 +696,146 @@ class QuestionSetActorTest extends BaseSpec with MockFactory {
         assert("successful".equals(response.getParams.getStatus))
     }
 
+
+    it should "return success response for 'updateCommentQuestionSet' having identifier and comment in the request body" in {
+        implicit val oec: OntologyEngineContext = mock[OntologyEngineContext]
+        val graphDB = mock[GraphService]
+        (oec.graphService _).expects().returns(graphDB).anyNumberOfTimes()
+        val nodes: util.List[Node] = getCategoryNode()
+        (graphDB.getNodeByUniqueIds(_: String, _: SearchCriteria)).expects(*, *).returns(Future(nodes)).anyNumberOfTimes()
+        (graphDB.readExternalProps(_: Request, _: List[String])).expects(*, *).returns(Future(new Response())).anyNumberOfTimes()
+
+        val node = getNode("QuestionSet", None)
+        node.getMetadata.putAll(mapAsJavaMap(Map("name" -> "question_1",
+            "visibility" -> "Default",
+            "code" -> "finemanfine",
+            "identifier" -> "do_11379299111504281611",
+            "description" -> "Updated description",
+            "navigationMode" -> "linear",
+            "allowSkip" -> "Yes",
+            "requiresSubmit" -> "No",
+            "shuffle" -> true.asInstanceOf[AnyRef],
+            "showFeedback" -> "Yes",
+            "showSolutions" -> "Yes",
+            "showHints" -> "Yes",
+            "summaryType" -> "Complete",
+            "mimeType" -> "application/vnd.sunbird.questionset",
+            "primaryCategory" -> "Practice Question Set",
+            "rejectComment" -> "Old comment")))
+        (graphDB.getNodeByUniqueId(_: String, _: String, _: Boolean, _: Request)).expects(*, *, *, *).returns(Future(node)).atLeastOnce()
+        val request = getQuestionSetRequest()
+        val commentList = new java.util.ArrayList[java.util.Map[String, Object]] {}
+        commentList.add(mapAsJavaMap(Map("identifier"-> "do_11379299111504281611", "comment"-> "Comments made by the reviewer 1")))
+        commentList.add(mapAsJavaMap(Map("identifier"-> "do_11379299111504281611", "comment"-> "Comments made by the reviewer 2")))
+
+        request.getContext.put("identifier", "do1234")
+        request.put("comments",commentList)
+        request.setOperation("updateCommentQuestionSet")
+        val response = callActor(request, Props(new QuestionSetActor()))
+        assert("successful".equals(response.getParams.getStatus))
+    }
+
+    it should "return failed response for 'updateCommentQuestionSet' when identifier key is missing in the request body" in {
+        implicit val oec: OntologyEngineContext = mock[OntologyEngineContext]
+        val graphDB = mock[GraphService]
+        val nodes: util.List[Node] = getCategoryNode()
+        val node = getNode("QuestionSet", None)
+        node.getMetadata.putAll(mapAsJavaMap(Map("name" -> "question_1",
+            "visibility" -> "Default",
+            "code" -> "finemanfine",
+            "identifier" -> "do_11379299111504281611",
+            "description" -> "Updated description",
+            "navigationMode" -> "linear",
+            "allowSkip" -> "Yes",
+            "requiresSubmit" -> "No",
+            "shuffle" -> true.asInstanceOf[AnyRef],
+            "showFeedback" -> "Yes",
+            "showSolutions" -> "Yes",
+            "showHints" -> "Yes",
+            "summaryType" -> "Complete",
+            "mimeType" -> "application/vnd.sunbird.questionset",
+            "primaryCategory" -> "Practice Question Set",
+            "rejectComment" -> "Old comment")))
+        val request = getQuestionSetRequest()
+        val commentList = new java.util.ArrayList[java.util.Map[String, Object]] {}
+        commentList.add(mapAsJavaMap(Map("comment"-> "Comments made by the reviewer 1")))
+        commentList.add(mapAsJavaMap(Map("identifier"-> "do_11379299111504281611", "comment"-> "Comments made by the reviewer 2")))
+
+        request.getContext.put("identifier", "do1234")
+        request.put("comments",commentList)
+        request.setOperation("updateCommentQuestionSet")
+        val response = callActor(request, Props(new QuestionSetActor()))
+        assert("failed".equals(response.getParams.getStatus))
+    }
+
+    it should "return failed response for 'updateCommentQuestionSet' when comment key is missing in the request body" in {
+        implicit val oec: OntologyEngineContext = mock[OntologyEngineContext]
+        val graphDB = mock[GraphService]
+        val nodes: util.List[Node] = getCategoryNode()
+
+        val node = getNode("QuestionSet", None)
+        node.getMetadata.putAll(mapAsJavaMap(Map("name" -> "question_1",
+            "visibility" -> "Default",
+            "code" -> "finemanfine",
+            "identifier" -> "do_11379299111504281611",
+            "description" -> "Updated description",
+            "navigationMode" -> "linear",
+            "allowSkip" -> "Yes",
+            "requiresSubmit" -> "No",
+            "shuffle" -> true.asInstanceOf[AnyRef],
+            "showFeedback" -> "Yes",
+            "showSolutions" -> "Yes",
+            "showHints" -> "Yes",
+            "summaryType" -> "Complete",
+            "mimeType" -> "application/vnd.sunbird.questionset",
+            "primaryCategory" -> "Practice Question Set",
+            "rejectComment" -> "Old comment")))
+        val request = getQuestionSetRequest()
+        val commentList = new java.util.ArrayList[java.util.Map[String, Object]] {}
+        commentList.add(mapAsJavaMap(Map("identifier"-> "do_11379299111504281611", "comment"-> "Comments made by the reviewer 1")))
+        commentList.add(mapAsJavaMap(Map("identifier"-> "do_11379299111504281611")))
+
+        request.getContext.put("identifier", "do1234")
+        request.put("comments",commentList)
+        request.setOperation("updateCommentQuestionSet")
+        val response = callActor(request, Props(new QuestionSetActor()))
+        assert("failed".equals(response.getParams.getStatus))
+    }
+
+    it should "return failed response for 'updateCommentQuestionSet' when comments key is missing in the request body" in {
+        implicit val oec: OntologyEngineContext = mock[OntologyEngineContext]
+        val graphDB = mock[GraphService]
+        val nodes: util.List[Node] = getCategoryNode()
+
+        val node = getNode("QuestionSet", None)
+        node.getMetadata.putAll(mapAsJavaMap(Map("name" -> "question_1",
+            "visibility" -> "Default",
+            "code" -> "finemanfine",
+            "identifier" -> "do_11379299111504281611",
+            "description" -> "Updated description",
+            "navigationMode" -> "linear",
+            "allowSkip" -> "Yes",
+            "requiresSubmit" -> "No",
+            "shuffle" -> true.asInstanceOf[AnyRef],
+            "showFeedback" -> "Yes",
+            "showSolutions" -> "Yes",
+            "showHints" -> "Yes",
+            "summaryType" -> "Complete",
+            "mimeType" -> "application/vnd.sunbird.questionset",
+            "primaryCategory" -> "Practice Question Set",
+            "rejectComment" -> "Old comment")))
+        val request = getQuestionSetRequest()
+        val commentList = new java.util.ArrayList[java.util.Map[String, Object]] {}
+        commentList.add(mapAsJavaMap(Map("identifier"-> "do_11379299111504281611", "comment"-> "Comments made by the reviewer 1")))
+        commentList.add(mapAsJavaMap(Map("identifier"-> "do_11379299111504281611")))
+
+        request.getContext.put("identifier", "do1234")
+        request.put("COMMENTS",commentList)
+        request.setOperation("updateCommentQuestionSet")
+        val response = callActor(request, Props(new QuestionSetActor()))
+        assert("failed".equals(response.getParams.getStatus))
+    }
+
     def getReadPropsResponseForQuestion(): Response = {
         val response = getSuccessfulResponse()
         response.put("body", "<div class='question-body' tabindex='-1'><div class='mcq-title' tabindex='0'><p><span style=\"background-color:#ffffff;color:#202124;\">Which of the following crops is a commercial crop?</span></p></div><div data-choice-interaction='response1' class='mcq-vertical'></div></div>")
