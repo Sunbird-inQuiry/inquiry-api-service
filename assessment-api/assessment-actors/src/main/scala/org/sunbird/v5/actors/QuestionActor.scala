@@ -64,7 +64,7 @@ class QuestionActor @Inject()(implicit oec: OntologyEngineContext) extends BaseA
       }
       val version: Double = node.getMetadata.getOrDefault("qumlVersion", 1.0.asInstanceOf[AnyRef]).asInstanceOf[Double]
       if (version < 1.1)
-        throw new ClientException(AssessmentErrorCodes.ERR_OBJECT_VALIDATION, "QuestionSet having quml version below 1.1 not supported for update operation. Please upgrade to quml version 1.1 first!")
+        throw new ClientException(AssessmentErrorCodes.ERR_OBJECT_VALIDATION, s"${node.getObjectType().replace("Image","")} having quml version below 1.1 not supported for update operation. Please upgrade to quml version 1.1 first!")
       val schemaVersion = node.getMetadata.getOrDefault("schemaVersion", "1.0").asInstanceOf[String]
       request.getContext.put("version", schemaVersion)
       DataNode.update(request).map(node => {
