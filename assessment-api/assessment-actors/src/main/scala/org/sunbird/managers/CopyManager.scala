@@ -61,6 +61,10 @@ object CopyManager {
     if (!StringUtils.equalsIgnoreCase(requestObjectType, nodeObjectType)) throw new ClientException(AssessmentConstants.ERR_INVALID_OBJECT_TYPE, s"Please Provide Valid ${requestObjectType} Identifier")
     if (StringUtils.equalsIgnoreCase(node.getObjectType, AssessmentConstants.QUESTION) && StringUtils.equalsIgnoreCase(node.getMetadata.getOrDefault(AssessmentConstants.VISIBILITY, AssessmentConstants.VISIBILITY_PARENT).asInstanceOf[String], AssessmentConstants.VISIBILITY_PARENT))
       throw new ClientException(AssessmentConstants.ERR_INVALID_REQUEST, "Question With Visibility Parent Cannot Be Copied Individually!")
+    val reqVer = request.getContext.getOrDefault("version", "1.0").asInstanceOf[String]
+    val nodeVer = node.getMetadata.getOrDefault("schemaVersion", "1.0").asInstanceOf[String]
+    if(reqVer.toDouble >= 1.1 && nodeVer.toDouble < 1.1)
+      throw new ClientException(AssessmentConstants.ERR_INVALID_REQUEST, s"${node.getObjectType.replace("Image", "")} with identifier ${node.getIdentifier.replace(".img","")} can not be copied because it doesn't have data in quml 1.1 format!")
   }
 
   def copyQuestionSet(originNode: Node, request: Request)(implicit ex: ExecutionContext, oec: OntologyEngineContext): Future[Node] = {

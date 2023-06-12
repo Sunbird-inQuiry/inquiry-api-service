@@ -44,7 +44,7 @@ object UpdateHierarchyManager {
                   idMap += (rootId -> rootId)
                   updateNodesModifiedInNodeList(nodes, nodesModified, request, idMap).map(updatedList => {
                       val modifiedNodeList = processBranching(updatedList, request, idMap)
-                      getChildrenHierarchy(modifiedNodeList, rootId, hierarchy, idMap, result._1).map(children => {
+                      getChildrenHierarchy(request, modifiedNodeList, rootId, hierarchy, idMap, result._1).map(children => {
                           TelemetryManager.log("Children for root id :" + rootId +" :: " + JsonUtils.serialize(children))
                           updateHierarchyData(rootId, children, modifiedNodeList, request).map(node => {
                               val response = ResponseHandler.OK()
@@ -96,7 +96,10 @@ object UpdateHierarchyManager {
         req.put(HierarchyConstants.IDENTIFIER, identifier)
         req.put(HierarchyConstants.MODE, HierarchyConstants.EDIT_MODE)
         DataNode.read(req).map(rootNode => {
-            val metadata: java.util.Map[String, AnyRef] = NodeUtil.serialize(rootNode, new java.util.ArrayList[String](), request.getContext.get("schemaName").asInstanceOf[String], request.getContext.get("version").asInstanceOf[String])
+            val schemaVersion = rootNode.getMetadata().getOrElse("schemaVersion", "1.0").asInstanceOf[String]
+            if(StringUtils.equalsIgnoreCase("1.1",request.getContext.get("version").toString) && StringUtils.equalsIgnoreCase("1.0", schemaVersion))
+                throw new ClientException(HierarchyErrorCodes.ERR_HIERARCHY_UPDATE_DENIED, "QuestionSet having quml version below 1.1 not supported for update hierarchy operation. Please upgrade to quml version 1.1 first!")
+            val metadata: java.util.Map[String, AnyRef] = NodeUtil.serialize(rootNode, new java.util.ArrayList[String](), request.getContext.get("schemaName").asInstanceOf[String], schemaVersion)
             if (!StringUtils.equals(metadata.get(HierarchyConstants.MIME_TYPE).asInstanceOf[String], HierarchyConstants.QUESTIONSET_MIME_TYPE)) {
                 TelemetryManager.error("UpdateHierarchyManager.getValidatedRootNode :: Invalid MimeType for Root node id: " + identifier)
                 throw new ClientException(HierarchyErrorCodes.ERR_INVALID_ROOT_ID, "Invalid MimeType for Root Node Identifier  : " + identifier)
@@ -159,7 +162,7 @@ object UpdateHierarchyManager {
     private def addNodeToList(child: java.util.Map[String, AnyRef], request: Request, nodes: scala.collection.immutable.List[Node])(implicit oec: OntologyEngineContext, ec: ExecutionContext): Future[scala.collection.immutable.List[Node]] = {
         if (StringUtils.isNotEmpty(child.get(HierarchyConstants.VISIBILITY).asInstanceOf[String]))
             if (StringUtils.equalsIgnoreCase(HierarchyConstants.DEFAULT, child.get(HierarchyConstants.VISIBILITY).asInstanceOf[String])) {
-                getQuestionNode(child.getOrDefault(HierarchyConstants.IDENTIFIER, "").asInstanceOf[String], HierarchyConstants.TAXONOMY_ID).map(node => {
+                getQuestionNode(child.getOrDefault(HierarchyConstants.IDENTIFIER, "").asInstanceOf[String], HierarchyConstants.TAXONOMY_ID, child.getOrElse("schemaVersion", "1.0").asInstanceOf[String]).map(node => {
                     node.getMetadata.put(HierarchyConstants.DEPTH, child.get(HierarchyConstants.DEPTH))
                     node.getMetadata.put(HierarchyConstants.PARENT_KEY, child.get(HierarchyConstants.PARENT_KEY))
                     node.getMetadata.put(HierarchyConstants.INDEX, child.get(HierarchyConstants.INDEX))
@@ -237,12 +240,19 @@ object UpdateHierarchyManager {
         metadata.put(HierarchyConstants.VERSION_KEY, System.currentTimeMillis + "")
         metadata.put(HierarchyConstants.CREATED_ON, DateUtils.formatCurrentDate)
         metadata.put(HierarchyConstants.LAST_STATUS_CHANGED_ON, DateUtils.formatCurrentDate)
+        metadata.remove("schemaVersion")
+        metadata.remove("qumlVersion")
         val rootNode = getTempNode(nodeList, request.getContext.get(HierarchyConstants.ROOT_ID).asInstanceOf[String])
+        val schemaVersion = rootNode.getMetadata.getOrDefault("schemaVersion", "1.0").asInstanceOf[String]
+        val qumlVersion = rootNode.getMetadata.getOrDefault("qumlVersion", 1.0.asInstanceOf[AnyRef]).asInstanceOf[Double]
+        if(qumlVersion >= 1.1)
+            metadata.putAll(Map("schemaVersion" -> schemaVersion, "qumlVersion" -> qumlVersion.asInstanceOf[AnyRef]).asJava)
         metadata.put(HierarchyConstants.CHANNEL, rootNode.getMetadata.get(HierarchyConstants.CHANNEL))
         val createRequest: Request = new Request(request)
         createRequest.setRequest(metadata)
+        createRequest.getContext.put(HierarchyConstants.VERSION, schemaVersion)
         if (neo4jCreateTypes.contains(objectType)) {
-            createRequest.getContext.put(HierarchyConstants.SCHEMA_NAME, "question")
+            createRequest.getContext.put(HierarchyConstants.SCHEMA_NAME, objectType.toLowerCase)
             DataNode.create(createRequest).map(node => {
                 node.setGraphId(HierarchyConstants.TAXONOMY_ID)
                 node.setNodeType(HierarchyConstants.DATA_NODE)
@@ -251,7 +261,7 @@ object UpdateHierarchyManager {
                 updatedList.distinct
             })
 
-        } else
+        } else {
             DefinitionNode.validate(createRequest, setDefaultValue).map(node => {
                 node.setGraphId(HierarchyConstants.TAXONOMY_ID)
                 node.setNodeType(HierarchyConstants.DATA_NODE)
@@ -259,6 +269,7 @@ object UpdateHierarchyManager {
                 val updatedList = node :: nodeList
                 updatedList.distinct
             })
+        }
     }
 
     private def updateTempNode(request:Request, nodeId: String, nodeList: List[Node], idMap: mutable.Map[String, String], metadata: java.util.HashMap[String, AnyRef])(implicit ec: ExecutionContext, oec: OntologyEngineContext): Future[List[Node]] = {
@@ -272,7 +283,7 @@ object UpdateHierarchyManager {
             createRequest.setRequest(metadata)
             if (neo4jCreateTypes.contains(objectType)) {
                 createRequest.getContext.put(HierarchyConstants.IDENTIFIER, tempNode.getIdentifier)
-                createRequest.getContext.put(HierarchyConstants.SCHEMA_NAME, "question")
+                createRequest.getContext.put(HierarchyConstants.SCHEMA_NAME, objectType.toLowerCase().replace("image",""))
                 createRequest.getContext.put(HierarchyConstants.OBJECT_TYPE, objectType)
                 DataNode.update(createRequest).map(node => {
                     idMap += (nodeId -> node.getIdentifier)
@@ -285,17 +296,17 @@ object UpdateHierarchyManager {
                     idMap += (nodeId -> tempNode.getIdentifier)
                     updateNodeList(nodeList, tempNode.getIdentifier, metadata)
                     Future(nodeList)
-                } else throw new ResourceNotFoundException(HierarchyErrorCodes.ERR_CONTENT_NOT_FOUND, "Content not found with identifier: " + nodeId)
+                } else throw new ResourceNotFoundException(HierarchyErrorCodes.ERR_CONTENT_NOT_FOUND, "Object not found with identifier: " + nodeId)
             }
         }
     }
 
-    private def validateNodes(nodeList: java.util.List[Node], rootId: String)(implicit ec: ExecutionContext, oec: OntologyEngineContext): Future[List[Node]] = {
+    private def validateNodes(nodeList: java.util.List[Node], rootId: String, request: Request)(implicit ec: ExecutionContext, oec: OntologyEngineContext): Future[List[Node]] = {
         val nodesToValidate = nodeList.filter(node => (StringUtils.equals(HierarchyConstants.PARENT, node.getMetadata.get(HierarchyConstants.VISIBILITY).asInstanceOf[String])
             && !StringUtils.equalsIgnoreCase("Question", node.getObjectType))
             || StringUtils.equalsAnyIgnoreCase(rootId, node.getIdentifier)).toList
-        DefinitionNode.updateJsonPropsInNodes(nodeList.toList, HierarchyConstants.TAXONOMY_ID, HierarchyConstants.QUESTIONSET_SCHEMA_NAME, HierarchyConstants.SCHEMA_VERSION)
-        DefinitionNode.validateContentNodes(nodesToValidate, HierarchyConstants.TAXONOMY_ID, HierarchyConstants.QUESTIONSET_SCHEMA_NAME, HierarchyConstants.SCHEMA_VERSION)
+        DefinitionNode.updateJsonPropsInNodes(nodeList.toList, HierarchyConstants.TAXONOMY_ID, HierarchyConstants.QUESTIONSET_SCHEMA_NAME, request.getContext.get("version").asInstanceOf[String])
+        DefinitionNode.validateContentNodes(nodesToValidate, HierarchyConstants.TAXONOMY_ID, HierarchyConstants.QUESTIONSET_SCHEMA_NAME, request.getContext.get("version").asInstanceOf[String])
     }
 
     def constructHierarchy(list: List[java.util.Map[String, AnyRef]]): java.util.Map[String, AnyRef] = {
@@ -322,9 +333,9 @@ object UpdateHierarchyManager {
     }
 
     @throws[Exception]
-    private def getChildrenHierarchy(nodeList: List[Node], rootId: String, hierarchyData: java.util.HashMap[String, AnyRef], idMap: mutable.Map[String, String], existingHierarchy: java.util.Map[String, AnyRef])(implicit oec: OntologyEngineContext, ec: ExecutionContext): Future[java.util.List[java.util.Map[String, AnyRef]]] = {
+    private def getChildrenHierarchy(request: Request, nodeList: List[Node], rootId: String, hierarchyData: java.util.HashMap[String, AnyRef], idMap: mutable.Map[String, String], existingHierarchy: java.util.Map[String, AnyRef])(implicit oec: OntologyEngineContext, ec: ExecutionContext): Future[java.util.List[java.util.Map[String, AnyRef]]] = {
         val childrenIdentifiersMap: Map[String, Map[String, Int]] = getChildrenIdentifiersMap(hierarchyData, idMap, existingHierarchy)
-        getPreparedHierarchyData(nodeList, rootId, childrenIdentifiersMap).map(nodeMaps => {
+        getPreparedHierarchyData(request, nodeList, rootId, childrenIdentifiersMap).map(nodeMaps => {
             TelemetryManager.info("prepared hierarchy list without filtering: " + nodeMaps.size())
             val filteredNodeMaps = nodeMaps.filter(nodeMap => null != nodeMap.get(HierarchyConstants.DEPTH)).toList
             TelemetryManager.info("prepared hierarchy list with filtering: " + filteredNodeMaps.size())
@@ -364,10 +375,10 @@ object UpdateHierarchyManager {
     }
 
     @throws[Exception]
-    private def getPreparedHierarchyData(nodeList: List[Node], rootId: String, childrenIdentifiersMap: Map[String, Map[String, Int]])(implicit oec: OntologyEngineContext, ec: ExecutionContext): Future[java.util.List[java.util.Map[String, AnyRef]]] = {
+    private def getPreparedHierarchyData(request: Request, nodeList: List[Node], rootId: String, childrenIdentifiersMap: Map[String, Map[String, Int]])(implicit oec: OntologyEngineContext, ec: ExecutionContext): Future[java.util.List[java.util.Map[String, AnyRef]]] = {
         if (MapUtils.isNotEmpty(childrenIdentifiersMap)) {
             val updatedNodeList = getTempNode(nodeList, rootId) :: List()
-            updateHierarchyRelatedData(childrenIdentifiersMap.getOrElse(rootId, Map[String, Int]()), 1,
+            updateHierarchyRelatedData(request, childrenIdentifiersMap.getOrElse(rootId, Map[String, Int]()), 1,
                 rootId, nodeList, childrenIdentifiersMap, updatedNodeList).map(finalEnrichedNodeList => {
                 TelemetryManager.info("Final enriched list size: " + finalEnrichedNodeList.size)
                 val childNodeIds = finalEnrichedNodeList.map(node => node.getIdentifier.replaceAll(".img", "")).filterNot(id => StringUtils.containsIgnoreCase(rootId, id)).distinct
@@ -376,7 +387,7 @@ object UpdateHierarchyManager {
                     put(HierarchyConstants.DEPTH, 0.asInstanceOf[AnyRef])
                     put(HierarchyConstants.CHILD_NODES, new java.util.ArrayList[String](childNodeIds))
                 })
-                validateNodes(finalEnrichedNodeList, rootId).map(result => HierarchyManager.convertNodeToMap(finalEnrichedNodeList))
+                validateNodes(finalEnrichedNodeList, rootId, request).map(result => HierarchyManager.convertNodeToMap(finalEnrichedNodeList))
             }).flatMap(f => f)
         } else {
             updateNodeList(nodeList, rootId, new java.util.HashMap[String, AnyRef]() {
@@ -384,12 +395,12 @@ object UpdateHierarchyManager {
                     put(HierarchyConstants.DEPTH, 0.asInstanceOf[AnyRef])
                 }
             })
-            validateNodes(nodeList, rootId).map(result => HierarchyManager.convertNodeToMap(nodeList))
+            validateNodes(nodeList, rootId, request).map(result => HierarchyManager.convertNodeToMap(nodeList))
         }
     }
 
     @throws[Exception]
-    private def updateHierarchyRelatedData(childrenIds: Map[String, Int], depth: Int, parent: String, nodeList: List[Node], hierarchyStructure: Map[String, Map[String, Int]], enrichedNodeList: scala.collection.immutable.List[Node])(implicit oec: OntologyEngineContext, ec: ExecutionContext): Future[List[Node]] = {
+    private def updateHierarchyRelatedData(request: Request, childrenIds: Map[String, Int], depth: Int, parent: String, nodeList: List[Node], hierarchyStructure: Map[String, Map[String, Int]], enrichedNodeList: scala.collection.immutable.List[Node])(implicit oec: OntologyEngineContext, ec: ExecutionContext): Future[List[Node]] = {
         val futures = childrenIds.map(child => {
             val id = child._1
             val index = child._2 + 1
@@ -398,19 +409,25 @@ object UpdateHierarchyManager {
                 populateHierarchyRelatedData(tempNode, depth, index, parent)
                 val nxtEnrichedNodeList = tempNode :: enrichedNodeList
                 if (MapUtils.isNotEmpty(hierarchyStructure.getOrDefault(child._1, Map[String, Int]())))
-                    updateHierarchyRelatedData(hierarchyStructure.getOrDefault(child._1, Map[String, Int]()),
+                    updateHierarchyRelatedData(request, hierarchyStructure.getOrDefault(child._1, Map[String, Int]()),
                         tempNode.getMetadata.get(HierarchyConstants.DEPTH).asInstanceOf[Int] + 1, id, nodeList, hierarchyStructure, nxtEnrichedNodeList)
                 else
                     Future(nxtEnrichedNodeList)
             } else {
-                getQuestionNode(id, HierarchyConstants.TAXONOMY_ID).map(node => {
+                getQuestionNode(id, HierarchyConstants.TAXONOMY_ID, request.getContext.getOrElse("version", "1.0").asInstanceOf[String]).map(node => {
+                    val requestVersion: Double = request.getContext.getOrElse("version", "1.0").asInstanceOf[String].toDouble
+                    if(requestVersion >= 1.1) {
+                        val nodeSchemaVersion: Double = node.getMetadata.getOrDefault("schemaVersion", "1.0").asInstanceOf[String].toDouble
+                        if(nodeSchemaVersion < requestVersion)
+                            throw new ClientException("ERR_OBJECT_VALIDATION", s"Children with identifier ${id} having quml version ${nodeSchemaVersion} can't be added")
+                    }
                     populateHierarchyRelatedData(node, depth, index, parent)
                     //node.getMetadata.put(HierarchyConstants.VISIBILITY, HierarchyConstants.DEFAULT)
                     node.setObjectType(HierarchyConstants.QUESTION_OBJECT_TYPE)
                     node.getMetadata.put(HierarchyConstants.OBJECT_TYPE, HierarchyConstants.QUESTION_OBJECT_TYPE)
                     val nxtEnrichedNodeList = node :: enrichedNodeList
                     if (MapUtils.isNotEmpty(hierarchyStructure.getOrDefault(id, Map[String, Int]()))) {
-                        updateHierarchyRelatedData(hierarchyStructure.getOrDefault(id, Map[String, Int]()), node.getMetadata.get(HierarchyConstants.DEPTH).asInstanceOf[Int] + 1, id, nodeList, hierarchyStructure, nxtEnrichedNodeList)
+                        updateHierarchyRelatedData(request, hierarchyStructure.getOrDefault(id, Map[String, Int]()), node.getMetadata.get(HierarchyConstants.DEPTH).asInstanceOf[Int] + 1, id, nodeList, hierarchyStructure, nxtEnrichedNodeList)
                     } else
                         Future(nxtEnrichedNodeList)
                 }).flatMap(f => f) recoverWith { case e: CompletionException => throw e.getCause }
@@ -483,12 +500,12 @@ object UpdateHierarchyManager {
         })
     }
 
-    def getQuestionNode(identifier: String, graphId: String)(implicit oec: OntologyEngineContext, ec: ExecutionContext): Future[Node] = {
+    def getQuestionNode(identifier: String, graphId: String, schemaVersion: String)(implicit oec: OntologyEngineContext, ec: ExecutionContext): Future[Node] = {
         val request: Request = new Request()
         request.setContext(new java.util.HashMap[String, AnyRef]() {
             {
                 put(HierarchyConstants.GRAPH_ID, graphId)
-                put(HierarchyConstants.VERSION, HierarchyConstants.SCHEMA_VERSION)
+                put(HierarchyConstants.VERSION, schemaVersion)
                 put(HierarchyConstants.OBJECT_TYPE, HierarchyConstants.QUESTION_OBJECT_TYPE)
                 put(HierarchyConstants.SCHEMA_NAME, HierarchyConstants.QUESTION_SCHEMA_NAME)
             }
