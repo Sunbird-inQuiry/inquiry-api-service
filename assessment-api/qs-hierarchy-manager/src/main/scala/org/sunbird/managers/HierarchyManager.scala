@@ -50,7 +50,7 @@ object HierarchyManager {
             val unitId = request.getRequest.getOrDefault("collectionId", "").asInstanceOf[String]
             val schemaVersion = rootNode.getMetadata.getOrDefault("schemaVersion", "1.0").asInstanceOf[String]
             if (1.1 <= request.getContext.get("version").toString.toDouble && StringUtils.equalsIgnoreCase("1.0", schemaVersion))
-                throw new ClientException(HierarchyErrorCodes.ERR_HIERARCHY_UPDATE_DENIED, "QuestionSet having quml version below 1.1 not supported for this operation. Please upgrade to quml version 1.1 first!")
+                throw new ClientException(HierarchyErrorCodes.ERR_HIERARCHY_UPDATE_DENIED, "QuestionSet not supported for this operation because it doesn't have data in QuML 1.1 format.")
             if (StringUtils.isBlank(unitId)) attachLeafToRootNode(request, rootNode, "add") else {
                 val rootNodeMap =  NodeUtil.serialize(rootNode, java.util.Arrays.asList("childNodes", "originData"), schemaName, schemaVersion)
                 val childNodes: List[String] = rootNodeMap.get("childNodes") match {
@@ -72,7 +72,7 @@ object HierarchyManager {
                                     val rootNodeQumlVer = rootNode.getMetadata.getOrDefault("qumlVersion", 1.1.asInstanceOf[AnyRef])
                                     val filteredChildNodes = leafNodes.filter(node => rootNodeQumlVer != node.getMetadata.getOrDefault("qumlVersion", 1.0.asInstanceOf[AnyRef]))
                                     if (!filteredChildNodes.isEmpty)
-                                        throw new ClientException("ERR_OBJECT_VALIDATION", s"Children with identifier ${filteredChildNodes.map(node => node.getIdentifier.replace(".img", "")).asJava} can't be added because they don't have data as per quml version ${rootNodeQumlVer}")
+                                        throw new ClientException("ERR_OBJECT_VALIDATION", s"Children with identifier ${filteredChildNodes.map(node => node.getIdentifier.replace(".img", "")).asJava} can't be added because they don't have data in QuML ${rootNodeQumlVer} format.")
                                 }
                                 updateHierarchyData(unitId, hierarchy, leafNodes, rootNode, request, "add").map(node => ResponseHandler.OK.put("rootId", node.getIdentifier.replaceAll(imgSuffix, "")))
                             }).flatMap(f => f)
@@ -140,7 +140,7 @@ object HierarchyManager {
                         val rootNodeQumlVer = rootNode.getMetadata.getOrDefault("qumlVersion", 1.1.asInstanceOf[AnyRef])
                         val filteredChildNodes = leafNodes.filter(node => rootNodeQumlVer != node.getMetadata.getOrDefault("qumlVersion", 1.0.asInstanceOf[AnyRef]))
                         if (!filteredChildNodes.isEmpty)
-                            throw new ClientException("ERR_OBJECT_VALIDATION", s"Children with identifier ${filteredChildNodes.map(node => node.getIdentifier.replace(".img", "")).asJava} can't be added because they don't have data as per quml version ${rootNodeQumlVer}")
+                            throw new ClientException("ERR_OBJECT_VALIDATION", s"Children with identifier ${filteredChildNodes.map(node => node.getIdentifier.replace(".img", "")).asJava} can't be added because they don't have data in QuML ${rootNodeQumlVer} format.")
                     }
                     updateRootNode(rootNode, request, operation).map(node => {
                         updateRootHierarchy(hierarchy, leafNodes, node, request, operation).map(response => {

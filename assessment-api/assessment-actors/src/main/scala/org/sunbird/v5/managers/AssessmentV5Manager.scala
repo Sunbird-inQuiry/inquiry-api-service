@@ -130,7 +130,7 @@ object AssessmentV5Manager {
     children.toList.foreach(content => {
       val version: Double = content.getOrDefault("qumlVersion", 1.0.asInstanceOf[AnyRef]).asInstanceOf[Double]
       if (version < 1.1)
-        throw new ClientException(AssessmentErrorCodes.ERR_OBJECT_VALIDATION, s"Children Object with identifier ${content.get("identifier").toString} having quml version below 1.1 not supported for this operation. Please upgrade to quml version 1.1 first!")
+        throw new ClientException(AssessmentErrorCodes.ERR_OBJECT_VALIDATION, s"Children Object with identifier ${content.get("identifier").toString} doesn't have data in QuML 1.1 format.")
       if ((StringUtils.equalsAnyIgnoreCase(content.getOrDefault("visibility", "").asInstanceOf[String], "Default")
         && !StringUtils.equals(rootUserId, content.getOrDefault("createdBy", "").asInstanceOf[String]))
         && !StringUtils.equalsIgnoreCase(content.getOrDefault("status", "").asInstanceOf[String], "Live"))
@@ -207,7 +207,7 @@ object AssessmentV5Manager {
         throw new ClientException(errCode, s"${node.getObjectType.replace("Image", "")} having Processing status can't be sent for publish.")
       val version: Double = node.getMetadata.getOrDefault("qumlVersion", 1.0.asInstanceOf[AnyRef]).asInstanceOf[Double]
       if (version < 1.1)
-        throw new ClientException(errCode, "Object having quml version below 1.1 not supported for publish operation. Please upgrade to quml version 1.1 first!")
+        throw new ClientException(errCode, s"${node.getObjectType().replace("Image", "")} can't be sent for publish as data is not in QuML 1.1 format.")
       node
     })
   }

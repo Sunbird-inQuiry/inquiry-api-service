@@ -64,7 +64,7 @@ class QuestionActor @Inject()(implicit oec: OntologyEngineContext) extends BaseA
       }
       val version: Double = node.getMetadata.getOrDefault("qumlVersion", 1.0.asInstanceOf[AnyRef]).asInstanceOf[Double]
       if (version < 1.1)
-        throw new ClientException(AssessmentErrorCodes.ERR_OBJECT_VALIDATION, s"${node.getObjectType().replace("Image","")} having quml version below 1.1 not supported for update operation. Please upgrade to quml version 1.1 first!")
+        throw new ClientException(AssessmentErrorCodes.ERR_OBJECT_VALIDATION, s"${node.getObjectType().replace("Image","")} cannot be updated as data is not in QuML 1.1 format.")
       val schemaVersion = node.getMetadata.getOrDefault("schemaVersion", "1.0").asInstanceOf[String]
       request.getContext.put("version", schemaVersion)
       DataNode.update(request).map(node => {
@@ -102,7 +102,7 @@ class QuestionActor @Inject()(implicit oec: OntologyEngineContext) extends BaseA
     AssessmentV5Manager.getNodeWithExternalProps(request).map(node => {
       val version: Double = node.getMetadata.getOrDefault("qumlVersion", 1.0.asInstanceOf[AnyRef]).asInstanceOf[Double]
       if (version < 1.1)
-        throw new ClientException(AssessmentErrorCodes.ERR_OBJECT_VALIDATION, "Question having quml version below 1.1 not supported for review operation. Please upgrade to quml version 1.1 first!")
+        throw new ClientException(AssessmentErrorCodes.ERR_OBJECT_VALIDATION, "Question can't be sent for review as data is not in QuML 1.1 format.")
       if (StringUtils.equalsIgnoreCase(node.getMetadata.getOrDefault("visibility", "").asInstanceOf[String], "Parent"))
         throw new ClientException(AssessmentErrorCodes.ERR_OBJECT_VALIDATION, s"${node.getObjectType.replace("Image", "")} with visibility Parent, can't be sent for review individually.")
       if (!StringUtils.equalsAnyIgnoreCase(node.getMetadata.getOrDefault("status", "").asInstanceOf[String], "Draft"))
@@ -141,7 +141,7 @@ class QuestionActor @Inject()(implicit oec: OntologyEngineContext) extends BaseA
     AssessmentV5Manager.getNodeWithExternalProps(request).map(node => {
       val version: Double = node.getMetadata.getOrDefault("qumlVersion", 1.0.asInstanceOf[AnyRef]).asInstanceOf[Double]
       if (version < 1.1)
-        throw new ClientException(AssessmentErrorCodes.ERR_OBJECT_VALIDATION, "Object having quml version below 1.1 not supported for publish operation. Please upgrade to quml version 1.1 first!")
+        throw new ClientException(AssessmentErrorCodes.ERR_OBJECT_VALIDATION, "Question can't be sent for publish as data is not in QuML 1.1 format.")
       if (StringUtils.equalsIgnoreCase(node.getMetadata.getOrDefault("visibility", "").asInstanceOf[String], "Parent"))
         throw new ClientException(AssessmentErrorCodes.ERR_OBJECT_VALIDATION, s"${node.getObjectType.replace("Image", "")} with visibility Parent, can't be sent for publish individually.")
       if (StringUtils.equalsAnyIgnoreCase(node.getMetadata.getOrDefault("status", "").asInstanceOf[String], "Processing"))

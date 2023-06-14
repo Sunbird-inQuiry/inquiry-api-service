@@ -99,7 +99,7 @@ class QuestionSetActor @Inject()(implicit oec: OntologyEngineContext) extends Ba
         throw new ClientException(AssessmentErrorCodes.ERR_OBJECT_VALIDATION, s"${node.getObjectType.replace("Image", "")} with status other than Draft can't be sent for review.")
       val version: Double = node.getMetadata.getOrDefault("qumlVersion", 1.0.asInstanceOf[AnyRef]).asInstanceOf[Double]
       if (version < 1.1)
-        throw new ClientException(AssessmentErrorCodes.ERR_OBJECT_VALIDATION, "QuestionSet having quml version below 1.1 not supported for review operation. Please upgrade to quml version 1.1 first!")
+        throw new ClientException(AssessmentErrorCodes.ERR_OBJECT_VALIDATION, "QuestionSet can't be sent for review as data is not in QuML 1.1 format.")
       val hStr = node.getMetadata.getOrDefault("hierarchy", "").asInstanceOf[String]
       val hierarchy = if (StringUtils.isNotBlank(hStr)) JsonUtils.deserialize(hStr, classOf[java.util.Map[String, AnyRef]]) else new util.HashMap[String, AnyRef]()
       val children = hierarchy.getOrDefault("children", new util.ArrayList[java.util.Map[String, AnyRef]]).asInstanceOf[util.List[java.util.Map[String, AnyRef]]]
@@ -173,7 +173,7 @@ class QuestionSetActor @Inject()(implicit oec: OntologyEngineContext) extends Ba
         throw new ClientException(AssessmentErrorCodes.ERR_OBJECT_VALIDATION, node.getMetadata.getOrDefault("objectType", "").asInstanceOf[String].replace("Image", "") + " with visibility Parent, can't be updated individually.")
       val version: Double = node.getMetadata.getOrDefault("qumlVersion", 1.0.asInstanceOf[AnyRef]).asInstanceOf[Double]
       if (version < 1.1)
-        throw new ClientException(AssessmentErrorCodes.ERR_OBJECT_VALIDATION, "QuestionSet having quml version below 1.1 not supported for update operation. Please upgrade to quml version 1.1 first!")
+        throw new ClientException(AssessmentErrorCodes.ERR_OBJECT_VALIDATION, "QuestionSet can't be updated as data is not in QuML 1.1 format.")
       val schemaVersion = node.getMetadata.getOrDefault("schemaVersion", "1.0").asInstanceOf[String]
       request.getContext.put("version", schemaVersion)
       DataNode.update(request).map(node => {

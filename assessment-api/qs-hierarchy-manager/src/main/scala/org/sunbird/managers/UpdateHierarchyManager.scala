@@ -98,7 +98,7 @@ object UpdateHierarchyManager {
         DataNode.read(req).map(rootNode => {
             val schemaVersion = rootNode.getMetadata().getOrElse("schemaVersion", "1.0").asInstanceOf[String]
             if(StringUtils.equalsIgnoreCase("1.1",request.getContext.get("version").toString) && StringUtils.equalsIgnoreCase("1.0", schemaVersion))
-                throw new ClientException(HierarchyErrorCodes.ERR_HIERARCHY_UPDATE_DENIED, "QuestionSet having quml version below 1.1 not supported for update hierarchy operation. Please upgrade to quml version 1.1 first!")
+                throw new ClientException(HierarchyErrorCodes.ERR_HIERARCHY_UPDATE_DENIED, "QuestionSet can't support update hierarchy operation because it is not having data in QuML 1.1 format.")
             val metadata: java.util.Map[String, AnyRef] = NodeUtil.serialize(rootNode, new java.util.ArrayList[String](), request.getContext.get("schemaName").asInstanceOf[String], schemaVersion)
             if (!StringUtils.equals(metadata.get(HierarchyConstants.MIME_TYPE).asInstanceOf[String], HierarchyConstants.QUESTIONSET_MIME_TYPE)) {
                 TelemetryManager.error("UpdateHierarchyManager.getValidatedRootNode :: Invalid MimeType for Root node id: " + identifier)
