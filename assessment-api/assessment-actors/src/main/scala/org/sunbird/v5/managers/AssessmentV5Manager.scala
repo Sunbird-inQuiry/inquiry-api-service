@@ -454,6 +454,7 @@ object AssessmentV5Manager {
         processBooleanProps(ch)
         if (StringUtils.equalsIgnoreCase("application/vnd.sunbird.questionset", ch.getOrDefault("mimeType", "").asInstanceOf[String])) {
           processTimeLimits(ch)
+          processInstructions(ch)
           val nestedChildren = ch.getOrDefault("children", new util.ArrayList[java.util.Map[String, AnyRef]]).asInstanceOf[util.List[java.util.Map[String, AnyRef]]]
           tranformChildren(nestedChildren)
         }

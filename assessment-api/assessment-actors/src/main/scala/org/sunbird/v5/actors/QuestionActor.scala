@@ -76,8 +76,7 @@ class QuestionActor @Inject()(implicit oec: OntologyEngineContext) extends BaseA
   def listQuestions(request: Request): Future[Response] = {
     RequestUtil.validateListRequest(request)
     val fields: util.List[String] = JavaConverters.seqAsJavaListConverter(request.get("fields").asInstanceOf[String].split(",").filter(field => StringUtils.isNotBlank(field) && !StringUtils.equalsIgnoreCase(field, "null"))).asJava
-    if(!fields.isEmpty)
-      request.getRequest.put("fields", fields)
+    request.getRequest.put("fields", fields)
     DataNode.search(request).map(nodeList => {
       val questionList = nodeList.map(node => AssessmentV5Manager.getQuestionMetadata(node, fields, List().asJava)).asJava
       ResponseHandler.OK.put("questions", questionList).put("count", questionList.size)
