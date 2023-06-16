@@ -418,7 +418,6 @@ object AssessmentV5Manager {
         processResponseDeclaration(data)
         processInteractions(data)
         processSolutions(data)
-        data.remove("maxScore")
         processInstructions(data)
         processHints(data)
         processBloomsLevel(data)
@@ -448,7 +447,6 @@ object AssessmentV5Manager {
   def tranformChildren(children: util.List[util.Map[String, AnyRef]]): Unit = {
     if (!children.isEmpty) {
       children.foreach(ch => {
-        if (ch.containsKey("maxScore")) ch.remove("maxScore")
         if (ch.containsKey("version")) ch.remove("version")
         processBloomsLevel(ch)
         processBooleanProps(ch)
