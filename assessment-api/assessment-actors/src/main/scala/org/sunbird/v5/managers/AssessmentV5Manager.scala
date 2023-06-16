@@ -285,7 +285,8 @@ object AssessmentV5Manager {
 
   def processTimeLimits(data: util.Map[String, AnyRef]): Unit = {
     if (data.containsKey("timeLimits")) {
-      val maxTime: Integer = data.getOrDefault("timeLimits", Map().asJava).asInstanceOf[util.Map[String, AnyRef]].getOrElse("maxTime", "0").asInstanceOf[String].toInt
+      val timeLimits = if(data.get("timeLimits").isInstanceOf[util.Map[String, AnyRef]]) data.getOrDefault("timeLimits", Map().asJava).asInstanceOf[util.Map[String, AnyRef]] else JsonUtils.deserialize(data.get("timeLimits").asInstanceOf[String], classOf[java.util.Map[String, AnyRef]])
+      val maxTime: Integer = timeLimits.getOrElse("maxTime", "0").asInstanceOf[String].toInt
       val updatedData: util.Map[String, AnyRef] = Map("questionSet" -> Map("max" -> maxTime, "min" -> 0.asInstanceOf[AnyRef]).asJava).asJava.asInstanceOf[util.Map[String, AnyRef]]
       data.put("timeLimits", updatedData)
     }
