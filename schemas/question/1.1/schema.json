@@ -653,6 +653,9 @@
         "type": "string"
       }
     },
+    "maxScore": {
+      "type": "number"
+    },
     "attributions": {
       "type": "array"
     },
