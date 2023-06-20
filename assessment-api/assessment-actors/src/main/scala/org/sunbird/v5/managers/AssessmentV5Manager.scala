@@ -285,7 +285,7 @@ object AssessmentV5Manager {
 
   def processTimeLimits(data: util.Map[String, AnyRef]): Unit = {
     if (data.containsKey("timeLimits")) {
-      val timeLimits = if(data.get("timeLimits").isInstanceOf[util.Map[String, AnyRef]]) data.getOrDefault("timeLimits", Map().asJava).asInstanceOf[util.Map[String, AnyRef]] else JsonUtils.deserialize(data.get("timeLimits").asInstanceOf[String], classOf[java.util.Map[String, AnyRef]])
+      val timeLimits:util.Map[String, AnyRef] = if(data.get("timeLimits").isInstanceOf[util.Map[String, AnyRef]]) data.getOrDefault("timeLimits", Map().asJava).asInstanceOf[util.Map[String, AnyRef]] else JsonUtils.deserialize(data.get("timeLimits").asInstanceOf[String], classOf[java.util.Map[String, AnyRef]])
       val maxTime: Integer = timeLimits.getOrElse("maxTime", "0").asInstanceOf[String].toInt
       val updatedData: util.Map[String, AnyRef] = Map("questionSet" -> Map("max" -> maxTime, "min" -> 0.asInstanceOf[AnyRef]).asJava).asJava.asInstanceOf[util.Map[String, AnyRef]]
       data.put("timeLimits", updatedData)
@@ -342,7 +342,13 @@ object AssessmentV5Manager {
   def processResponseDeclaration(data: util.Map[String, AnyRef]): Unit = {
     val outcomeDeclaration = new util.HashMap[String, AnyRef]()
     // Remove responseDeclaration metadata for Subjective Question
-    if (StringUtils.equalsIgnoreCase("Subjective Question", data.getOrDefault("primaryCategory", "").toString)) data.remove("responseDeclaration") else {
+    if (StringUtils.equalsIgnoreCase("Subjective Question", data.getOrDefault("primaryCategory", "").toString)) {
+      data.remove("responseDeclaration")
+      data.remove("interactions")
+      if(data.containsKey("maxScore") && null != data.get("maxScore")) {
+        data.put("outcomeDeclaration", Map[String, AnyRef]("cardinality" -> "single", "type" -> "integer", "defaultValue" -> data.get("maxScore")).asJava)
+      }
+    } else {
       //transform responseDeclaration and populate outcomeDeclaration
       val responseDeclaration: util.Map[String, AnyRef] = data.getOrDefault("responseDeclaration", Map[String, AnyRef]().asJava).asInstanceOf[util.Map[String, AnyRef]]
       if (!responseDeclaration.isEmpty) {
