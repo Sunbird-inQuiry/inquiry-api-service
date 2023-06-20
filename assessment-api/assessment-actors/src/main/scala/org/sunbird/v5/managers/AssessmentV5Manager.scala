@@ -116,12 +116,15 @@ object AssessmentV5Manager {
     val metadata = node.getMetadata
     if (StringUtils.isBlank(metadata.getOrDefault("body", "").asInstanceOf[String]))
       messages += s"""body"""
-    if (StringUtils.isBlank(metadata.getOrDefault("answer", "").asInstanceOf[String]))
-      messages += s"""answer"""
+    /*if (StringUtils.isBlank(metadata.getOrDefault("answer", "").asInstanceOf[String]))
+      messages += s"""answer"""*/
     if (null != metadata.get("interactionTypes")) {
       if (StringUtils.isBlank(metadata.getOrElse("responseDeclaration", "").asInstanceOf[String])) messages += s"""responseDeclaration"""
       if (StringUtils.isBlank(metadata.getOrElse("interactions", "").asInstanceOf[String])) messages += s"""interactions"""
       if (StringUtils.isBlank(metadata.getOrElse("outcomeDeclaration", "").asInstanceOf[String])) messages += s"""outcomeDeclaration"""
+    } else {
+      if (StringUtils.isBlank(metadata.getOrDefault("answer", "").asInstanceOf[String]))
+        messages += s"""answer"""
     }
     messages.toList
   }
