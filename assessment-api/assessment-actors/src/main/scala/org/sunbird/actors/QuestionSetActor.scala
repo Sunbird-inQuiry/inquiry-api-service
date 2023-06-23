@@ -171,39 +171,44 @@ class QuestionSetActor @Inject()(implicit oec: OntologyEngineContext) extends Ba
 	def updateComment(request: Request): Future[Response] = {
 		AssessmentManager.getValidatedNodeForUpdateComment(request, "ERR_QUESTION_SET_UPDATE_COMMENT").flatMap(_ => updateInnerComment(request))
 	}
-	def updateInnerComment(request: Request): Future[Response] = {
-		val newReq = new Request(request)
-		val finalReq = new Request(request)
+def updateInnerComment(request: Request): Future[Response] = {
+	val readReq = new Request(request)
+  val writeReq = new Request(request)
 
-		newReq.getRequest.remove("comments")
-		finalReq.getRequest.remove("comments")
+  readReq.getRequest.remove("comments")
+  writeReq.getRequest.remove("comments")
 
-		request.getRequest.get("comments").asInstanceOf[java.util.ArrayList[java.util.Map[String, Object]]].map(
-			x => {
-				System.out.println(x)
-				val identifier = x.get("identifier").asInstanceOf[String]
+	val comments = request.getRequest.get("comments").asInstanceOf[java.util.ArrayList[java.util.Map[String, Object]]].asScala.toList
+  val futureResults = Future.traverse(comments) { comment =>
+    val identifier = comment.get("identifier").asInstanceOf[String]
+    val rejectComment = comment.get("comment")
 
-				if(Platform.getBoolean("questionset.cache.enable", false))
-					RedisCache.delete(hierarchyPrefix + identifier)
+		readReq.getRequest.clear()
+		readReq.getRequest.put("rejectComment", rejectComment)
+		readReq.getContext.replace("identifier", identifier)
 
-				finalReq.getRequest.put("rejectComment", x.get("comment"))
-				RequestUtil.validateRequest(finalReq)
+		RequestUtil.validateRequest(readReq)
+		val identifiers = new util.ArrayList[String](){{
+      add(identifier)
+    }}
+		readReq.put("identifiers", identifiers)
 
+		DataNode.list(readReq).flatMap { response =>
+			writeReq.getRequest.clear()
+			writeReq.getRequest.put("rejectComment", rejectComment)
+			writeReq.getContext.replace("identifier", identifier)
 
-				val identifiers = new util.ArrayList[String](){{
-					add(identifier)
-					if (!identifier.endsWith(".img"))
-						add(identifier.concat(".img"))
-				}}
-				newReq.put("identifiers", identifiers)
+			DataNode.systemUpdate(writeReq, response, "questionSet")
+    }
+  }
 
-				DataNode.list(newReq).flatMap(response => {
-					System.out.println(response.isEmpty)
-					DataNode.systemUpdate(finalReq, response,"questionSet", Some(HierarchyManager.getHierarchy))
-				}).map(node => node)
-			})
-			Future(ResponseHandler.OK.put("identifier", finalReq.getContext.get("identifier")))
+  futureResults.flatMap { nodes =>
+    val responseMap = Map("identifier" -> request.getContext.get("identifier"))
+    val response = ResponseHandler.OK
+    response.putAll(responseMap.asJava)
+    Future.successful(response)
+  }
+}
 
-	}
 
 }

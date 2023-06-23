@@ -89,22 +89,46 @@ object AssessmentManager {
 		val newReq = new Request(request)
 		newReq.getContext.remove("comments")
 
-		if (request.getRequest.get("comments").asInstanceOf[java.util.ArrayList[java.util.Map[String, Object]]].size == 0)
+		if (request.getRequest.getOrDefault("comments",new java.util.ArrayList[java.util.Map[String, Object]]).asInstanceOf[java.util.ArrayList[java.util.Map[String, Object]]].isEmpty)
 			throw new ClientException(errCode, "comments key is missing in the request body")
-		request.getRequest.get("comments").asInstanceOf[java.util.ArrayList[java.util.Map[String, Object]]].map(
-			x => {
-				newReq.getRequest.putAll(Map("identifier" -> x.get("identifier"), "mode" -> "read").asJava)
-				newReq.getContext.remove("identifier")
 
-				if (x.get("identifier").asInstanceOf[String] == null)
-					throw new ClientException(errCode, "identifier key is missing in the request body")
-				if (x.get("comment").asInstanceOf[String] == null)
-					throw new ClientException(errCode, "comment key is missing in the request body")
-				DataNode.read(newReq).map(node =>node)
-			})
-			Future(request)
+		val comments = request.getRequest.get("comments").asInstanceOf[java.util.ArrayList[java.util.Map[String, Object]]].asScala.toList
+
+		val updatedCommentsFutures = Future.traverse(comments) { comment =>
+			val identifier = comment.get("identifier").asInstanceOf[String]
+			val commentText = comment.get("comment").asInstanceOf[String]
+
+			newReq.getRequest.putAll(Map("identifier" -> identifier, "mode" -> "edit").asJava)
+			newReq.getContext.remove("identifier")
+
+			if (identifier == null)
+				throw new ClientException(errCode, "identifier key is missing in the request body")
+			if (commentText == null)
+				throw new ClientException(errCode, "comment key is missing in the request body")
+
+			DataNode.read(newReq).map { node =>
+				var updatedComment = comment
+				if (StringUtils.endsWith(node.getIdentifier, ".img")) {
+					updatedComment = Map("identifier" -> node.getIdentifier, "comment" -> comment.get("comment"))
+				}
+				if (!StringUtils.equalsIgnoreCase("QuestionSet", node.getObjectType))
+					throw new ClientException("ERR_QUESTION_SET_ADD", s"Node with Identifier ${node.getIdentifier} is not a Question Set")
+
+				if (!StringUtils.endsWith(node.getMetadata.get("mimeType").asInstanceOf[String], "questionset"))
+					throw new ClientException("ERR_QUESTION_SET_ADD", s"Node with Identifier ${node.getIdentifier} is not a Question Set")
+
+				if (!StringUtils.equalsAnyIgnoreCase(node.getMetadata.getOrDefault("status", "").asInstanceOf[String], "Review"))
+					throw new ClientException(errCode, s"Node with Identifier ${node.getIdentifier} does not have a status Review.")
+				updatedComment
+			}
+		}
+
+		updatedCommentsFutures.map { updatedComments =>
+			val updatedCommentsList = new java.util.ArrayList[java.util.Map[String, Object]](updatedComments.asJava)
+			request.getRequest.put("comments", updatedCommentsList)
+			request
+		}
 	}
-
 
 	def getValidatedNodeForReview(request: Request, errCode: String)(implicit ec: ExecutionContext, oec: OntologyEngineContext): Future[Node] = {
 		request.put("mode", "edit")
@@ -328,14 +352,13 @@ object AssessmentManager {
 		DataNode.read(request).map(node => {
 			val metadata = new java.util.HashMap().asInstanceOf[java.util.Map[String, AnyRef]]
 			metadata.put("identifier", node.getIdentifier.replace(".img", ""))
-			metadata.put("comment", node.getMetadata.get("rejectComment"))
-
+			metadata.put("comment", node.getMetadata.getOrDefault("rejectComment",""))
 			res.add(metadata)
-			if(!StringUtils.equalsIgnoreCase(metadata.get("visibility").asInstanceOf[String],"Private")) {
+			if(!StringUtils.equalsIgnoreCase(node.getMetadata.get("visibility").asInstanceOf[String],"Private")) {
 				ResponseHandler.OK.put(resName, res)
 			}
 			else {
-				throw new ClientException("ERR_ACCESS_DENIED", s"$resName visibility is private, hence access denied")
+				throw new ClientException("ERR_ACCESS_DENIED", s"visibility of ${node.getIdentifier.replace(".img", "")} is private hence access denied")
 			}
 		})
 	}

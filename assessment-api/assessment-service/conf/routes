@@ -42,4 +42,4 @@ POST      /questionset/v4/import                     controllers.v4.QuestionSetC
 PATCH     /questionset/v4/system/update/:identifier  controllers.v4.QuestionSetController.systemUpdate(identifier:String)
 POST      /questionset/v4/copy/:identifier           controllers.v4.QuestionSetController.copy(identifier:String, mode:Option[String], type:String?="deep")
 PATCH     /questionset/v4/comment/update/:identifier controllers.v4.QuestionSetController.updateComment(identifier:String)
-GET       /questionset/v4/comment/read/:identifier   controllers.v4.QuestionSetController.readComment(identifier:String, mode:Option[String], fields:Option[String])
+GET       /questionset/v4/comment/read/:identifier   controllers.v4.QuestionSetController.readComment(identifier:String)
