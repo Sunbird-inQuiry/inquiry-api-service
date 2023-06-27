@@ -107,10 +107,6 @@ object AssessmentManager {
 				throw new ClientException(errCode, "comment key is missing in the request body")
 
 			DataNode.read(newReq).map { node =>
-				var updatedComment = comment
-				if (StringUtils.endsWith(node.getIdentifier, ".img")) {
-					updatedComment = Map("identifier" -> node.getIdentifier, "comment" -> comment.get("comment"))
-				}
 				if (!StringUtils.equalsIgnoreCase("QuestionSet", node.getObjectType))
 					throw new ClientException("ERR_QUESTION_SET_ADD", s"Node with Identifier ${node.getIdentifier} is not a Question Set")
 
@@ -119,13 +115,18 @@ object AssessmentManager {
 
 				if (!StringUtils.equalsAnyIgnoreCase(node.getMetadata.getOrDefault("status", "").asInstanceOf[String], "Review"))
 					throw new ClientException(errCode, s"Node with Identifier ${node.getIdentifier} does not have a status Review.")
+
+				val updatedComment : java.util.Map[String, Object]= if (StringUtils.endsWith(node.getIdentifier, ".img")) {
+					Map("identifier" -> node.getIdentifier, "comment" -> comment.get("comment"))
+				}else{
+					comment
+				}
 				updatedComment
 			}
 		}
 
 		updatedCommentsFutures.map { updatedComments =>
-			val updatedCommentsList = new java.util.ArrayList[java.util.Map[String, Object]](updatedComments.asJava)
-			request.getRequest.put("comments", updatedCommentsList)
+			request.getRequest.put("comments", new java.util.ArrayList[java.util.Map[String, Object]](updatedComments.asJava))
 			request
 		}
 	}

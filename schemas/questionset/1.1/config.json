@@ -1,0 +1,90 @@
+{
+  "objectType": "QuestionSet",
+  "relations": {
+    "children": {
+      "type": "hasSequenceMember",
+      "direction": "out",
+      "objects": [
+        "Question",
+        "QuestionImage",
+        "QuestionSet",
+        "QuestionSetImage"
+      ]
+    },
+    "collection": {
+      "type": "hasSequenceMember",
+      "direction": "in",
+      "objects": [
+        "QuestionSet",
+        "QuestionSetImage"
+      ]
+    }
+  },
+  "version": "enable",
+  "versionCheckMode": "OFF",
+  "frameworkCategories": [
+    "board",
+    "medium",
+    "subject",
+    "gradeLevel",
+    "topic"
+  ],
+  "orgFrameworkTerms": [
+    "boardIds",
+    "gradeLevelIds",
+    "subjectIds",
+    "mediumIds",
+    "topicsIds"
+  ],
+  "targetFrameworkTerms": [
+    "targetFWIds",
+    "targetBoardIds",
+    "targetGradeLevelIds",
+    "targetSubjectIds",
+    "targetMediumIds",
+    "targetTopicIds"
+  ],
+  "cacheEnabled": false,
+  "schema_restrict_api": true,
+  "restrictProps": {
+    "create": [
+      "children",
+      "status",
+      "schemaVersion"
+    ],
+    "update": [
+      "children",
+      "visibility",
+      "code",
+      "status",
+      "mimeType",
+      "qumlVersion",
+      "schemaVersion"
+    ],
+    "updateHierarchy": [
+      "variants",
+      "config",
+      "reservedDialcodes",
+      "qumlVersion",
+      "schemaVersion"
+    ]
+  },
+  "oneOfProps": ["instructions"],
+  "external": {
+    "tableName": "questionset_hierarchy",
+    "properties": {
+      "hierarchy": {
+        "type": "string"
+      },
+      "instructions": {
+        "type": "string"
+      },
+      "outcomeDeclaration": {
+        "type": "string"
+      }
+    },
+    "primaryKey": [
+      "identifier"
+    ]
+  }
+}

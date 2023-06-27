@@ -163,7 +163,6 @@ class QuestionSetActor @Inject()(implicit oec: OntologyEngineContext) extends Ba
 			DataNode.systemUpdate(request, response,"questionSet", Some(HierarchyManager.getHierarchy))
 		}).map(node => ResponseHandler.OK.put("identifier", identifier).put("status", "success"))
 	}
-
 	def copy(request: Request): Future[Response] ={
 		RequestUtil.restrictProperties(request)
 		CopyManager.copy(request)
@@ -171,44 +170,43 @@ class QuestionSetActor @Inject()(implicit oec: OntologyEngineContext) extends Ba
 	def updateComment(request: Request): Future[Response] = {
 		AssessmentManager.getValidatedNodeForUpdateComment(request, "ERR_QUESTION_SET_UPDATE_COMMENT").flatMap(_ => updateInnerComment(request))
 	}
-def updateInnerComment(request: Request): Future[Response] = {
-	val readReq = new Request(request)
-  val writeReq = new Request(request)
+	def updateInnerComment(request: Request): Future[Response] = {
+		val readReq = new Request(request)
+		val writeReq = new Request(request)
 
-  readReq.getRequest.remove("comments")
-  writeReq.getRequest.remove("comments")
+		readReq.getRequest.remove("comments")
+		writeReq.getRequest.remove("comments")
 
-	val comments = request.getRequest.get("comments").asInstanceOf[java.util.ArrayList[java.util.Map[String, Object]]].asScala.toList
-  val futureResults = Future.traverse(comments) { comment =>
-    val identifier = comment.get("identifier").asInstanceOf[String]
-    val rejectComment = comment.get("comment")
+		val comments = request.getRequest.get("comments").asInstanceOf[java.util.ArrayList[java.util.Map[String, Object]]].asScala.toList
+		val futureResults = Future.traverse(comments) { comment =>
+			val identifier = comment.get("identifier").asInstanceOf[String]
+			val rejectComment = comment.get("comment")
 
-		readReq.getRequest.clear()
-		readReq.getRequest.put("rejectComment", rejectComment)
-		readReq.getContext.replace("identifier", identifier)
+			readReq.getRequest.clear()
+			readReq.getRequest.put("rejectComment", rejectComment)
+			readReq.getContext.replace("identifier", identifier)
 
-		RequestUtil.validateRequest(readReq)
-		val identifiers = new util.ArrayList[String](){{
-      add(identifier)
-    }}
-		readReq.put("identifiers", identifiers)
+			RequestUtil.validateRequest(readReq)
+			val identifiers = new util.ArrayList[String](){{
+				add(identifier)
+			}}
+			readReq.put("identifiers", identifiers)
 
-		DataNode.list(readReq).flatMap { response =>
-			writeReq.getRequest.clear()
-			writeReq.getRequest.put("rejectComment", rejectComment)
-			writeReq.getContext.replace("identifier", identifier)
+			DataNode.list(readReq).flatMap { response =>
+				writeReq.getRequest.clear()
+				writeReq.getRequest.put("rejectComment", rejectComment)
+				writeReq.getContext.replace("identifier", identifier)
 
-			DataNode.systemUpdate(writeReq, response, "questionSet")
-    }
-  }
-
-  futureResults.flatMap { nodes =>
-    val responseMap = Map("identifier" -> request.getContext.get("identifier"))
-    val response = ResponseHandler.OK
-    response.putAll(responseMap.asJava)
-    Future.successful(response)
-  }
-}
+				DataNode.systemUpdate(writeReq, response, "questionSet")
+			}
+		}
+		futureResults.flatMap { nodes =>
+			val responseMap = Map("identifier" -> request.getContext.get("identifier"))
+			val response = ResponseHandler.OK
+			response.putAll(responseMap.asJava)
+			Future.successful(response)
+		}
+	}
 
 
 }
