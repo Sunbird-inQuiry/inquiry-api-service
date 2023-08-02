@@ -8,5 +8,6 @@ object ActorNames {
     final val QUESTION_SET_ACTOR = "questionSetActor"
     final val QUESTION_V5_ACTOR = "questionV5Actor"
     final val QUESTION_SET_V5_ACTOR = "questionSetV5Actor"
+    final val QUESTION_SET_ASSESS_ACTOR="questionSetAssessActor"
 
 }

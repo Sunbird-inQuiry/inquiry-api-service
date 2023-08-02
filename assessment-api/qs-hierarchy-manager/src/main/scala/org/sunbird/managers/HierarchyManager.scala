@@ -21,15 +21,19 @@ import com.mashape.unirest.http.Unirest
 import org.apache.commons.collections4.{CollectionUtils, MapUtils}
 import org.sunbird.graph.OntologyEngineContext
 import org.sunbird.telemetry.logger.TelemetryManager
-import org.sunbird.utils.{HierarchyConstants, HierarchyErrorCodes}
+import org.sunbird.utils.{HierarchyConstants, HierarchyErrorCodes, JwtUtils}
+
+import scala.collection.mutable
 
 object HierarchyManager {
 
     val schemaName: String = "questionset"
     val imgSuffix: String = ".img"
     val hierarchyPrefix: String = "qs_hierarchy_"
-    val statusList = List("Live", "Unlisted", "Flagged")
+    val statusList = List("Live", "Unlisted", "Flagged", "Draft")
     val ASSESSMENT_OBJECT_TYPES = List("Question", "QuestionSet")
+
+    val keyManager = new KeyManager(Platform.getString("api.jwt.basepath","./keys/"), Platform.getString("api.jwt.keyprefix","device"), Platform.getInteger("keys.count",1))
 
     val keyTobeRemoved = {
         if(Platform.config.hasPath("content.hierarchy.removed_props_for_leafNodes"))
@@ -250,9 +254,38 @@ object HierarchyManager {
         hierarchyFuture.map(result => {
             if (!result.isEmpty) {
                 val bookmarkId = request.get("bookmarkId").asInstanceOf[String]
-                val rootHierarchy  = result.get("questionSet").asInstanceOf[util.Map[String, AnyRef]]
+                val rootHierarchy = result.get(HierarchyConstants.QUESTIONSET).asInstanceOf[util.Map[String, AnyRef]]
                 if (StringUtils.isEmpty(bookmarkId)) {
-                    ResponseHandler.OK.put("questionSet", rootHierarchy)
+                    if (request.get(HierarchyConstants.SERVEREVALUABLE).asInstanceOf[String].equalsIgnoreCase(HierarchyConstants.TRUE)) {
+                        val mutableRootHierarchy = mutable.Map[String, AnyRef](rootHierarchy.asScala.toSeq: _*)
+                        val childrenList = mutableRootHierarchy
+                          .getOrElse(HierarchyConstants.CHILDREN, new util.ArrayList[java.util.Map[String, AnyRef]])
+                          .asInstanceOf[util.ArrayList[java.util.Map[String, AnyRef]]]
+                        val updatedChildrenList = childrenList.asScala.map(child => {
+                            val maxQuestions = Option(child.get(HierarchyConstants.MAXQUESTIONS)).map(_.asInstanceOf[Int]).getOrElse(0)
+                            val shuffle = Option(child.get(HierarchyConstants.SHUFFLE)).map(_.asInstanceOf[Boolean]).getOrElse(false)
+                            val randomizedChild = if (shuffle) shuffleQuestions(child) else child
+                            val limitedChild = limitQuestions(randomizedChild, maxQuestions)
+
+                            limitedChild
+                        }).asJava
+                        val serverEvaluable = updatedChildrenList.get(0).getOrDefault(HierarchyConstants.EVAL, new util.LinkedHashMap()).asInstanceOf[java.util.LinkedHashMap[String, String]]
+                        if (serverEvaluable.get(HierarchyConstants.MODE) != null && serverEvaluable.get(HierarchyConstants.MODE).equalsIgnoreCase(HierarchyConstants.SERVER)) {
+                            request.put(HierarchyConstants.EVAL_MODE, HierarchyConstants.SERVER)
+                        } else {
+                            request.put(HierarchyConstants.EVAL_MODE, HierarchyConstants.CLIENT)
+                        }
+                        val nestedChildrenIdentifiers = getNestedChildrenIdentifiers(updatedChildrenList)
+                        val mergedMap: util.Map[String, String] = createMergedMap(request, nestedChildrenIdentifiers)
+                        val userMapJson = JsonUtils.serialize(mergedMap)
+                        val jwtToken = generateJwtToken(userMapJson)
+                        mutableRootHierarchy.put(HierarchyConstants.IDENTIFIER, request.get(HierarchyConstants.ROOTID))
+                        mutableRootHierarchy.put(HierarchyConstants.QUESTIONSETTOKEN, jwtToken)
+                        mutableRootHierarchy.put(HierarchyConstants.CHILDREN, updatedChildrenList)
+                        ResponseHandler.OK.put(HierarchyConstants.QUESTIONSET, mutableRootHierarchy.asJava)
+                    } else {
+                        ResponseHandler.OK.put(HierarchyConstants.QUESTIONSET, rootHierarchy)
+                    }
                 } else {
                     val children = rootHierarchy.getOrElse("children", new util.ArrayList[util.Map[String, AnyRef]]()).asInstanceOf[util.List[util.Map[String, AnyRef]]]
                     val bookmarkHierarchy = filterBookmarkHierarchy(children, bookmarkId)
@@ -520,7 +553,7 @@ object HierarchyManager {
         val hierarchy = fetchHierarchy(request, request.getRequest.get("rootId").asInstanceOf[String])
         hierarchy.map(hierarchy => {
             if (!hierarchy.isEmpty) {
-                if (StringUtils.isNotEmpty(hierarchy.getOrDefault("status", "").asInstanceOf[String]) && statusList.contains(hierarchy.getOrDefault("status", "").asInstanceOf[String])) {
+                if (StringUtils.isNotEmpty(hierarchy.getOrDefault("status", "Draft").asInstanceOf[String]) && statusList.contains(hierarchy.getOrDefault("status", "Draft").asInstanceOf[String])) {
                     val hierarchyMap = mapAsJavaMap(hierarchy)
                     rootHierarchy.put("questionSet", hierarchyMap)
                     RedisCache.set(hierarchyPrefix + request.get("rootId"), JsonUtils.serialize(hierarchyMap))
@@ -754,6 +787,68 @@ object HierarchyManager {
         })
         TelemetryManager.info(s"updated BranchingLogic for ${identifier} : ${updatedBranchingLogic}")
         updatedBranchingLogic
+    }
+
+    def shuffleQuestions(child: util.Map[String, AnyRef]): util.Map[String, AnyRef] = {
+        val questions = child.getOrDefault(HierarchyConstants.CHILDREN, new util.ArrayList[util.Map[String, AnyRef]]()).asInstanceOf[util.List[util.Map[String, AnyRef]]]
+        util.Collections.shuffle(questions)
+        child
+    }
+
+    def limitQuestions(child: util.Map[String, AnyRef], maxQuestions: Int): util.Map[String, AnyRef] = {
+        if (maxQuestions > 0) {
+            val questions = child.getOrDefault(HierarchyConstants.CHILDREN, new util.ArrayList[util.Map[String, AnyRef]]()).asInstanceOf[util.List[util.Map[String, AnyRef]]]
+            val limitedQuestions = questions.subList(0, Math.min(maxQuestions, questions.size()))
+            child.put(HierarchyConstants.CHILDREN, limitedQuestions)
+        }
+        child
+    }
+
+
+    private def getNestedChildrenIdentifiers(childrenList: util.List[java.util.Map[String, AnyRef]]): String = {
+        val javaChildrenList: java.util.List[java.util.Map[String, AnyRef]] = childrenList.map(map => mapAsJavaMap(map)).asJava
+        javaChildrenList.asScala.flatMap { child =>
+            val nestedChildren = child
+              .getOrDefault(HierarchyConstants.CHILDREN, new util.ArrayList[java.util.Map[String, AnyRef]])
+              .asInstanceOf[util.List[java.util.Map[String, AnyRef]]]
+              .asScala
+              .toList
+              .asInstanceOf[Seq[java.util.Map[String, AnyRef]]]
+            val javaNestedChildren = JavaConverters.seqAsJavaListConverter(nestedChildren).asJava
+            javaNestedChildren.asScala.map(_.get(HierarchyConstants.IDENTIFIER).asInstanceOf[String])
+        }.mkString(",")
+    }
+
+    private def createMergedMap(request: Request, nestedChildrenIdentifiers: String): util.Map[String, String] = {
+        val questionMap: util.HashMap[String, String] = new util.HashMap[String, String]()
+        val userMap: util.Map[String, String] = new util.HashMap[String, String]()
+        val mergedMap: util.Map[String, String] = new util.HashMap[String, String]()
+
+        questionMap.put(HierarchyConstants.QUESTIONLIST, nestedChildrenIdentifiers)
+        userMap.put(HierarchyConstants.CONTENTID, request.get(HierarchyConstants.ROOTID).asInstanceOf[String])
+        userMap.put(HierarchyConstants.COLLECTIONID, request.get(HierarchyConstants.COLLECTIONID).asInstanceOf[String])
+        userMap.put(HierarchyConstants.USERID, request.get(HierarchyConstants.USERID).asInstanceOf[String])
+        userMap.put(HierarchyConstants.ATTEMPTID, request.get(HierarchyConstants.ATTEMPTID).asInstanceOf[String])
+        userMap.put(HierarchyConstants.EVAL_MODE, request.get(HierarchyConstants.EVAL_MODE).asInstanceOf[String])
+        mergedMap.putAll(userMap)
+        mergedMap.putAll(questionMap)
+
+        mergedMap
+    }
+
+    private def generateJwtToken(userMapJson: String): String = {
+        val headerOptions: java.util.Map[String, String] = new java.util.HashMap[String, String]()
+        val keyData = keyManager.getRandomKey()
+        val id = keyData.getKeyId
+        val privateKey = keyData.getPrivateKey
+        headerOptions.put("type", "jwt")
+        headerOptions.put("alg", "RS256")
+        headerOptions.put("keyId", id)
+        JwtUtils.createRS256Token(userMapJson, privateKey, headerOptions)
+    }
+
+    def verifyRS256Token(token: String) = {
+        JwtUtils.verifyRS256Token(token, keyManager)
     }
 
 

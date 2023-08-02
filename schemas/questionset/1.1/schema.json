@@ -705,6 +705,15 @@
     "artifactUrl": {
       "type": "string",
       "format": "url"
+    },
+    "eval": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["server","client"]
+        }
+      }
     }
   },
   "additionalProperties": false

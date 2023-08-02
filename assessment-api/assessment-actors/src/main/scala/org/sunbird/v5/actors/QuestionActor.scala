@@ -1,5 +1,6 @@
 package org.sunbird.v5.actors
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import org.apache.commons.lang3.StringUtils
 import org.sunbird.`object`.importer.{ImportConfig, ImportManager}
 import org.sunbird.actor.core.BaseActor
@@ -9,8 +10,10 @@ import org.sunbird.common.{DateUtils, Platform}
 import org.sunbird.graph.OntologyEngineContext
 import org.sunbird.graph.nodes.DataNode
 import org.sunbird.graph.schema.DefinitionNode
+import org.sunbird.graph.utils.NodeUtil
+import org.sunbird.managers.AssessmentManager.mapper
 import org.sunbird.managers.CopyManager
-import org.sunbird.utils.{AssessmentErrorCodes, RequestUtil}
+import org.sunbird.utils.{AssessmentConstants, AssessmentErrorCodes, RequestUtil}
 import org.sunbird.v5.managers.AssessmentV5Manager
 
 import java.util
@@ -26,6 +29,7 @@ class QuestionActor @Inject()(implicit oec: OntologyEngineContext) extends BaseA
   private lazy val importConfig = getImportConfig()
   private lazy val importMgr = new ImportManager(importConfig)
   val defaultVersion = Platform.config.getNumber("v5_default_qumlVersion")
+  private val mapper = new ObjectMapper()
 
   override def onReceive(request: Request): Future[Response] = request.getOperation match {
     case "createQuestion" => AssessmentV5Manager.create(request)
@@ -48,6 +52,16 @@ class QuestionActor @Inject()(implicit oec: OntologyEngineContext) extends BaseA
     val extPropNameList:util.List[String] = DefinitionNode.getExternalProps(request.getContext.get("graph_id").asInstanceOf[String], request.getContext.get("version").asInstanceOf[String], request.getContext.get("schemaName").asInstanceOf[String]).asJava
     request.getRequest.put("fields", extPropNameList)
     DataNode.read(request).map(node => {
+      val serverEvaluable = node.getMetadata.getOrDefault(AssessmentConstants.EVAL, AssessmentConstants.FLOWER_BRACKETS)
+      val data = mapper.readValue(serverEvaluable.asInstanceOf[String], classOf[java.util.Map[String, String]])
+      if (data.get(AssessmentConstants.MODE) != null && data.get(AssessmentConstants.MODE) == AssessmentConstants.SERVER && !StringUtils.equals(request.getOrDefault("isEditor", "").asInstanceOf[String], "true")) {
+        val hideEditorResponse = AssessmentV5Manager.hideEditorStateAns(node)
+        if (StringUtils.isNotEmpty(hideEditorResponse))
+          node.getMetadata.put(AssessmentConstants.EDITOR_STATE, hideEditorResponse)
+        val hideCorrectAns = AssessmentV5Manager.hideCorrectResponse(node)
+        if (StringUtils.isNotEmpty(hideCorrectAns))
+          node.getMetadata.put(AssessmentConstants.RESPONSE_DECLARATION, hideCorrectAns)
+      }
       if (StringUtils.equalsIgnoreCase(node.getMetadata.get("visibility").asInstanceOf[String], "Private"))
         throw new ClientException(AssessmentErrorCodes.ERR_ACCESS_DENIED, s"Question visibility is private, hence access denied")
       ResponseHandler.OK.put("question", AssessmentV5Manager.getQuestionMetadata(node, fields, extPropNameList))
@@ -78,10 +92,23 @@ class QuestionActor @Inject()(implicit oec: OntologyEngineContext) extends BaseA
     val fields: util.List[String] = JavaConverters.seqAsJavaListConverter(request.get("fields").asInstanceOf[String].split(",").filter(field => StringUtils.isNotBlank(field) && !StringUtils.equalsIgnoreCase(field, "null"))).asJava
     request.getRequest.put("fields", fields)
     DataNode.search(request).map(nodeList => {
-      val questionList = nodeList.map(node => AssessmentV5Manager.getQuestionMetadata(node, fields, List().asJava)).asJava
-      ResponseHandler.OK.put("questions", questionList).put("count", questionList.size)
-    })
-  }
+      val questionList = nodeList.map(node => {
+      val serverEvaluable = node.getMetadata.getOrDefault(AssessmentConstants.EVAL, AssessmentConstants.FLOWER_BRACKETS)
+      val data = mapper.readValue(serverEvaluable.asInstanceOf[String], classOf[java.util.Map[String, String]])
+      if (data.get(AssessmentConstants.MODE) != null && data.get(AssessmentConstants.MODE).equalsIgnoreCase(AssessmentConstants.SERVER) && !StringUtils.equals(request.get("isEditor").asInstanceOf[String], "true")) {
+        val hideEditorStateAns = AssessmentV5Manager.hideEditorStateAns(node)
+        if (StringUtils.isNotEmpty(hideEditorStateAns))
+          node.getMetadata.put(AssessmentConstants.EDITOR_STATE, hideEditorStateAns)
+        val hideCorrectResponse = AssessmentV5Manager.hideCorrectResponse(node)
+        if (StringUtils.isNotEmpty(hideCorrectResponse))
+          node.getMetadata.put(AssessmentConstants.RESPONSE_DECLARATION, hideCorrectResponse)
+      }
+      NodeUtil.serialize(node, fields, node.getObjectType.toLowerCase.replace("Image", ""), request.getContext.get("version").asInstanceOf[String])
+    }).asJava
+        ResponseHandler.OK.put("questions", questionList).put("count", questionList.size)
+      })
+    }
+
 
   def privateRead(request: Request)(implicit oec: OntologyEngineContext, ec: ExecutionContext): Future[Response] = {
     val fields: util.List[String] = JavaConverters.seqAsJavaListConverter(request.get("fields").asInstanceOf[String].split(",").filter(field => StringUtils.isNotBlank(field) && !StringUtils.equalsIgnoreCase(field, "null"))).asJava
