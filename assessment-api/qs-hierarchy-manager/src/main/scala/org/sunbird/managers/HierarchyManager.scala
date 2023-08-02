@@ -30,7 +30,7 @@ object HierarchyManager {
     val schemaName: String = "questionset"
     val imgSuffix: String = ".img"
     val hierarchyPrefix: String = "qs_hierarchy_"
-    val statusList = List("Live", "Unlisted", "Flagged", "Draft")
+    val statusList = List("Live", "Unlisted", "Flagged")
     val ASSESSMENT_OBJECT_TYPES = List("Question", "QuestionSet")
 
     val keyManager = new KeyManager(Platform.getString("api.jwt.basepath","./keys/"), Platform.getString("api.jwt.keyprefix","device"), Platform.getInteger("keys.count",1))
@@ -553,7 +553,7 @@ object HierarchyManager {
         val hierarchy = fetchHierarchy(request, request.getRequest.get("rootId").asInstanceOf[String])
         hierarchy.map(hierarchy => {
             if (!hierarchy.isEmpty) {
-                if (StringUtils.isNotEmpty(hierarchy.getOrDefault("status", "Draft").asInstanceOf[String]) && statusList.contains(hierarchy.getOrDefault("status", "Draft").asInstanceOf[String])) {
+                if (StringUtils.isNotEmpty(hierarchy.getOrDefault("status", "").asInstanceOf[String]) && statusList.contains(hierarchy.getOrDefault("status", "").asInstanceOf[String])) {
                     val hierarchyMap = mapAsJavaMap(hierarchy)
                     rootHierarchy.put("questionSet", hierarchyMap)
                     RedisCache.set(hierarchyPrefix + request.get("rootId"), JsonUtils.serialize(hierarchyMap))
