@@ -11,7 +11,6 @@ import org.sunbird.graph.OntologyEngineContext
 import org.sunbird.graph.nodes.DataNode
 import org.sunbird.graph.schema.DefinitionNode
 import org.sunbird.graph.utils.NodeUtil
-import org.sunbird.managers.AssessmentManager.mapper
 import org.sunbird.managers.CopyManager
 import org.sunbird.utils.{AssessmentConstants, AssessmentErrorCodes, RequestUtil}
 import org.sunbird.v5.managers.AssessmentV5Manager
