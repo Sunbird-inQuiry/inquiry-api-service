@@ -1,8 +1,9 @@
 package org.sunbird.managers
 
+import com.fasterxml.jackson.databind.ObjectMapper
+
 import java.util
 import java.util.concurrent.CompletionException
-
 import org.apache.commons.collections4.{CollectionUtils, MapUtils}
 import org.apache.commons.lang3.StringUtils
 import org.sunbird.common.dto.{Request, Response, ResponseHandler}
@@ -25,13 +26,22 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object UpdateHierarchyManager {
     val neo4jCreateTypes: java.util.List[String] = Platform.getStringList("neo4j_objecttypes_enabled", List("Question").asJava)
-
+    val mapper: ObjectMapper = new ObjectMapper()
     @throws[Exception]
     def updateHierarchy(request: Request)(implicit oec: OntologyEngineContext, ec: ExecutionContext): Future[Response] = {
         val (nodesModified, hierarchy) = validateRequest(request)
         val rootId: String = getRootId(nodesModified, hierarchy)
         request.getContext.put(HierarchyConstants.ROOT_ID, rootId)
         getValidatedRootNode(rootId, request).map(node => {
+            val eval = node.getMetadata.getOrDefault("eval", "{}").asInstanceOf[String]
+            val data = mapper.readValue(eval, classOf[java.util.Map[String, String]])
+            var mode = data.get("mode")
+            nodesModified.foreach { n =>
+                if (!rootId.equals(n._1) && !(mode.equals(n._2.asInstanceOf[java.util.LinkedHashMap[String, AnyRef]].get("metadata")
+                  .asInstanceOf[java.util.LinkedHashMap[String, AnyRef]].getOrElse("eval", new util.LinkedHashMap())
+                  .asInstanceOf[java.util.LinkedHashMap[String, AnyRef]].getOrDefault("mode", "client").asInstanceOf[String])))
+                    throw new ClientException(ErrorCodes.ERR_BAD_REQUEST.name(), "All children of QuestionSet should be the same eval status")
+            }
             getExistingHierarchy(request, node).map(existingHierarchy => {
                 val existingChildren = existingHierarchy.getOrElse(HierarchyConstants.CHILDREN, new java.util.ArrayList[java.util.HashMap[String, AnyRef]]()).asInstanceOf[java.util.List[java.util.Map[String, AnyRef]]]
                 val nodes = List(node)
