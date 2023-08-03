@@ -73,3 +73,9 @@ POST      /questionset/v5/reject/:identifier         controllers.v5.QuestionSetC
 POST      /questionset/v5/import                     controllers.v5.QuestionSetController.importQuestionSet()
 PATCH     /questionset/v5/system/update/:identifier  controllers.v5.QuestionSetController.systemUpdate(identifier:String)
 POST      /questionset/v5/copy/:identifier           controllers.v5.QuestionSetController.copy(identifier:String, mode:Option[String], type:String?="deep")
+POST      /questionset/v5/hierarchy/:identifier      controllers.v5.QuestionSetController.getHierarchyRead(identifier:String, mode:Option[String])
+POST      /question/v5/editor/list                   controllers.v5.QuestionController.editorList(fields:Option[String])
+GET       /question/v5/editor/read/:identifier       controllers.v5.QuestionController.editorRead(identifier:String, mode:Option[String], fields:Option[String])
+
+# QuestionValidate API's
+POST    /questionset/v5/assestment/validate     	 controllers.v5.QuestionSetAssessController.assessment

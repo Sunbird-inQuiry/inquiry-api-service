@@ -721,6 +721,15 @@
       "items": {
         "type": "object"
       }
+    },
+    "eval": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["server","client"]
+        }
+      }
     }
   },
   "additionalProperties": false

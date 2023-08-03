@@ -118,14 +118,18 @@ class QuestionSetController @Inject()(@Named(ActorNames.QUESTION_SET_V5_ACTOR) q
     getResult(ApiId.UPDATE_HIERARCHY, questionSetActor, questionSetRequest)
   }
 
-  def getHierarchy(identifier: String, mode: Option[String]) = Action.async { implicit request =>
-    val headers = commonHeaders()
-    val questionSet = new java.util.HashMap().asInstanceOf[java.util.Map[String, Object]]
-    questionSet.putAll(headers)
-    questionSet.putAll(Map("rootId" -> identifier, "mode" -> mode.getOrElse("")).asJava)
-    val readRequest = getRequest(questionSet, headers, "getHierarchy")
-    setRequestContext(readRequest, defaultVersion, objectType, schemaName)
-    getResult(ApiId.GET_HIERARCHY, questionSetActor, readRequest)
+//  def getHierarchy(identifier: String, mode: Option[String]) = Action.async { implicit request =>
+//    val headers = commonHeaders()
+//    val questionSet = new java.util.HashMap().asInstanceOf[java.util.Map[String, Object]]
+//    questionSet.putAll(headers)
+//    questionSet.putAll(Map("rootId" -> identifier, "mode" -> mode.getOrElse("")).asJava)
+//    val readRequest = getRequest(questionSet, headers, "getHierarchy")
+//    setRequestContext(readRequest, defaultVersion, objectType, schemaName)
+//    getResult(ApiId.GET_HIERARCHY, questionSetActor, readRequest)
+//  }
+
+  def getHierarchy(identifier: String, mode: Option[String]) = {
+    fetchHierarchy(identifier, mode)
   }
 
   def reject(identifier: String) = Action.async { implicit request =>
@@ -168,5 +172,19 @@ class QuestionSetController @Inject()(@Named(ActorNames.QUESTION_SET_V5_ACTOR) q
     val questionSetRequest = getRequest(questionSet, headers, QuestionSetOperations.copyQuestionSet.toString)
     setRequestContext(questionSetRequest, defaultVersion, objectType, schemaName)
     getResult(ApiId.COPY_QUESTION_SET, questionSetActor, questionSetRequest)
+  }
+
+  def getHierarchyRead(identifier: String, mode: Option[String]) = {
+    fetchHierarchy(identifier, mode, "true")
+  }
+  def fetchHierarchy(identifier: String, mode: Option[String], evaluable: String = "false") = Action.async { implicit request =>
+    val headers = commonHeaders()
+    val body = requestBody()
+    val questionSet = body.getOrDefault("questionset", new java.util.HashMap()).asInstanceOf[java.util.Map[String, Object]];
+    questionSet.putAll(headers)
+    questionSet.putAll(Map("rootId" -> identifier, "mode" -> mode.getOrElse(""), "serverEvaluable" -> evaluable).asJava)
+    val readRequest = getRequest(questionSet, headers, "getHierarchy")
+    setRequestContext(readRequest, defaultVersion, objectType, schemaName)
+    getResult(ApiId.GET_HIERARCHY, questionSetActor, readRequest)
   }
 }
