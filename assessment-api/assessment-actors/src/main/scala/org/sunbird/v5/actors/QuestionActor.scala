@@ -27,7 +27,6 @@ class QuestionActor @Inject()(implicit oec: OntologyEngineContext) extends BaseA
 
   private lazy val importConfig = getImportConfig()
   private lazy val importMgr = new ImportManager(importConfig)
-  val defaultVersion:String = Platform.config.getNumber("v5_default_qumlVersion").toString
   private val mapper = new ObjectMapper()
 
   override def onReceive(request: Request): Future[Response] = request.getOperation match {
