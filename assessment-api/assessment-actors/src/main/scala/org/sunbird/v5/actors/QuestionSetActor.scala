@@ -29,7 +29,6 @@ class QuestionSetActor @Inject()(implicit oec: OntologyEngineContext) extends Ba
   implicit val ec: ExecutionContext = getContext().dispatcher
   private lazy val importConfig = getImportConfig()
   private lazy val importMgr = new ImportManager(importConfig)
-  val defaultVersion:String = Platform.config.getNumber("v5_default_qumlVersion").toString
 
   override def onReceive(request: Request): Future[Response] = request.getOperation match {
     case "createQuestionSet" => AssessmentV5Manager.create(request)
