@@ -650,6 +650,15 @@
         "type": "object"
       }
     },
+    "eval": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["server","client"]
+        }
+      }
+    },
     "origin": {
       "type": "string"
     },
@@ -705,15 +714,6 @@
     "artifactUrl": {
       "type": "string",
       "format": "url"
-    },
-    "eval": {
-      "type": "object",
-      "properties": {
-        "mode": {
-          "type": "string",
-          "enum": ["server","client"]
-        }
-      }
     }
   },
   "additionalProperties": false
