@@ -676,6 +676,15 @@
         "No"
       ]
     },
+    "eval": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["server","client"]
+        }
+      }
+    },
     "allowAnonymousAccess": {
       "type": "string",
       "enum": [
@@ -720,15 +729,6 @@
       "type": "array",
       "items": {
         "type": "object"
-      }
-    },
-    "eval": {
-      "type": "object",
-      "properties": {
-        "mode": {
-          "type": "string",
-          "enum": ["server","client"]
-        }
       }
     }
   },
