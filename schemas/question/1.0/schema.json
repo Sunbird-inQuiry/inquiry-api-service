@@ -569,6 +569,15 @@
         "No"
       ]
     },
+    "eval": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["server","client"]
+        }
+      }
+    },
     "evidence": {
       "type": "object"
     },
@@ -601,15 +610,6 @@
     },
     "migrationVersion": {
       "type": "number"
-    },
-    "eval": {
-      "type": "object",
-      "properties": {
-        "mode": {
-          "type": "string",
-          "enum": ["server","client"]
-        }
-      }
     }
   },
   "additionalProperties": false
