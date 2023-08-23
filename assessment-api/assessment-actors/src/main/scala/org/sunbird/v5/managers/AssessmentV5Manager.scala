@@ -17,7 +17,7 @@ import org.sunbird.utils.{AssessmentErrorCodes, RequestUtil}
 import java.util
 import java.util.UUID
 import scala.concurrent.{Await, ExecutionContext, Future}
-import scala.collection.JavaConversions._
+import scala.collection.convert.ImplicitConversions._
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.Duration

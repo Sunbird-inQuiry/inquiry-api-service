@@ -17,7 +17,7 @@ import org.sunbird.telemetry.util.LogTelemetryEventUtil
 import org.sunbird.utils.RequestUtil
 
 import scala.concurrent.{Await, ExecutionContext, Future}
-import scala.collection.JavaConversions._
+import scala.collection.convert.ImplicitConversions._
 import scala.collection.JavaConverters
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ListBuffer
