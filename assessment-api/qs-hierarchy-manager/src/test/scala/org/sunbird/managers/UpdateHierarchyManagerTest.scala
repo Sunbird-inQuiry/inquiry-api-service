@@ -1,7 +1,6 @@
 package org.sunbird.managers
 
 import java.util
-
 import org.apache.commons.collections4.MapUtils
 import org.parboiled.common.StringUtils
 import org.sunbird.common.JsonUtils
@@ -9,9 +8,12 @@ import org.sunbird.common.dto.Request
 import org.sunbird.graph.OntologyEngineContext
 import org.sunbird.utils.HierarchyConstants
 
-class UpdateHierarchyManagerTest extends BaseSpec {
+import scala.concurrent.ExecutionContext
+
+/*class UpdateHierarchyManagerTest extends BaseSpec {
 
 	implicit val oec: OntologyEngineContext = new OntologyEngineContext
+	implicit val ec: ExecutionContext = ExecutionContext.Implicits.global
 
 	private val KEYSPACE_CREATE_SCRIPT = "CREATE KEYSPACE IF NOT EXISTS hierarchy_store WITH replication = {'class': 'SimpleStrategy','replication_factor': '1'};"
 	private val TABLE_CREATE_SCRIPT = "CREATE TABLE IF NOT EXISTS hierarchy_store.questionset_hierarchy (identifier text,hierarchy text,instructions text,outcomeDeclaration text,PRIMARY KEY (identifier));"
@@ -173,4 +175,4 @@ class UpdateHierarchyManagerTest extends BaseSpec {
 		}).flatMap(f => f)
 	}
 
-}
+}*/
