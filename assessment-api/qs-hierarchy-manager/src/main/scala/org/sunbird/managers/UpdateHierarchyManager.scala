@@ -36,11 +36,14 @@ object UpdateHierarchyManager {
             val eval = node.getMetadata.getOrDefault("eval", "{}").asInstanceOf[String]
             val data = mapper.readValue(eval, classOf[java.util.Map[String, String]])
             var mode = data.get("mode")
-            nodesModified.foreach { n =>
-                if (!rootId.equals(n._1) && !(mode.equals(n._2.asInstanceOf[java.util.LinkedHashMap[String, AnyRef]].get("metadata")
-                  .asInstanceOf[java.util.LinkedHashMap[String, AnyRef]].getOrElse("eval", new util.LinkedHashMap())
-                  .asInstanceOf[java.util.LinkedHashMap[String, AnyRef]].getOrDefault("mode", "client").asInstanceOf[String])))
-                    throw new ClientException(ErrorCodes.ERR_BAD_REQUEST.name(), "All children of QuestionSet should be the same eval status")
+            if (nodesModified.get(rootId) != null) {
+                val updMode = nodesModified.get(rootId).asInstanceOf[java.util.LinkedHashMap[String, AnyRef]]
+                  .get("metadata").asInstanceOf[java.util.LinkedHashMap[String, AnyRef]]
+                  .getOrElse("eval", new util.LinkedHashMap())
+                  .asInstanceOf[java.util.LinkedHashMap[String, AnyRef]].get("mode").asInstanceOf[String]
+                if (StringUtils.isNotEmpty(mode) && !mode.equals(updMode))
+                    throw new ClientException(ErrorCodes.ERR_BAD_REQUEST.name(), "QuestionSet eval status cannot be modified")
+                mode = updMode
             }
             getExistingHierarchy(request, node).map(existingHierarchy => {
                 val existingChildren = existingHierarchy.getOrElse(HierarchyConstants.CHILDREN, new java.util.ArrayList[java.util.HashMap[String, AnyRef]]()).asInstanceOf[java.util.List[java.util.Map[String, AnyRef]]]
