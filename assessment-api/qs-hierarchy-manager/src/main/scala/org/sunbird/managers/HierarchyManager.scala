@@ -652,8 +652,8 @@ object HierarchyManager {
 
     def fetchAllLeafNodes(children: util.List[util.Map[String, AnyRef]], leafNodeIds: util.List[String]): List[Any] = {
         children.toList.map(content => {
-            if(StringUtils.equalsIgnoreCase("Default", content.getOrDefault("visibility", "").asInstanceOf[String])) {
-                leafNodeIds.add(content.get("identifier").asInstanceOf[String])
+            if(StringUtils.equalsIgnoreCase("application/vnd.sunbird.question", content.getOrDefault("mimeType", "").asInstanceOf[String])) {
+                leafNodeIds.add(content.get("identifier").asInstanceOf[String].replace(".img",""))
                 leafNodeIds
             } else {
                 fetchAllLeafNodes(content.getOrDefault("children", new util.ArrayList[Map[String, AnyRef]]).asInstanceOf[util.List[util.Map[String, AnyRef]]], leafNodeIds)
