@@ -75,9 +75,14 @@ class QuestionSetActor @Inject()(implicit oec: OntologyEngineContext) extends Ba
     HierarchyManager.getHierarchy(request).map(resp => {
       if (StringUtils.equalsIgnoreCase(resp.getResponseCode.toString, "OK")) {
         val hierarchyMap = resp.getResult.get("questionSet").asInstanceOf[util.Map[String, AnyRef]]
-        val schemaVersion = hierarchyMap.getOrDefault("schemaVersion", "1.0").asInstanceOf[String]
-        val updateHierarchy = if (StringUtils.equalsIgnoreCase("1.0", schemaVersion)) AssessmentV5Manager.getTransformedHierarchy(hierarchyMap) else {
-          hierarchyMap
+        val hStr: String = JsonUtils.serialize(hierarchyMap)
+        val regex = """\"identifier\":\"(.*?)\.img\""""
+        val pattern = regex.r
+        val updateHStr = pattern.replaceAllIn(hStr, m => s""""identifier":"${m.group(1)}"""")
+        val updatedHierarchyMap = JsonUtils.deserialize[util.Map[String, AnyRef]](updateHStr, Class[util.Map[String, AnyRef]])
+        val schemaVersion = updatedHierarchyMap.getOrDefault("schemaVersion", "1.0").asInstanceOf[String]
+        val updateHierarchy = if (StringUtils.equalsIgnoreCase("1.0", schemaVersion)) AssessmentV5Manager.getTransformedHierarchy(updatedHierarchyMap) else {
+          updatedHierarchyMap
         }
         resp.getResult.remove("questionSet")
         resp.put("questionset", updateHierarchy)
