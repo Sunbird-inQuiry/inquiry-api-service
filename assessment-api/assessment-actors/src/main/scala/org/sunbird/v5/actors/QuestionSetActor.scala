@@ -79,7 +79,7 @@ class QuestionSetActor @Inject()(implicit oec: OntologyEngineContext) extends Ba
         val regex = """\"identifier\":\"(.*?)\.img\""""
         val pattern = regex.r
         val updateHStr = pattern.replaceAllIn(hStr, m => s""""identifier":"${m.group(1)}"""")
-        val updatedHierarchyMap = JsonUtils.deserialize[util.Map[String, AnyRef]](updateHStr, Class[util.Map[String, AnyRef]])
+        val updatedHierarchyMap = JsonUtils.deserialize[util.Map[String, AnyRef]](updateHStr, classOf[util.Map[String, AnyRef]])
         val schemaVersion = updatedHierarchyMap.getOrDefault("schemaVersion", "1.0").asInstanceOf[String]
         val updateHierarchy = if (StringUtils.equalsIgnoreCase("1.0", schemaVersion)) AssessmentV5Manager.getTransformedHierarchy(updatedHierarchyMap) else {
           updatedHierarchyMap
