@@ -237,6 +237,7 @@ object AssessmentV5Manager {
   def pushInstructionEvent(identifier: String, node: Node)(implicit oec: OntologyEngineContext): Unit = {
     val (actor, context, objData, eData) = generateInstructionEventMetadata(identifier.replace(".img", ""), node)
     val beJobRequestEvent: String = LogTelemetryEventUtil.logInstructionEvent(actor.asJava, context.asJava, objData.asJava, eData)
+    println("printing beJobRequestEvent", beJobRequestEvent)
     val topic: String = Platform.getString("kafka.topics.instruction", "sunbirddev.learning.job.request")
     if (StringUtils.isBlank(beJobRequestEvent)) throw new ClientException("BE_JOB_REQUEST_EXCEPTION", "Event is not generated properly.")
     oec.kafkaClient.send(beJobRequestEvent, topic)
@@ -554,7 +555,7 @@ object AssessmentV5Manager {
           throw new ClientException(ErrorCodes.ERR_BAD_REQUEST.name(), "Invalid Request")
         val res = getMap(answerMap.get(identifier).asInstanceOf[Some[util.Map[String, AnyRef]]].x, AssessmentConstants.RESPONSE1)
         val cardinality = res.getOrDefault(AssessmentConstants.CARDINALITY, "").asInstanceOf[String]
-        val maxScore = res.getOrDefault(AssessmentConstants.MAX_SCORE, 0.asInstanceOf[Integer]).asInstanceOf[Integer]
+        val maxScore = res.getOrDefault(AssessmentConstants.MAX_SCORE, 0).asInstanceOf[Integer]
         cardinality match {
           case AssessmentConstants.MULTIPLE => populateMultiCardinality(res, edata, maxScore)
           case _ => populateSingleCardinality(res, edata, maxScore)
@@ -620,7 +621,7 @@ object AssessmentV5Manager {
   private case class HTTPResponse(status: Int, body: String) extends Serializable
 
   private def populateSingleCardinality(res: util.Map[String, AnyRef], edata: util.Map[String, AnyRef], maxScore: Integer): Unit = {
-    val correctValue = getMap(res, AssessmentConstants.CORRECT_RESPONSE).getOrDefault(AssessmentConstants.VALUE, new util.ArrayList[Integer]).asInstanceOf[String]
+    val correctValue = getMap(res, AssessmentConstants.CORRECT_RESPONSE).getOrDefault(AssessmentConstants.VALUE, new util.ArrayList[Integer]).toString
     val usrResponse = getListMap(edata, AssessmentConstants.RESVALUES).get(0).getOrDefault(AssessmentConstants.VALUE, "").toString
     StringUtils.equals(usrResponse, correctValue) match {
       case true => {
