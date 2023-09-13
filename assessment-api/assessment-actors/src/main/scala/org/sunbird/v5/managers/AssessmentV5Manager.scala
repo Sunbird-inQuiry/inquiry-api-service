@@ -569,7 +569,8 @@ val answerMaps: (Map[String, AnyRef], Map[String, AnyRef], Map[String, AnyRef]) 
         val res = getMap(answerMap.get(identifier).asInstanceOf[Some[util.Map[String, AnyRef]]].x, AssessmentConstants.RESPONSE1)
         val cardinality = res.getOrDefault(AssessmentConstants.CARDINALITY, "").asInstanceOf[String]
       //  val maxScore = res.getOrDefault(AssessmentConstants.MAX_SCORE, 0.asInstanceOf[Integer]).asInstanceOf[Integer]
-        val maxScore = maxScoreMap.get(identifier).asInstanceOf[Integer]
+        val maxScoreOption = maxScoreMap.get(identifier)
+        val maxScore = maxScoreOption.getOrElse(0).asInstanceOf[Integer]
         cardinality match {
           case AssessmentConstants.MULTIPLE => populateMultiCardinality(res, edata, maxScore)
           case _ => populateSingleCardinality(res, edata, maxScore)
