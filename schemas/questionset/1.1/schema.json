@@ -230,6 +230,15 @@
     "topic" : {
       "type": "array"
     },
+    "taxonomyCategory1": {
+      "type": "string"
+    },
+    "taxonomyCategory2": {
+      "type": "array"
+    },
+    "taxonomyCategory3": {
+      "type": "array"
+    },
     "boardIds": {
       "type": "array",
       "items": {
