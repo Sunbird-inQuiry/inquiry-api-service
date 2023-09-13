@@ -536,15 +536,29 @@ object AssessmentV5Manager {
   }
 
   def calculateScore(privateList: Response, assessments: util.List[util.Map[String, AnyRef]]): Unit = {
-    val answerMaps: (Map[String, AnyRef], Map[String, AnyRef]) = getListMap(privateList.getResult, AssessmentConstants.QUESTIONS)
-      .map { que =>
-        ((que.get(AssessmentConstants.IDENTIFIER).toString -> que.get(AssessmentConstants.RESPONSE_DECLARATION)),
-          (que.get(AssessmentConstants.IDENTIFIER).toString -> que.get(AssessmentConstants.EDITOR_STATE)))
-      }.unzip match {
-      case (map1, map2) => (map1.toMap, map2.toMap)
+//    val answerMaps: (Map[String, AnyRef], Map[String, AnyRef]) = getListMap(privateList.getResult, AssessmentConstants.QUESTIONS)
+//      .map { que =>
+//        ((que.get(AssessmentConstants.IDENTIFIER).toString -> que.get(AssessmentConstants.RESPONSE_DECLARATION)),
+//          (que.get(AssessmentConstants.IDENTIFIER).toString -> que.get(AssessmentConstants.EDITOR_STATE)))
+//        )
+//      }.unzip match {
+//      case (map1, map2) => (map1.toMap, map2.toMap)
+//    }
+val answerMaps: (Map[String, AnyRef], Map[String, AnyRef], Map[String, AnyRef]) = {
+  val listOfMaps = getListMap(privateList.getResult, AssessmentConstants.QUESTIONS)
+    .map { que =>
+      (
+        que.get(AssessmentConstants.IDENTIFIER).toString -> que.get(AssessmentConstants.RESPONSE_DECLARATION),
+        que.get(AssessmentConstants.IDENTIFIER).toString -> que.get(AssessmentConstants.EDITOR_STATE),
+        que.get(AssessmentConstants.IDENTIFIER).toString -> que.get(AssessmentConstants.MAX_SCORE)
+      )
     }
+  val (map1, map2, map3) = (listOfMaps.map(_._1).toMap, listOfMaps.map(_._2).toMap, listOfMaps.map(_._3).toMap)
+  (map1, map2, map3)
+}
     val answerMap = answerMaps._1
     val editorStateMap = answerMaps._2
+    val maxScoreMap = answerMaps._3
     assessments.foreach { k =>
       getListMap(k, AssessmentConstants.EVENTS).toList.foreach { event =>
         val edata = getMap(event, AssessmentConstants.EDATA)
@@ -554,7 +568,8 @@ object AssessmentV5Manager {
           throw new ClientException(ErrorCodes.ERR_BAD_REQUEST.name(), "Invalid Request")
         val res = getMap(answerMap.get(identifier).asInstanceOf[Some[util.Map[String, AnyRef]]].x, AssessmentConstants.RESPONSE1)
         val cardinality = res.getOrDefault(AssessmentConstants.CARDINALITY, "").asInstanceOf[String]
-        val maxScore = res.getOrDefault(AssessmentConstants.MAX_SCORE, 0.asInstanceOf[Integer]).asInstanceOf[Integer]
+      //  val maxScore = res.getOrDefault(AssessmentConstants.MAX_SCORE, 0.asInstanceOf[Integer]).asInstanceOf[Integer]
+        val maxScore = maxScoreMap.get(identifier).asInstanceOf[Integer]
         cardinality match {
           case AssessmentConstants.MULTIPLE => populateMultiCardinality(res, edata, maxScore)
           case _ => populateSingleCardinality(res, edata, maxScore)
