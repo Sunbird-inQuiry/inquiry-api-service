@@ -83,18 +83,6 @@
         "framework": {
             "type": "string"
         },
-        "subject" : {
-            "type": "array"
-        },
-        "medium" : {
-            "type": "array"
-        },
-        "board" : {
-            "type": "string"
-        },
-        "gradeLevel" : {
-            "type": "array"
-        },
         "topic" : {
             "type": "array"
         },

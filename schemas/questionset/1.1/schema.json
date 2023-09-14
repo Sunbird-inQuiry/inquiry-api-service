@@ -215,49 +215,49 @@
     "framework": {
       "type": "string"
     },
-    "subject" : {
-      "type": "array"
-    },
-    "medium" : {
-      "type": "array"
-    },
-    "board" : {
+    "taxonomyCategory1" : {
       "type": "string"
     },
-    "gradeLevel" : {
+    "taxonomyCategory2" : {
+      "type": "array"
+    },
+    "taxonomyCategory3" : {
+      "type": "array"
+    },
+    "taxonomyCategory4" : {
+      "type": "array"
+    },
+    "taxonomyCategory5" : {
       "type": "array"
     },
     "topic" : {
       "type": "array"
     },
-    "taxonomyCategory1": {
-      "type": "string"
-    },
-    "taxonomyCategory2": {
-      "type": "array"
-    },
-    "taxonomyCategory3": {
-      "type": "array"
-    },
-    "boardIds": {
+    "taxonomyCategory1Ids": {
       "type": "array",
       "items": {
         "type": "string"
       }
     },
-    "gradeLevelIds": {
+    "taxonomyCategory2Ids": {
       "type": "array",
       "items": {
         "type": "string"
       }
     },
-    "subjectIds": {
+    "taxonomyCategory3Ids": {
       "type": "array",
       "items": {
         "type": "string"
       }
     },
-    "mediumIds": {
+    "taxonomyCategory4Ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "taxonomyCategory5Ids": {
       "type": "array",
       "items": {
         "type": "string"
@@ -275,30 +275,37 @@
         "type": "string"
       }
     },
-    "targetBoardIds": {
+    "targettaxonomyCategory1Ids": {
       "type": "array",
       "items": {
         "type": "string"
       }
     },
-    "targetGradeLevelIds": {
+    "targettaxonomyCategory2Ids": {
       "type": "array",
       "items": {
         "type": "string"
       }
     },
-    "targetSubjectIds": {
+    "targettaxonomyCategory3Ids": {
       "type": "array",
       "items": {
         "type": "string"
       }
     },
-    "targetMediumIds": {
+    "targettaxonomyCategory4Ids": {
       "type": "array",
       "items": {
         "type": "string"
       }
     },
+    "targettaxonomyCategory5Ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+
     "targetTopicIds": {
       "type": "array",
       "items": {
@@ -311,19 +318,31 @@
         "type": "string"
       }
     },
-    "se_boardIds": {
+    "se_taxonomyCategory1Ids": {
       "type": "array",
       "items": {
         "type": "string"
       }
     },
-    "se_subjectIds": {
+    "se_taxonomyCategory2Ids": {
       "type": "array",
       "items": {
         "type": "string"
       }
     },
-    "se_mediumIds": {
+    "se_taxonomyCategory3Ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "se_taxonomyCategory4Ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "se_taxonomyCategory5Ids": {
       "type": "array",
       "items": {
         "type": "string"
@@ -335,42 +354,44 @@
         "type": "string"
       }
     },
-    "se_gradeLevelIds": {
+    "se_taxonomyCategory1": {
       "type": "array",
       "items": {
         "type": "string"
       }
     },
-    "se_boards": {
+    "se_taxonomyCategory2": {
       "type": "array",
       "items": {
         "type": "string"
       }
     },
-    "se_subjects": {
+    "se_taxonomyCategory3": {
       "type": "array",
       "items": {
         "type": "string"
       }
     },
-    "se_mediums": {
+    "se_taxonomyCategory4": {
       "type": "array",
       "items": {
         "type": "string"
       }
     },
+    "se_taxonomyCategory5": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+
     "se_topics": {
       "type": "array",
       "items": {
         "type": "string"
       }
     },
-    "se_gradeLevels": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    },
+
     "createdOn": {
       "type": "string"
     },
