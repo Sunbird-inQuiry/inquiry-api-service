@@ -185,20 +185,8 @@
     "max_time": {
       "dataType": "number"
     },
-    "gradeLevel": {
-      "dataType": "array"
-    },
     "topic": {
       "dataType": "array"
-    },
-    "board": {
-      "dataType": "string"
-    },
-    "subject": {
-      "dataType": "string"
-    },
-    "medium": {
-      "dataType": "string"
     },
     "source": {
       "dataType": "string"

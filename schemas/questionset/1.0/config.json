@@ -23,25 +23,13 @@
   "version": "enable",
   "versionCheckMode": "OFF",
   "frameworkCategories": [
-    "board",
-    "medium",
-    "subject",
-    "gradeLevel",
     "topic"
   ],
   "orgFrameworkTerms": [
-    "boardIds",
-    "gradeLevelIds",
-    "subjectIds",
-    "mediumIds",
     "topicsIds"
   ],
   "targetFrameworkTerms": [
     "targetFWIds",
-    "targetBoardIds",
-    "targetGradeLevelIds",
-    "targetSubjectIds",
-    "targetMediumIds",
     "targetTopicIds"
   ],
   "cacheEnabled": false,
