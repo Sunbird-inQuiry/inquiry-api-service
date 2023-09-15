@@ -561,7 +561,7 @@ val answerMaps: (Map[String, AnyRef], Map[String, AnyRef], Map[String, AnyRef]) 
     val answerMap = answerMaps._1
     val editorStateMap = answerMaps._2
     val maxScoreMap = answerMaps._3
-    log.info("printing maxScoreMap", maxScoreMap)
+    log.info("printing maxScoreMap: {}", maxScoreMap)
     assessments.foreach { k =>
       getListMap(k, AssessmentConstants.EVENTS).toList.foreach { event =>
         val edata = getMap(event, AssessmentConstants.EDATA)
@@ -574,7 +574,7 @@ val answerMaps: (Map[String, AnyRef], Map[String, AnyRef], Map[String, AnyRef]) 
       //  val maxScore = res.getOrDefault(AssessmentConstants.MAX_SCORE, 0.asInstanceOf[Integer]).asInstanceOf[Integer]
         val maxScoreOption = maxScoreMap.get(identifier)
         val maxScore = maxScoreOption.getOrElse(0).asInstanceOf[Integer]
-        log.info("printing maxScore", maxScore)
+        log.info(s"printing maxScore: $maxScore")
         cardinality match {
           case AssessmentConstants.MULTIPLE => populateMultiCardinality(res, edata, maxScore)
           case _ => populateSingleCardinality(res, edata, maxScore)
