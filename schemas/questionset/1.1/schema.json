@@ -215,15 +215,6 @@
     "framework": {
       "type": "string"
     },
-    "taxonomyCategory4" : {
-      "type": "array"
-    },
-    "taxonomyCategory5" : {
-      "type": "array"
-    },
-    "topic" : {
-      "type": "array"
-    },
     "taxonomyCategory1" : {
       "type": "string"
     },
@@ -231,6 +222,15 @@
       "type": "array"
     },
     "taxonomyCategory3" : {
+      "type": "array"
+    },
+    "taxonomyCategory4" : {
+      "type": "array"
+    },
+    "taxonomyCategory5" : {
+      "type": "array"
+    },
+    "topic" : {
       "type": "array"
     },
     "taxonomyCategory1Ids": {
