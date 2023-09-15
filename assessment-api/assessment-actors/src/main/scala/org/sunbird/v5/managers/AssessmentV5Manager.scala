@@ -26,6 +26,7 @@ import com.mashape.unirest.http.Unirest
 import org.apache.http.HttpResponse
 import org.sunbird.utils.{AssessmentConstants, JavaJsonUtils, RequestUtil}
 import com.fasterxml.jackson.databind.node.{ArrayNode, ObjectNode}
+import org.slf4j.LoggerFactory
 import org.sunbird.common.exception.{ClientException, ErrorCodes, ResourceNotFoundException, ServerException}
 
 object AssessmentV5Manager {
@@ -36,6 +37,7 @@ object AssessmentV5Manager {
   val validStatus = List("Draft", "Review")
   val mapper = new ObjectMapper()
   val map = Map("userId" -> "userID", "attemptId" -> "attemptID")
+  private val log = LoggerFactory.getLogger(this.getClass)
 
   def validateAndGetVersion(ver: AnyRef): AnyRef = {
     if (supportedVersions.contains(ver)) ver else throw new ClientException(AssessmentErrorCodes.ERR_REQUEST_DATA_VALIDATION, s"Platform doesn't support quml version ${ver} | Currently Supported quml version are: ${supportedVersions}")
@@ -559,6 +561,7 @@ val answerMaps: (Map[String, AnyRef], Map[String, AnyRef], Map[String, AnyRef]) 
     val answerMap = answerMaps._1
     val editorStateMap = answerMaps._2
     val maxScoreMap = answerMaps._3
+    log.info("printing maxScoreMap", maxScoreMap)
     assessments.foreach { k =>
       getListMap(k, AssessmentConstants.EVENTS).toList.foreach { event =>
         val edata = getMap(event, AssessmentConstants.EDATA)
@@ -571,6 +574,7 @@ val answerMaps: (Map[String, AnyRef], Map[String, AnyRef], Map[String, AnyRef]) 
       //  val maxScore = res.getOrDefault(AssessmentConstants.MAX_SCORE, 0.asInstanceOf[Integer]).asInstanceOf[Integer]
         val maxScoreOption = maxScoreMap.get(identifier)
         val maxScore = maxScoreOption.getOrElse(0).asInstanceOf[Integer]
+        log.info("printing maxScore", maxScore)
         cardinality match {
           case AssessmentConstants.MULTIPLE => populateMultiCardinality(res, edata, maxScore)
           case _ => populateSingleCardinality(res, edata, maxScore)
