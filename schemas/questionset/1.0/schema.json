@@ -558,7 +558,7 @@
             "Yes",
             "No"
           ],
-          "default": "No"
+          "default": "Yes"
         },
         "autoBatch": {
           "type": "string",
@@ -566,12 +566,12 @@
             "Yes",
             "No"
           ],
-          "default": "No"
+          "default": "Yes"
         }
       },
       "default": {
-        "enabled": "No",
-        "autoBatch": "No"
+        "enabled": "Yes",
+        "autoBatch": "Yes"
       },
       "additionalProperties": false
     },
