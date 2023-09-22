@@ -704,7 +704,7 @@
             "Yes",
             "No"
           ],
-          "default": "Yes"
+          "default": "No"
         },
         "autoBatch": {
           "type": "string",
@@ -712,12 +712,12 @@
             "Yes",
             "No"
           ],
-          "default": "Yes"
+          "default": "No"
         }
       },
       "default": {
-        "enabled": "Yes",
-        "autoBatch": "Yes"
+        "enabled": "No",
+        "autoBatch": "No"
       },
       "additionalProperties": false
     },
