@@ -682,7 +682,8 @@
         "mode": {
           "type": "string",
           "enum": ["server","client"]
-        }
+        },
+        "additionalProperties": false
       }
     },
     "allowAnonymousAccess": {
