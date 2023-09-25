@@ -569,15 +569,6 @@
         "No"
       ]
     },
-    "eval": {
-      "type": "object",
-      "properties": {
-        "mode": {
-          "type": "string",
-          "enum": ["server","client"]
-        }
-      }
-    },
     "evidence": {
       "type": "object"
     },

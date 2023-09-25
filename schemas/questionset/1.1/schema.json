@@ -656,7 +656,8 @@
         "mode": {
           "type": "string",
           "enum": ["server","client"]
-        }
+        },
+        "additionalProperties": false
       }
     },
     "origin": {
@@ -714,6 +715,9 @@
     "artifactUrl": {
       "type": "string",
       "format": "url"
+    },
+    "questionSetToken": {
+      "type": "string"
     }
   },
   "additionalProperties": false
