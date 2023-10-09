@@ -2,7 +2,6 @@ package org.sunbird.managers
 
 import java.util
 import java.util.concurrent.CompletionException
-
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.apache.commons.lang3.StringUtils
 import org.sunbird.cache.impl.RedisCache
@@ -13,7 +12,7 @@ import org.sunbird.graph.dac.model.Node
 import org.sunbird.graph.nodes.DataNode
 import org.sunbird.graph.utils.{NodeUtil, ScalaJsonUtils}
 
-import scala.collection.JavaConversions._
+import scala.collection.convert.ImplicitConversions._
 import scala.collection.JavaConverters._
 import scala.collection.JavaConverters
 import scala.concurrent.{ExecutionContext, Future}
@@ -22,12 +21,11 @@ import com.mashape.unirest.http.Unirest
 import org.apache.commons.collections4.{CollectionUtils, MapUtils}
 import org.sunbird.graph.OntologyEngineContext
 import org.sunbird.telemetry.logger.TelemetryManager
-import org.sunbird.utils.HierarchyConstants
+import org.sunbird.utils.{HierarchyConstants, HierarchyErrorCodes}
 
 object HierarchyManager {
 
     val schemaName: String = "questionset"
-    val schemaVersion: String = "1.0"
     val imgSuffix: String = ".img"
     val hierarchyPrefix: String = "qs_hierarchy_"
     val statusList = List("Live", "Unlisted", "Flagged")
@@ -50,6 +48,9 @@ object HierarchyManager {
         val rootNodeFuture = getRootNode(request)
         rootNodeFuture.map(rootNode => {
             val unitId = request.getRequest.getOrDefault("collectionId", "").asInstanceOf[String]
+            val schemaVersion = rootNode.getMetadata.getOrDefault("schemaVersion", "1.0").asInstanceOf[String]
+            if (1.1 <= request.getContext.get("version").toString.toDouble && StringUtils.equalsIgnoreCase("1.0", schemaVersion))
+                throw new ClientException(HierarchyErrorCodes.ERR_HIERARCHY_UPDATE_DENIED, "QuestionSet not supported for this operation because it doesn't have data in QuML 1.1 format.")
             if (StringUtils.isBlank(unitId)) attachLeafToRootNode(request, rootNode, "add") else {
                 val rootNodeMap =  NodeUtil.serialize(rootNode, java.util.Arrays.asList("childNodes", "originData"), schemaName, schemaVersion)
                 val childNodes: List[String] = rootNodeMap.get("childNodes") match {
@@ -65,7 +66,16 @@ object HierarchyManager {
                             Future{ResponseHandler.ERROR(ResponseCode.SERVER_ERROR, ResponseCode.SERVER_ERROR.name(), "hierarchy is empty")}
                         } else {
                             val leafNodesFuture = fetchLeafNodes(request)
-                            leafNodesFuture.map(leafNodes => updateHierarchyData(unitId, hierarchy, leafNodes, rootNode, request, "add").map(node => ResponseHandler.OK.put("rootId", node.getIdentifier.replaceAll(imgSuffix, "")))).flatMap(f => f)
+                            leafNodesFuture.map(leafNodes => {
+                                val requestContextVersion = request.getContext.getOrDefault("version", "1.0").asInstanceOf[String].toDouble
+                                if (requestContextVersion != 1.0 && requestContextVersion >= 1.1) {
+                                    val rootNodeQumlVer = rootNode.getMetadata.getOrDefault("qumlVersion", 1.1.asInstanceOf[AnyRef])
+                                    val filteredChildNodes = leafNodes.filter(node => rootNodeQumlVer != node.getMetadata.getOrDefault("qumlVersion", 1.0.asInstanceOf[AnyRef]))
+                                    if (!filteredChildNodes.isEmpty)
+                                        throw new ClientException("ERR_OBJECT_VALIDATION", s"Children with identifier ${filteredChildNodes.map(node => node.getIdentifier.replace(".img", "")).asJava} can't be added because they don't have data in QuML ${rootNodeQumlVer} format.")
+                                }
+                                updateHierarchyData(unitId, hierarchy, leafNodes, rootNode, request, "add").map(node => ResponseHandler.OK.put("rootId", node.getIdentifier.replaceAll(imgSuffix, "")))
+                            }).flatMap(f => f)
                         }
                     }).flatMap(f => f)
                 }
@@ -79,6 +89,8 @@ object HierarchyManager {
         val rootNodeFuture = getRootNode(request)
         rootNodeFuture.map(rootNode => {
             val unitId = request.getRequest.getOrDefault("collectionId", "").asInstanceOf[String]
+            val schemaVersion = rootNode.getMetadata.getOrDefault("schemaVersion", "1.0").asInstanceOf[String]
+            request.getContext.put(HierarchyConstants.VERSION, schemaVersion)
             if (StringUtils.isBlank(unitId)) attachLeafToRootNode(request, rootNode, "remove") else {
                 val rootNodeMap =  NodeUtil.serialize(rootNode, java.util.Arrays.asList("childNodes", "originData"), schemaName, schemaVersion)
                 val childNodes: List[String] = rootNodeMap.get("childNodes") match {
@@ -105,6 +117,7 @@ object HierarchyManager {
                 Future(ResponseHandler.ERROR(ResponseCode.SERVER_ERROR, ResponseCode.SERVER_ERROR.name(), "hierarchy is empty"))
             } else {
                 fetchLeafNodes(request).map(leafNodes => {
+                    val schemaVersion = rootNode.getMetadata.getOrDefault("schemaVersion", "1.0").asInstanceOf[String]
                     val rootNodeMap =  NodeUtil.serialize(rootNode, java.util.Arrays.asList(HierarchyConstants.BRANCHING_LOGIC, HierarchyConstants.ALLOW_BRANCHING, HierarchyConstants.CHILD_NODES), schemaName, schemaVersion)
                     if (isBranchingEnabled(rootNodeMap, request, operation)) {
                         val branchingLogic = rootNodeMap.getOrDefault(HierarchyConstants.BRANCHING_LOGIC, new util.HashMap[String, AnyRef]()).asInstanceOf[java.util.Map[String, AnyRef]]
@@ -122,6 +135,13 @@ object HierarchyManager {
                         TelemetryManager.info("updated branchingLogic for node " + rootNode.getIdentifier + " is : " + rootNode.getMetadata.get(HierarchyConstants.BRANCHING_LOGIC))
                     } else if (StringUtils.equalsIgnoreCase("add", operation) && request.getRequest.getOrDefault(HierarchyConstants.BRANCHING_LOGIC, new util.HashMap[String, AnyRef]()).asInstanceOf[util.Map[String, AnyRef]].nonEmpty)
                         throw new ClientException("ERR_BRANCHING_LOGIC", s"Branching Is Not Enabled For ${rootNode.getIdentifier}. Please Enable Branching Or Remove branchingLogic from Request.")
+                    val requestContextVersion = request.getContext.getOrDefault("version", "1.0").asInstanceOf[String].toDouble
+                    if (requestContextVersion != 1.0 && requestContextVersion >= 1.1) {
+                        val rootNodeQumlVer = rootNode.getMetadata.getOrDefault("qumlVersion", 1.1.asInstanceOf[AnyRef])
+                        val filteredChildNodes = leafNodes.filter(node => rootNodeQumlVer != node.getMetadata.getOrDefault("qumlVersion", 1.0.asInstanceOf[AnyRef]))
+                        if (!filteredChildNodes.isEmpty)
+                            throw new ClientException("ERR_OBJECT_VALIDATION", s"Children with identifier ${filteredChildNodes.map(node => node.getIdentifier.replace(".img", "")).asJava} can't be added because they don't have data in QuML ${rootNodeQumlVer} format.")
+                    }
                     updateRootNode(rootNode, request, operation).map(node => {
                         updateRootHierarchy(hierarchy, leafNodes, node, request, operation).map(response => {
                             if (!ResponseHandler.checkError(response)) {
@@ -296,6 +316,7 @@ object HierarchyManager {
                 node.getMetadata.putAll(extData)
                 node
             } else node
+            val schemaVersion = updatedNode.getMetadata.getOrDefault("schemaVersion", "1.0").asInstanceOf[String]
             val nodeMap:java.util.Map[String,AnyRef] = NodeUtil.serialize(updatedNode, null, updatedNode.getObjectType.toLowerCase().replace("image", ""), schemaVersion)
             nodeMap.keySet().removeAll(keyTobeRemoved)
             nodeMap

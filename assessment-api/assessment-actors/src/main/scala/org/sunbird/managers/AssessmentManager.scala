@@ -9,15 +9,19 @@ import org.sunbird.common.exception.{ClientException, ResourceNotFoundException,
 import org.sunbird.graph.OntologyEngineContext
 import org.sunbird.graph.dac.model.{Node, Relation}
 import org.sunbird.graph.nodes.DataNode
+import org.sunbird.graph.schema.{DefinitionNode, ObjectCategoryDefinition}
 import org.sunbird.graph.utils.NodeUtil
+import org.sunbird.graph.utils.NodeUtil.{convertJsonProperties, handleKeyNames}
 import org.sunbird.telemetry.logger.TelemetryManager
 import org.sunbird.telemetry.util.LogTelemetryEventUtil
 import org.sunbird.utils.RequestUtil
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.collection.JavaConversions._
+import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.collection.convert.ImplicitConversions._
 import scala.collection.JavaConverters
 import scala.collection.JavaConverters._
+import scala.collection.mutable.ListBuffer
+import scala.concurrent.duration.Duration
 
 object AssessmentManager {
 
@@ -92,6 +96,42 @@ object AssessmentManager {
 		})
 	}
 
+	def getValidatedQuestionNodeForReview(request: Request, errCode: String)(implicit ec: ExecutionContext, oec: OntologyEngineContext): Future[Node] = {
+		val extPropNameList:util.List[String] = DefinitionNode.getExternalProps(request.getContext.get("graph_id").asInstanceOf[String], request.getContext.get("version").asInstanceOf[String], request.getContext.get("schemaName").asInstanceOf[String]).asJava
+		val readReq = new Request(request)
+		readReq.put("identifier", request.get("identifier").toString)
+		readReq.put("mode", "edit")
+		readReq.put("fields", extPropNameList)
+		DataNode.read(readReq).map(node => {
+			if (StringUtils.equalsIgnoreCase(node.getMetadata.getOrDefault("visibility", "").asInstanceOf[String], "Parent"))
+				throw new ClientException(errCode, s"${node.getObjectType.replace("Image", "")} with visibility Parent, can't be sent for review individually.")
+			if (!StringUtils.equalsAnyIgnoreCase(node.getMetadata.getOrDefault("status", "").asInstanceOf[String], "Draft"))
+				throw new ClientException(errCode, s"${node.getObjectType.replace("Image", "")} with status other than Draft can't be sent for review.")
+			val messages = validateQuestionNodeForReview(request, node)
+			if(messages.nonEmpty)
+				throw new ClientException("ERR_MANDATORY_FIELD_VALIDATION", s"Mandatory Fields ${messages.asJava} Missing for ${node.getIdentifier.replace(".img", "")}")
+			else node
+		})
+	}
+
+	def validateQuestionNodeForReview(request: Request, node: Node)(implicit ec: ExecutionContext, oec: OntologyEngineContext): List[String] = {
+		val messages = ListBuffer[String]()
+		val metadataMap = node.getMetadata
+		val extPropNameList:util.List[String] = DefinitionNode.getExternalProps(request.getContext.get("graph_id").asInstanceOf[String], request.getContext.get("version").asInstanceOf[String], node.getObjectType.toLowerCase.replace("image", "")).asJava
+		val objectCategoryDefinition: ObjectCategoryDefinition = DefinitionNode.getObjectCategoryDefinition(node.getMetadata.getOrDefault("primaryCategory", "").asInstanceOf[String], node.getObjectType.toLowerCase().replace("image", ""), node.getMetadata.getOrDefault("channel","all").asInstanceOf[String])
+		val jsonProps = DefinitionNode.fetchJsonProps(node.getGraphId, request.getContext().get("version").toString, node.getObjectType.toLowerCase().replace("image", ""), objectCategoryDefinition)
+		val metadata:util.Map[String, AnyRef] = metadataMap.entrySet().asScala.filter(entry => null != entry.getValue).map((entry: util.Map.Entry[String, AnyRef]) => handleKeyNames(entry, extPropNameList) ->  convertJsonProperties(entry, jsonProps)).toMap.asJava
+		if (metadata.getOrElse("body", "").asInstanceOf[String].isEmpty) messages += s"""body"""
+		if (metadata.getOrElse("editorState", new util.HashMap()).asInstanceOf[util.Map[String, AnyRef]].isEmpty) messages += s"""editorState"""
+		if (null != metadata.get("interactionTypes")) {
+			if (metadata.getOrElse("responseDeclaration", new util.HashMap()).asInstanceOf[util.Map[String, AnyRef]].isEmpty) messages += s"""responseDeclaration"""
+			if (metadata.getOrElse("interactions", new util.HashMap()).asInstanceOf[util.Map[String, AnyRef]].isEmpty) messages += s"""interactions"""
+		} else {
+			if (metadata.getOrElse("answer", "").asInstanceOf[String].isEmpty) messages += s"""answer"""
+		}
+		messages.toList
+	}
+
 	def getValidatedNodeForPublish(request: Request, errCode: String)(implicit ec: ExecutionContext, oec: OntologyEngineContext): Future[Node] = {
 		request.put("mode", "edit")
 		DataNode.read(request).map(node => {
@@ -100,6 +140,22 @@ object AssessmentManager {
 			if (StringUtils.equalsAnyIgnoreCase(node.getMetadata.getOrDefault("status", "").asInstanceOf[String], "Processing"))
 				throw new ClientException(errCode, s"${node.getObjectType.replace("Image", "")} having Processing status can't be sent for publish.")
 			node
+		})
+	}
+
+	def getValidatedQuestionNodeForPublish(request: Request, errCode: String)(implicit ec: ExecutionContext, oec: OntologyEngineContext): Future[Node] = {
+		val extPropNameList:util.List[String] = DefinitionNode.getExternalProps(request.getContext.get("graph_id").asInstanceOf[String], request.getContext.get("version").asInstanceOf[String], request.getContext.get("schemaName").asInstanceOf[String]).asJava
+		request.put("mode", "edit")
+		request.put("fields", extPropNameList)
+		DataNode.read(request).map(node => {
+			if (StringUtils.equalsIgnoreCase(node.getMetadata.getOrDefault("visibility", "").asInstanceOf[String], "Parent"))
+				throw new ClientException(errCode, s"${node.getObjectType.replace("Image", "")} with visibility Parent, can't be sent for publish individually.")
+			if (StringUtils.equalsAnyIgnoreCase(node.getMetadata.getOrDefault("status", "").asInstanceOf[String], "Processing"))
+				throw new ClientException(errCode, s"${node.getObjectType.replace("Image", "")} having Processing status can't be sent for publish.")
+			val messages = validateQuestionNodeForReview(request, node)
+			if(messages.nonEmpty)
+				throw new ClientException("ERR_MANDATORY_FIELD_VALIDATION", s"Mandatory Fields ${messages.asJava} Missing for ${node.getIdentifier.replace(".img", "")}")
+			else node
 		})
 	}
 
@@ -131,14 +187,14 @@ object AssessmentManager {
 		})
 	}
 
-	def validateQuestionSetHierarchy(hierarchyString: String, rootUserId: String)(implicit ec: ExecutionContext, oec: OntologyEngineContext): Unit = {
+	def validateQuestionSetHierarchy(request: Request, hierarchyString: String, rootUserId: String)(implicit ec: ExecutionContext, oec: OntologyEngineContext): Unit = {
 		if (!skipValidation) {
 			val hierarchy = if (!hierarchyString.asInstanceOf[String].isEmpty) {
 				JsonUtils.deserialize(hierarchyString.asInstanceOf[String], classOf[java.util.Map[String, AnyRef]])
 			} else
 				new java.util.HashMap[String, AnyRef]()
 			val children = hierarchy.getOrDefault("children", new util.ArrayList[java.util.Map[String, AnyRef]]).asInstanceOf[util.List[java.util.Map[String, AnyRef]]]
-			validateChildrenRecursive(children, rootUserId)
+			validateChildrenRecursive(request, children, rootUserId)
 		}
 	}
 
@@ -152,13 +208,35 @@ object AssessmentManager {
 		})
 	}
 
-	private def validateChildrenRecursive(children: util.List[util.Map[String, AnyRef]], rootUserId: String): Unit = {
+	private def validateChildrenRecursive(request: Request, children: util.List[util.Map[String, AnyRef]], rootUserId: String)(implicit ec: ExecutionContext, oec: OntologyEngineContext): Unit = {
 		children.toList.foreach(content => {
 			if ((StringUtils.equalsAnyIgnoreCase(content.getOrDefault("visibility", "").asInstanceOf[String], "Default")
 			  && !StringUtils.equals(rootUserId, content.getOrDefault("createdBy", "").asInstanceOf[String]))
 			  && !StringUtils.equalsIgnoreCase(content.getOrDefault("status", "").asInstanceOf[String], "Live"))
 				throw new ClientException("ERR_QUESTION_SET", "Object with identifier: " + content.get("identifier") + " is not Live. Please Publish it.")
-			validateChildrenRecursive(content.getOrDefault("children", new util.ArrayList[Map[String, AnyRef]]).asInstanceOf[util.List[util.Map[String, AnyRef]]], rootUserId)
+			if((StringUtils.equalsAnyIgnoreCase("application/vnd.sunbird.question", content.get("mimeType").toString) &&
+			  StringUtils.equalsAnyIgnoreCase(content.getOrDefault("visibility", "").asInstanceOf[String], "Parent")
+			  && !StringUtils.equalsIgnoreCase(content.getOrDefault("status", "").asInstanceOf[String], "Live"))
+			  || (StringUtils.equalsAnyIgnoreCase("application/vnd.sunbird.question", content.get("mimeType").toString)
+			  && StringUtils.equalsAnyIgnoreCase(content.getOrDefault("visibility", "").asInstanceOf[String], "Default")
+			  && StringUtils.equals(rootUserId, content.getOrDefault("createdBy", "").asInstanceOf[String])
+			  && !StringUtils.equalsIgnoreCase(content.getOrDefault("status", "").asInstanceOf[String], "Live"))) {
+				val extPropNameList:util.List[String] = DefinitionNode.getExternalProps(request.getContext.get("graph_id").asInstanceOf[String], request.getContext.get("version").asInstanceOf[String], content.getOrDefault("objectType", "Question").asInstanceOf[String].toLowerCase.replace("image","")).asJava
+				val readReq = new Request(request)
+				readReq.getRequest.put("identifier", content.get("identifier").toString)
+				readReq.getContext.put("identifier", content.get("identifier").toString)
+				readReq.getContext.put("objectType", content.get("objectType").toString)
+				readReq.getContext.put("schemaName", content.get("objectType").toString.toLowerCase().replace("image",""))
+				readReq.put("mode", "edit")
+				readReq.put("fields", extPropNameList)
+				val messages:List[String] = Await.result(DataNode.read(readReq).map(node => {
+					val messages = validateQuestionNodeForReview(request, node)
+					messages
+				}), Duration.apply("30 seconds"))
+				if(messages.nonEmpty)
+					throw new ClientException("ERR_MANDATORY_FIELD_VALIDATION", s"Mandatory Fields ${messages.asJava} Missing for ${content.get("identifier").toString}")
+			}
+			validateChildrenRecursive(request, content.getOrDefault("children", new util.ArrayList[Map[String, AnyRef]]).asInstanceOf[util.List[util.Map[String, AnyRef]]], rootUserId)
 		})
 	}
 

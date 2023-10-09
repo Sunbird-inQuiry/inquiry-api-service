@@ -49,7 +49,7 @@ class QuestionActor @Inject()(implicit oec: OntologyEngineContext) extends BaseA
 
 	def review(request: Request): Future[Response] = {
 		request.getRequest.put("identifier", request.getContext.get("identifier"))
-		AssessmentManager.getValidatedNodeForReview(request, "ERR_QUESTION_REVIEW").flatMap(node => {
+		AssessmentManager.getValidatedQuestionNodeForReview(request, "ERR_QUESTION_REVIEW").flatMap(node => {
 			val updateRequest = new Request(request)
 			updateRequest.getContext.put("identifier", request.get("identifier"))
 			updateRequest.putAll(Map("versionKey" -> node.getMetadata.get("versionKey"), "prevStatus" -> "Draft", "status" -> "Review", "lastStatusChangedOn" -> DateUtils.formatCurrentDate).asJava)
@@ -60,7 +60,7 @@ class QuestionActor @Inject()(implicit oec: OntologyEngineContext) extends BaseA
 	def publish(request: Request): Future[Response] = {
 		val lastPublishedBy: String = request.getRequest.getOrDefault("lastPublishedBy", "").asInstanceOf[String]
 		request.getRequest.put("identifier", request.getContext.get("identifier"))
-		AssessmentManager.getValidatedNodeForPublish(request, "ERR_QUESTION_PUBLISH").map(node => {
+		AssessmentManager.getValidatedQuestionNodeForPublish(request, "ERR_QUESTION_PUBLISH").map(node => {
 			if(StringUtils.isNotBlank(lastPublishedBy))
 				node.getMetadata.put("lastPublishedBy", lastPublishedBy)
 			AssessmentManager.pushInstructionEvent(node.getIdentifier, node)
