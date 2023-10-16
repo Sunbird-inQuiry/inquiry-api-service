@@ -680,6 +680,9 @@
         "type": "object"
       }
     },
+    "bloomsLevel": {
+      "type": "string"
+    },
     "eval": {
       "type": "object",
       "properties": {
