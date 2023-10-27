@@ -530,7 +530,7 @@ object AssessmentV5Manager {
       metadata.put("comment", node.getMetadata.getOrDefault("rejectComment", ""))
       res.add(metadata)
       if (!StringUtils.equalsIgnoreCase("QuestionSet", node.getObjectType))
-        throw new ClientException("ERR_QUESTION_SET_ADD", s"Node with Identifier ${node.getIdentifier} is not a Question Set.")
+        throw new ClientException("ERR_QUESTION_SET_READ_COMMENT", s"Node with Identifier ${node.getIdentifier} is not a Question Set.")
       if (!StringUtils.equalsIgnoreCase(node.getMetadata.get("visibility").asInstanceOf[String], "Private")) {
         ResponseHandler.OK.put(resName, res)
       }
