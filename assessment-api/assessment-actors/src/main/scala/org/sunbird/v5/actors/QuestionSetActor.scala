@@ -115,7 +115,6 @@ class QuestionSetActor @Inject()(implicit oec: OntologyEngineContext) extends Ba
           updateHierarchy.put(HierarchyConstants.CHILDREN, updatedChildrenList)
           resp.getResult.put("questionset", updateHierarchy.asJava)
         }
-        resp.getResult.remove("questionSet")
         resp
      } else {
         resp.getResult.remove("questionSet")
