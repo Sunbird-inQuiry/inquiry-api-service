@@ -96,4 +96,16 @@ class QuestionSetControllerSpec extends BaseSpec {
 		isOK(result)
 		status(result)(defaultAwaitTimeout) must equalTo(OK)
 	}
+
+	"updateComment should update the questionSet successfully" in {
+		val result = controller.updateComment()(FakeRequest())
+		isOK(result)
+		status(result)(defaultAwaitTimeout) must equalTo(OK)
+	}
+
+	"readComment should return an questionSet successfully for given valid identifier" in {
+		val result = controller.readComment("do_123")(FakeRequest())
+		isOK(result)
+		status(result)(defaultAwaitTimeout) must equalTo(OK)
+	}
 }

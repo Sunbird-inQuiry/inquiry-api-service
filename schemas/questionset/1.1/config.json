@@ -50,7 +50,8 @@
     "create": [
       "children",
       "status",
-      "schemaVersion"
+      "schemaVersion",
+      "rejectComment"
     ],
     "update": [
       "children",
@@ -59,14 +60,16 @@
       "status",
       "mimeType",
       "qumlVersion",
-      "schemaVersion"
+      "schemaVersion",
+      "rejectComment"
     ],
     "updateHierarchy": [
       "variants",
       "config",
       "reservedDialcodes",
       "qumlVersion",
-      "schemaVersion"
+      "schemaVersion",
+      "rejectComment"
     ]
   },
   "oneOfProps": ["instructions"],

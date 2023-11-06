@@ -1,14 +1,16 @@
-# knowledge-platform
+# inquiry-api-service
 
-Repository for Knowledge Platform - 2.0
+Repository for inQuiry API Service
 
-## Knowledge-platform local setup
-This readme file contains the instruction to set up and run the content-service in local machine.
+## inquiry-api-service local setup
+This readme file contains the instruction to set up and run the assessment-service in local machine.
 
 ### System Requirements:
 
 ### Prerequisites:
 * Java 11
+* scala-2.12
+* play-2.7.2
 
 ### Prepare folders for database data and logs
 
@@ -114,7 +116,7 @@ services:
       - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://127.0.0.1:2181     
     
   kafka:
-    image: 'wurstmeister/kafka:2.11-1.0.1'
+    image: 'wurstmeister/kafka:2.12-1.0.1'
     container_name: kafka
     ports:
       - "9092:9092"
