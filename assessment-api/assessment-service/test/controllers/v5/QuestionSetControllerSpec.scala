@@ -112,4 +112,22 @@ class QuestionSetControllerSpec extends BaseSpec {
     isOK(result)
     status(result)(defaultAwaitTimeout) must equalTo(OK)
   }
+
+  "getHierarchyRead" should {
+    "return a valid result for a given valid identifier and mode" in {
+      val result = controller.getHierarchyRead("do_123", Some("edit"))(FakeRequest())
+      isOK(result)
+      status(result) must equalTo(OK)
+      // Add more assertions as needed
+    }
+  }
+
+  "fetchHierarchy method" should {
+    "return a valid result for a given valid identifier, mode, and evaluable parameter" in {
+      val result = controller.fetchHierarchy("do_123", None, "true")(FakeRequest())
+      isOK(result)
+      status(result) must equalTo(OK)
+      // Add more assertions as needed
+    }
+  }
 }
