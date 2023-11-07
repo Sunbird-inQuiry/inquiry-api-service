@@ -2,7 +2,6 @@ package org.sunbird.v5.actors
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.apache.commons.lang3.StringUtils
-import org.sunbird.CopyManager
 import org.sunbird.`object`.importer.{ImportConfig, ImportManager}
 import org.sunbird.actor.core.BaseActor
 import org.sunbird.common.dto.{Request, Response, ResponseHandler}
@@ -20,6 +19,7 @@ import javax.inject.Inject
 import scala.collection.JavaConverters
 import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
+import org.sunbird.managers.CopyManager
 
 class QuestionActor @Inject()(implicit oec: OntologyEngineContext) extends BaseActor {
 
