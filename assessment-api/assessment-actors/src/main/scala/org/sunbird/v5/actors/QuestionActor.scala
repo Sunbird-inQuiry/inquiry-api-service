@@ -2,6 +2,7 @@ package org.sunbird.v5.actors
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.apache.commons.lang3.StringUtils
+import org.sunbird.CopyManager
 import org.sunbird.`object`.importer.{ImportConfig, ImportManager}
 import org.sunbird.actor.core.BaseActor
 import org.sunbird.common.dto.{Request, Response, ResponseHandler}
@@ -11,7 +12,6 @@ import org.sunbird.graph.OntologyEngineContext
 import org.sunbird.graph.nodes.DataNode
 import org.sunbird.graph.schema.DefinitionNode
 import org.sunbird.graph.utils.NodeUtil
-import org.sunbird.managers.CopyManager
 import org.sunbird.utils.{AssessmentConstants, AssessmentErrorCodes, RequestUtil}
 import org.sunbird.v5.managers.AssessmentV5Manager
 
