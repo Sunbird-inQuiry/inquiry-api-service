@@ -1,7 +1,6 @@
 package org.sunbird.managers
 
-import java.security.PrivateKey
-import java.security.PublicKey
+import java.security.{PrivateKey, PublicKey}
 
 class KeyData(private var keyId: String, private var privateKey: PrivateKey, private var publicKey: PublicKey) {
 

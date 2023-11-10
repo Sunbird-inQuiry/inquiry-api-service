@@ -1,29 +1,26 @@
 package org.sunbird.managers
 
-import java.util
-import java.util.concurrent.CompletionException
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.mashape.unirest.http.{HttpResponse, Unirest}
+import org.apache.commons.collections4.{CollectionUtils, MapUtils}
 import org.apache.commons.lang3.StringUtils
 import org.sunbird.cache.impl.RedisCache
 import org.sunbird.common.dto.{Request, Response, ResponseHandler}
-import org.sunbird.common.exception.{ClientException, ErrorCodes, ResourceNotFoundException, ResponseCode, ServerException}
+import org.sunbird.common.exception._
 import org.sunbird.common.{JsonUtils, Platform}
+import org.sunbird.graph.OntologyEngineContext
 import org.sunbird.graph.dac.model.Node
 import org.sunbird.graph.nodes.DataNode
 import org.sunbird.graph.utils.{NodeUtil, ScalaJsonUtils}
-
-import scala.collection.convert.ImplicitConversions._
-import scala.collection.JavaConverters._
-import scala.collection.JavaConverters
-import scala.concurrent.{ExecutionContext, Future}
-import com.mashape.unirest.http.HttpResponse
-import com.mashape.unirest.http.Unirest
-import org.apache.commons.collections4.{CollectionUtils, MapUtils}
-import org.sunbird.graph.OntologyEngineContext
 import org.sunbird.telemetry.logger.TelemetryManager
 import org.sunbird.utils.{HierarchyConstants, HierarchyErrorCodes, JwtUtils}
 
-import scala.collection.mutable
+import java.util
+import java.util.concurrent.CompletionException
+import scala.collection.JavaConverters
+import scala.collection.JavaConverters._
+import scala.collection.convert.ImplicitConversions._
+import scala.concurrent.{ExecutionContext, Future}
 
 object HierarchyManager {
 

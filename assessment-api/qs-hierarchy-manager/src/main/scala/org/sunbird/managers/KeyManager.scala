@@ -1,7 +1,6 @@
 package org.sunbird.managers
 
 import org.slf4j.LoggerFactory
-import org.sunbird.KeyData
 import org.sunbird.common.Platform
 import org.sunbird.utils.Base64Util
 
