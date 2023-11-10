@@ -4,13 +4,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.slf4j.LoggerFactory
 import org.sunbird.common.Platform
-import org.sunbird.utils.Base64Util
-
-import java.nio.charset.StandardCharsets
-import java.nio.file.{Files, Paths}
-import java.security.spec.{PKCS8EncodedKeySpec, X509EncodedKeySpec}
-import java.security.{KeyFactory, PrivateKey, PublicKey}
-import java.util.{Base64, HashMap}
+import org.sunbird.managers.KeyManager
 
 class KeyManagerTest extends AnyFlatSpec with Matchers {
 
