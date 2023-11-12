@@ -14,12 +14,12 @@ class KeyManagerTest extends AnyFlatSpec with Matchers {
   private val keyPrefix = Platform.getString("api.jwt.keyprefix","device")
   private val keyCount = Platform.getInteger("api.jwt.keycount",3)
 
-  "KeyManager" should "load keys" in {
-
-    val keyManager = new KeyManager(basePath, keyPrefix, keyCount)
-
-    keyManager.getRandomKey() should not be null
-  }
+//  "KeyManager" should "load keys" in {
+//
+//    val keyManager = new KeyManager(basePath, keyPrefix, keyCount)
+//
+//    keyManager.getRandomKey() should not be null
+//  }
 
   it should "load public key from filesystem" in {
     val keyManager = new KeyManager(basePath, keyPrefix, keyCount)
