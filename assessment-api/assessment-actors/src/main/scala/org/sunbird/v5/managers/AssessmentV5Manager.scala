@@ -667,7 +667,7 @@ val answerMaps: (Map[String, AnyRef], Map[String, AnyRef], Map[String, AnyRef]) 
 
   private case class HTTPResponse(status: Int, body: String) extends Serializable
 
-  private def populateSingleCardinality(res: util.Map[String, AnyRef], edata: util.Map[String, AnyRef], maxScore: Integer): Unit = {
+   def populateSingleCardinality(res: util.Map[String, AnyRef], edata: util.Map[String, AnyRef], maxScore: Integer): Unit = {
     val correctValue = getMap(res, AssessmentConstants.CORRECT_RESPONSE).getOrDefault(AssessmentConstants.VALUE, new util.ArrayList[Integer]).toString
     val usrResponse = getListMap(edata, AssessmentConstants.RESVALUES).get(0).getOrDefault(AssessmentConstants.VALUE, "").toString
     StringUtils.equals(usrResponse, correctValue) match {
@@ -682,7 +682,7 @@ val answerMaps: (Map[String, AnyRef], Map[String, AnyRef], Map[String, AnyRef]) 
     }
   }
 
-  private def populateMultiCardinality(res: util.Map[String, AnyRef], edata: util.Map[String, AnyRef], maxScore: Integer) = {
+   def populateMultiCardinality(res: util.Map[String, AnyRef], edata: util.Map[String, AnyRef], maxScore: Integer) = {
     val correctValue = getMap(res, AssessmentConstants.CORRECT_RESPONSE).getOrDefault(AssessmentConstants.VALUE, new util.ArrayList[Integer]).asInstanceOf[util.ArrayList[Integer]].flatMap(k => List(k)).sorted
     val usrResponse = edata.getOrDefault(AssessmentConstants.RESVALUES, new util.ArrayList[util.ArrayList[util.Map[String, AnyRef]]]())
       .asInstanceOf[util.ArrayList[util.ArrayList[util.Map[String, AnyRef]]]]
