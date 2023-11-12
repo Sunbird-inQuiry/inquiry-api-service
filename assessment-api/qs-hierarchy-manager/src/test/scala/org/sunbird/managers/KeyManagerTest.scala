@@ -12,7 +12,7 @@ class KeyManagerTest extends AnyFlatSpec with Matchers {
 
   private val basePath = Platform.getString("api.jwt.basepath","./keys/")
   private val keyPrefix = Platform.getString("api.jwt.keyprefix","device")
-  private val keyCount = Platform.getInteger("api.jwt.keycount",5)
+  private val keyCount = Platform.getInteger("api.jwt.keycount",3)
 
   "KeyManager" should "load keys" in {
 
