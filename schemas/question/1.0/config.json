@@ -54,5 +54,12 @@
       }
     },
     "primaryKey": ["identifier"]
+  },
+  "PII_Fields": {
+    "user": {
+      "createdBy": ["creator"]
+    },
+    "org": {
+    }
   }
 }
