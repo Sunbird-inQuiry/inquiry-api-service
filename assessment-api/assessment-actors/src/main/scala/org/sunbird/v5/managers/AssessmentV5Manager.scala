@@ -94,9 +94,9 @@ object AssessmentV5Manager {
   def getValidateNodeForReject(request: Request, errCode: String)(implicit ec: ExecutionContext, oec: OntologyEngineContext): Future[Node] = {
     request.put("mode", "edit")
     DataNode.read(request).map(node => {
-      val serverEvaluable = node.getMetadata.getOrDefault(AssessmentConstants.EVAL, AssessmentConstants.FLOWER_BRACKETS)
-      val data = mapper.readValue(serverEvaluable.asInstanceOf[String], classOf[java.util.Map[String, String]])
-      if (data.get(AssessmentConstants.MODE) != null && data.get(AssessmentConstants.MODE) == AssessmentConstants.SERVER && !StringUtils.equals(request.getOrDefault("isEditor", "").asInstanceOf[String], "true")) {
+      val serverEvaluable = node.getMetadata.get(AssessmentConstants.EVAL)
+      val data = serverEvaluable
+      if (data  != null && data == AssessmentConstants.SERVER && !StringUtils.equals(request.getOrDefault("isEditor", "").asInstanceOf[String], "true")) {
         val hideEditorResponse = hideEditorStateAns(node)
         if (StringUtils.isNotEmpty(hideEditorResponse))
           node.getMetadata.put(AssessmentConstants.EDITOR_STATE, hideEditorResponse)
@@ -538,26 +538,26 @@ object AssessmentV5Manager {
   }
 
   def calculateScore(privateList: Response, assessments: util.List[util.Map[String, AnyRef]]): Unit = {
-//    val answerMaps: (Map[String, AnyRef], Map[String, AnyRef]) = getListMap(privateList.getResult, AssessmentConstants.QUESTIONS)
-//      .map { que =>
-//        ((que.get(AssessmentConstants.IDENTIFIER).toString -> que.get(AssessmentConstants.RESPONSE_DECLARATION)),
-//          (que.get(AssessmentConstants.IDENTIFIER).toString -> que.get(AssessmentConstants.EDITOR_STATE)))
-//        )
-//      }.unzip match {
-//      case (map1, map2) => (map1.toMap, map2.toMap)
-//    }
-val answerMaps: (Map[String, AnyRef], Map[String, AnyRef], Map[String, AnyRef]) = {
-  val listOfMaps = getListMap(privateList.getResult, AssessmentConstants.QUESTIONS)
-    .map { que =>
-      (
-        que.get(AssessmentConstants.IDENTIFIER).toString -> que.get(AssessmentConstants.RESPONSE_DECLARATION),
-        que.get(AssessmentConstants.IDENTIFIER).toString -> que.get(AssessmentConstants.EDITOR_STATE),
-        que.get(AssessmentConstants.IDENTIFIER).toString -> que.get(AssessmentConstants.MAX_SCORE)
-      )
+    //    val answerMaps: (Map[String, AnyRef], Map[String, AnyRef]) = getListMap(privateList.getResult, AssessmentConstants.QUESTIONS)
+    //      .map { que =>
+    //        ((que.get(AssessmentConstants.IDENTIFIER).toString -> que.get(AssessmentConstants.RESPONSE_DECLARATION)),
+    //          (que.get(AssessmentConstants.IDENTIFIER).toString -> que.get(AssessmentConstants.EDITOR_STATE)))
+    //        )
+    //      }.unzip match {
+    //      case (map1, map2) => (map1.toMap, map2.toMap)
+    //    }
+    val answerMaps: (Map[String, AnyRef], Map[String, AnyRef], Map[String, AnyRef]) = {
+      val listOfMaps = getListMap(privateList.getResult, AssessmentConstants.QUESTIONS)
+        .map { que =>
+          (
+            que.get(AssessmentConstants.IDENTIFIER).toString -> que.get(AssessmentConstants.RESPONSE_DECLARATION),
+            que.get(AssessmentConstants.IDENTIFIER).toString -> que.get(AssessmentConstants.EDITOR_STATE),
+            que.get(AssessmentConstants.IDENTIFIER).toString -> que.get(AssessmentConstants.MAX_SCORE)
+          )
+        }
+      val (map1, map2, map3) = (listOfMaps.map(_._1).toMap, listOfMaps.map(_._2).toMap, listOfMaps.map(_._3).toMap)
+      (map1, map2, map3)
     }
-  val (map1, map2, map3) = (listOfMaps.map(_._1).toMap, listOfMaps.map(_._2).toMap, listOfMaps.map(_._3).toMap)
-  (map1, map2, map3)
-}
     val answerMap = answerMaps._1
     val editorStateMap = answerMaps._2
     val maxScoreMap = answerMaps._3
@@ -571,7 +571,7 @@ val answerMaps: (Map[String, AnyRef], Map[String, AnyRef], Map[String, AnyRef]) 
           throw new ClientException(ErrorCodes.ERR_BAD_REQUEST.name(), "Invalid Request")
         val res = getMap(answerMap.get(identifier).asInstanceOf[Some[util.Map[String, AnyRef]]].x, AssessmentConstants.RESPONSE1)
         val cardinality = res.getOrDefault(AssessmentConstants.CARDINALITY, "").asInstanceOf[String]
-      //  val maxScore = res.getOrDefault(AssessmentConstants.MAX_SCORE, 0.asInstanceOf[Integer]).asInstanceOf[Integer]
+        //  val maxScore = res.getOrDefault(AssessmentConstants.MAX_SCORE, 0.asInstanceOf[Integer]).asInstanceOf[Integer]
         val maxScoreOption = maxScoreMap.get(identifier)
         val maxScore = maxScoreOption.getOrElse(0).asInstanceOf[Integer]
         log.info(s"printing maxScore: $maxScore")

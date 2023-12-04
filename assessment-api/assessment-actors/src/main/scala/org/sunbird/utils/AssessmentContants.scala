@@ -72,8 +72,9 @@ object AssessmentConstants {
   val RESPONSE = "response"
   val OUTCOMES = "outcomes"
   val OPTIONS = "options"
-  val EVAL: String = "eval"
+  val EVAL: String = "evalMode"
   val SERVER: String = "server"
+  val CLIENT: String = "client"
   val FLOWER_BRACKETS: String = "{}"
 
 }

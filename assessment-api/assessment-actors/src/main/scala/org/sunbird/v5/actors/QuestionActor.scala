@@ -50,9 +50,9 @@ class QuestionActor @Inject()(implicit oec: OntologyEngineContext) extends BaseA
     val extPropNameList:util.List[String] = DefinitionNode.getExternalProps(request.getContext.get("graph_id").asInstanceOf[String], request.getContext.get("version").asInstanceOf[String], request.getContext.get("schemaName").asInstanceOf[String]).asJava
     request.getRequest.put("fields", extPropNameList)
     DataNode.read(request).map(node => {
-      val serverEvaluable = node.getMetadata.getOrDefault(AssessmentConstants.EVAL, AssessmentConstants.FLOWER_BRACKETS)
-      val data = mapper.readValue(serverEvaluable.asInstanceOf[String], classOf[java.util.Map[String, String]])
-      if (data.get(AssessmentConstants.MODE) != null && data.get(AssessmentConstants.MODE) == AssessmentConstants.SERVER && !StringUtils.equals(request.getOrDefault("isEditor", "").asInstanceOf[String], "true")) {
+      val serverEvaluable = node.getMetadata.get(AssessmentConstants.EVAL)
+      val data = serverEvaluable
+      if (data != null && data == AssessmentConstants.SERVER && !StringUtils.equals(request.getOrDefault("isEditor", "").asInstanceOf[String], "true")) {
         val hideEditorResponse = AssessmentV5Manager.hideEditorStateAns(node)
         if (StringUtils.isNotEmpty(hideEditorResponse))
           node.getMetadata.put(AssessmentConstants.EDITOR_STATE, hideEditorResponse)
@@ -91,21 +91,21 @@ class QuestionActor @Inject()(implicit oec: OntologyEngineContext) extends BaseA
     request.getRequest.put("fields", fields)
     DataNode.search(request).map(nodeList => {
       val questionList = nodeList.map(node => {
-      val serverEvaluable = node.getMetadata.getOrDefault(AssessmentConstants.EVAL, AssessmentConstants.FLOWER_BRACKETS)
-      val data = mapper.readValue(serverEvaluable.asInstanceOf[String], classOf[java.util.Map[String, String]])
-      if (data.get(AssessmentConstants.MODE) != null && data.get(AssessmentConstants.MODE).equalsIgnoreCase(AssessmentConstants.SERVER) && !StringUtils.equals(request.get("isEditor").asInstanceOf[String], "true")) {
-        val hideEditorStateAns = AssessmentV5Manager.hideEditorStateAns(node)
-        if (StringUtils.isNotEmpty(hideEditorStateAns))
-          node.getMetadata.put(AssessmentConstants.EDITOR_STATE, hideEditorStateAns)
-        val hideCorrectResponse = AssessmentV5Manager.hideCorrectResponse(node)
-        if (StringUtils.isNotEmpty(hideCorrectResponse))
-          node.getMetadata.put(AssessmentConstants.RESPONSE_DECLARATION, hideCorrectResponse)
-      }
-      NodeUtil.serialize(node, fields, node.getObjectType.toLowerCase.replace("Image", ""), request.getContext.get("version").asInstanceOf[String])
-    }).asJava
-        ResponseHandler.OK.put("questions", questionList).put("count", questionList.size)
-      })
-    }
+        val serverEvaluable = node.getMetadata.get(AssessmentConstants.EVAL)
+        val data = serverEvaluable
+        if (data  != null && data == AssessmentConstants.SERVER && !StringUtils.equals(request.get("isEditor").asInstanceOf[String], "true")) {
+          val hideEditorStateAns = AssessmentV5Manager.hideEditorStateAns(node)
+          if (StringUtils.isNotEmpty(hideEditorStateAns))
+            node.getMetadata.put(AssessmentConstants.EDITOR_STATE, hideEditorStateAns)
+          val hideCorrectResponse = AssessmentV5Manager.hideCorrectResponse(node)
+          if (StringUtils.isNotEmpty(hideCorrectResponse))
+            node.getMetadata.put(AssessmentConstants.RESPONSE_DECLARATION, hideCorrectResponse)
+        }
+        NodeUtil.serialize(node, fields, node.getObjectType.toLowerCase.replace("Image", ""), request.getContext.get("version").asInstanceOf[String])
+      }).asJava
+      ResponseHandler.OK.put("questions", questionList).put("count", questionList.size)
+    })
+  }
 
 
   def privateRead(request: Request)(implicit oec: OntologyEngineContext, ec: ExecutionContext): Future[Response] = {

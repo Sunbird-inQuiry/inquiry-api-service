@@ -568,14 +568,12 @@
         "No"
       ]
     },
-    "eval": {
-      "type": "object",
-      "properties": {
-        "mode": {
-          "type": "string",
-          "enum": ["server","client"]
-        }
-      }
+    "evalMode": {
+      "type": "string",
+      "enum": [
+        "server",
+        "client"
+      ]
     },
     "allowAnonymousAccess": {
       "type": "string",
