@@ -44,7 +44,7 @@ object HierarchyManager {
 
     val externalKeys: java.util.List[String] = if(Platform.config.hasPath("questionset.hierarchy.remove_external_props")) Platform.config.getStringList("questionset.hierarchy.remove_external_props")
     else List("hierarchy","outcomeDeclaration").asJava
-    
+
     @throws[Exception]
     def addLeafNodesToHierarchy(request:Request)(implicit oec: OntologyEngineContext, ec: ExecutionContext): Future[Response] = {
         validateRequest(request, "add")
@@ -150,8 +150,8 @@ object HierarchyManager {
                         updateRootHierarchy(hierarchy, leafNodes, node, request, operation).map(response => {
                             if (!ResponseHandler.checkError(response)) {
                                 ResponseHandler.OK
-                                    .put("rootId", node.getIdentifier.replaceAll(imgSuffix, ""))
-                                    .put("children", request.get("children"))
+                                  .put("rootId", node.getIdentifier.replaceAll(imgSuffix, ""))
+                                  .put("children", request.get("children"))
                             } else response
                         })
                     }).flatMap(f => f)
@@ -171,10 +171,10 @@ object HierarchyManager {
         }
         if ("remove".equalsIgnoreCase(operation)) {
             val filteredChildren = hierarchy.get("children")
-                .asInstanceOf[java.util.List[java.util.Map[String, AnyRef]]].asScala
-                .filter(child => !leafNodeIds.contains(child.get("identifier")))
+              .asInstanceOf[java.util.List[java.util.Map[String, AnyRef]]].asScala
+              .filter(child => !leafNodeIds.contains(child.get("identifier")))
             filteredChildren.sortBy(_.get("index").asInstanceOf[Integer])
-                .zipWithIndex.foreach(zippedChild => zippedChild._1.put("index", (zippedChild._2.asInstanceOf[Integer] + 1).asInstanceOf[Object]))
+              .zipWithIndex.foreach(zippedChild => zippedChild._1.put("index", (zippedChild._2.asInstanceOf[Integer] + 1).asInstanceOf[Object]))
             val updatedHierarchy = Map("children" -> filteredChildren, "identifier" -> rootNode.getIdentifier.replace(imgSuffix, "")).asJava
             req.put("hierarchy", ScalaJsonUtils.serialize(updatedHierarchy))
         }
@@ -269,8 +269,8 @@ object HierarchyManager {
 
                             limitedChild
                         }).asJava
-                        val serverEvaluable = updatedChildrenList.get(0).getOrDefault(HierarchyConstants.EVAL, new util.LinkedHashMap()).asInstanceOf[java.util.LinkedHashMap[String, String]]
-                        if (serverEvaluable.get(HierarchyConstants.MODE) != null && serverEvaluable.get(HierarchyConstants.MODE).equalsIgnoreCase(HierarchyConstants.SERVER)) {
+                        val serverEvaluable = updatedChildrenList.get(0).get(HierarchyConstants.EVAL)
+                        if (serverEvaluable != null && serverEvaluable == HierarchyConstants.SERVER) {
                             request.put(HierarchyConstants.EVAL_MODE, HierarchyConstants.SERVER)
                         } else {
                             request.put(HierarchyConstants.EVAL_MODE, HierarchyConstants.CLIENT)
