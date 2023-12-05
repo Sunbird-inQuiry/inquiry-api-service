@@ -41,7 +41,7 @@ object UpdateHierarchyManager {
           .get(HierarchyConstants.METADATA).asInstanceOf[java.util.LinkedHashMap[String, AnyRef]]
           .get(HierarchyConstants.EVAL).asInstanceOf[String]
         if (StringUtils.isNotEmpty(mode) && !mode.equals(updMode))
-          throw new ClientException(ErrorCodes.ERR_BAD_REQUEST.name(), "QuestionSet eval status cannot be modified")
+          throw new ClientException(ErrorCodes.ERR_BAD_REQUEST.name(), "QuestionSet evaluation mode status cannot be modified")
         mode = updMode
       }
       getExistingHierarchy(request, node).map(existingHierarchy => {
