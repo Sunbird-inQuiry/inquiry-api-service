@@ -721,6 +721,9 @@
       "items": {
         "type": "object"
       }
+    },
+    "creator": {
+      "type": "string"
     }
   },
   "additionalProperties": false

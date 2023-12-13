@@ -705,6 +705,9 @@
     "artifactUrl": {
       "type": "string",
       "format": "url"
+    },
+    "creator": {
+      "type": "string"
     }
   },
   "additionalProperties": false
