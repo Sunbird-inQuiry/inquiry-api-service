@@ -601,6 +601,9 @@
     },
     "migrationVersion": {
       "type": "number"
+    },
+    "creator": {
+      "type": "string"
     }
   },
   "additionalProperties": false
