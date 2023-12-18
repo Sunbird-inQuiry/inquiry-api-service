@@ -92,9 +92,9 @@ object AssessmentV5Manager {
   def getValidateNodeForReject(request: Request, errCode: String)(implicit ec: ExecutionContext, oec: OntologyEngineContext): Future[Node] = {
     request.put("mode", "edit")
     DataNode.read(request).map(node => {
-      val serverEvaluable = node.getMetadata.getOrDefault(AssessmentConstants.EVAL, AssessmentConstants.FLOWER_BRACKETS)
-      val data = mapper.readValue(serverEvaluable.asInstanceOf[String], classOf[java.util.Map[String, String]])
-      if (data.get(AssessmentConstants.MODE) != null && data.get(AssessmentConstants.MODE) == AssessmentConstants.SERVER && !StringUtils.equals(request.getOrDefault("isEditor", "").asInstanceOf[String], "true")) {
+      val serverEvaluable = node.getMetadata.get(AssessmentConstants.EVAL)
+      val data = serverEvaluable
+      if (data  != null && data == AssessmentConstants.SERVER && !StringUtils.equals(request.getOrDefault("isEditor", "").asInstanceOf[String], "true")) {
         val hideEditorResponse = hideEditorStateAns(node)
         if (StringUtils.isNotEmpty(hideEditorResponse))
           node.getMetadata.put(AssessmentConstants.EDITOR_STATE, hideEditorResponse)
