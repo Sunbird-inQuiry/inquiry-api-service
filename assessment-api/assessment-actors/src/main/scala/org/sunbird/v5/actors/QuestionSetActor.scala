@@ -98,8 +98,8 @@ class QuestionSetActor @Inject()(implicit oec: OntologyEngineContext) extends Ba
 
             limitedChild
           }).asJava
-          val serverEvaluable = updatedChildrenList.get(0).getOrDefault(HierarchyConstants.EVAL, new util.LinkedHashMap()).asInstanceOf[java.util.LinkedHashMap[String, String]]
-          if (serverEvaluable.get(HierarchyConstants.MODE) != null && serverEvaluable.get(HierarchyConstants.MODE).equalsIgnoreCase(HierarchyConstants.SERVER)) {
+          val serverEvaluable = updatedChildrenList.get(0).get(HierarchyConstants.EVAL)
+          if (serverEvaluable != null && serverEvaluable == HierarchyConstants.SERVER) {
             request.put(HierarchyConstants.EVAL_MODE, HierarchyConstants.SERVER)
           } else {
             request.put(HierarchyConstants.EVAL_MODE, HierarchyConstants.CLIENT)
