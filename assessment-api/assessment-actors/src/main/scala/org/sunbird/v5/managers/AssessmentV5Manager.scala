@@ -188,6 +188,7 @@ object AssessmentV5Manager {
   def updateHierarchy(hierarchy: util.Map[String, AnyRef], status: String, rootUserId: String): (java.util.Map[String, AnyRef], java.util.List[String]) = {
     val keys = List("identifier", "children").asJava
     hierarchy.keySet().retainAll(keys)
+
     val children = hierarchy.getOrDefault("children", new util.ArrayList[java.util.Map[String, AnyRef]]).asInstanceOf[util.List[java.util.Map[String, AnyRef]]]
     val childrenToUpdate: List[String] = updateChildrenRecursive(children, status, List(), rootUserId)
     (hierarchy, childrenToUpdate.asJava)
