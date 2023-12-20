@@ -33,14 +33,12 @@ object UpdateHierarchyManager {
         val rootId: String = getRootId(nodesModified, hierarchy)
         request.getContext.put(HierarchyConstants.ROOT_ID, rootId)
         getValidatedRootNode(rootId, request).map(node => {
-            val eval = node.getMetadata.getOrDefault("eval", "{}").asInstanceOf[String]
-            val data = mapper.readValue(eval, classOf[java.util.Map[String, String]])
-            var mode = data.get("mode")
+            var mode = node.getMetadata.get(HierarchyConstants.EVAL).asInstanceOf[String]
             if (nodesModified.get(rootId) != null) {
-                val updMode = nodesModified.get(rootId).asInstanceOf[java.util.LinkedHashMap[String, AnyRef]]
-                  .get("metadata").asInstanceOf[java.util.LinkedHashMap[String, AnyRef]]
-                  .getOrElse("eval", new util.LinkedHashMap())
-                  .asInstanceOf[java.util.LinkedHashMap[String, AnyRef]].get("mode").asInstanceOf[String]
+                val updMode = nodesModified.get(rootId)
+                  .asInstanceOf[java.util.LinkedHashMap[String, AnyRef]]
+                  .get(HierarchyConstants.METADATA).asInstanceOf[java.util.LinkedHashMap[String, AnyRef]]
+                  .get(HierarchyConstants.EVAL).asInstanceOf[String]
                 if (StringUtils.isNotEmpty(mode) && !mode.equals(updMode))
                     throw new ClientException(ErrorCodes.ERR_BAD_REQUEST.name(), "QuestionSet eval status cannot be modified")
                 mode = updMode

@@ -650,15 +650,12 @@
         "type": "object"
       }
     },
-    "eval": {
-      "type": "object",
-      "properties": {
-        "mode": {
-          "type": "string",
-          "enum": ["server","client"]
-        },
-        "additionalProperties": false
-      }
+    "evalMode": {
+      "type": "string",
+      "enum": [
+        "server",
+        "client"
+      ]
     },
     "origin": {
       "type": "string"
