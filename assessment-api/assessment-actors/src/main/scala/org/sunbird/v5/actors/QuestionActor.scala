@@ -20,9 +20,6 @@ import javax.inject.Inject
 import scala.collection.JavaConverters
 import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
-import scala.collection.JavaConverters._
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits.global
 
 class QuestionActor @Inject()(implicit oec: OntologyEngineContext) extends BaseActor {
 

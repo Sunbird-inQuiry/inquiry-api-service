@@ -41,6 +41,8 @@ POST      /questionset/v4/reject/:identifier         controllers.v4.QuestionSetC
 POST      /questionset/v4/import                     controllers.v4.QuestionSetController.importQuestionSet()
 PATCH     /questionset/v4/system/update/:identifier  controllers.v4.QuestionSetController.systemUpdate(identifier:String)
 POST      /questionset/v4/copy/:identifier           controllers.v4.QuestionSetController.copy(identifier:String, mode:Option[String], type:String?="deep")
+PATCH     /questionset/v4/comment/update             controllers.v4.QuestionSetController.updateComment
+GET       /questionset/v4/comment/read/:identifier   controllers.v4.QuestionSetController.readComment(identifier:String)
 
 
 # Question V5 API's
@@ -73,9 +75,14 @@ POST      /questionset/v5/reject/:identifier         controllers.v5.QuestionSetC
 POST      /questionset/v5/import                     controllers.v5.QuestionSetController.importQuestionSet()
 PATCH     /questionset/v5/system/update/:identifier  controllers.v5.QuestionSetController.systemUpdate(identifier:String)
 POST      /questionset/v5/copy/:identifier           controllers.v5.QuestionSetController.copy(identifier:String, mode:Option[String], type:String?="deep")
+
 POST      /questionset/v5/hierarchy/:identifier      controllers.v5.QuestionSetController.getHierarchyRead(identifier:String, mode:Option[String])
 POST      /question/v5/editor/list                   controllers.v5.QuestionController.editorList(fields:Option[String])
 GET       /question/v5/editor/read/:identifier       controllers.v5.QuestionController.editorRead(identifier:String, mode:Option[String], fields:Option[String])
 
 # QuestionValidate API's
 POST    /questionset/v5/assestment/validate     	 controllers.v5.QuestionSetAssessController.assessment
+
+PATCH     /questionset/v5/comment/update             controllers.v5.QuestionSetController.updateComment
+GET       /questionset/v5/comment/read/:identifier   controllers.v5.QuestionSetController.readComment(identifier:String)
+

@@ -31,7 +31,7 @@
         <dependency>
             <groupId>org.scalatest</groupId>
             <artifactId>scalatest_${scala.maj.version}</artifactId>
-            <version>3.1.2</version>
+            <version>3.2.16</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -83,7 +83,7 @@
             <plugin>
                 <groupId>net.alchim31.maven</groupId>
                 <artifactId>scala-maven-plugin</artifactId>
-                <version>4.4.0</version>
+                <version>3.2.2</version>
                 <configuration>
                     <scalaVersion>${scala.version}</scalaVersion>
                     <checkMultipleScalaVersions>false</checkMultipleScalaVersions>
