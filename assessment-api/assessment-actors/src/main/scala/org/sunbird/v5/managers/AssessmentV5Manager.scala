@@ -562,6 +562,7 @@ object AssessmentV5Manager {
     val editorStateMap = answerMaps._2
     val maxScoreMap = answerMaps._3
     log.info("printing maxScoreMap: {}", maxScoreMap)
+    log.info("printing editorStateMap: {}", editorStateMap)
     assessments.foreach { k =>
       getListMap(k, AssessmentConstants.EVENTS).toList.foreach { event =>
         val edata = getMap(event, AssessmentConstants.EDATA)
@@ -640,6 +641,7 @@ object AssessmentV5Manager {
   private case class HTTPResponse(status: Int, body: String) extends Serializable
 
   private def populateSingleCardinality(res: util.Map[String, AnyRef], edata: util.Map[String, AnyRef], maxScore: Integer): Unit = {
+    log.info("populateSingleCardinality: {}", res)
     val correctValue = getMap(res, AssessmentConstants.CORRECT_RESPONSE).getOrDefault(AssessmentConstants.VALUE, new util.ArrayList[Integer]).toString
     val usrResponse = getListMap(edata, AssessmentConstants.RESVALUES).get(0).getOrDefault(AssessmentConstants.VALUE, "").toString
     StringUtils.equals(usrResponse, correctValue) match {
@@ -655,6 +657,7 @@ object AssessmentV5Manager {
   }
 
   private def populateMultiCardinality(res: util.Map[String, AnyRef], edata: util.Map[String, AnyRef], maxScore: Integer) = {
+    log.info("populateMultiCardinality: {}", res)
     val correctValue = getMap(res, AssessmentConstants.CORRECT_RESPONSE).getOrDefault(AssessmentConstants.VALUE, new util.ArrayList[Integer]).asInstanceOf[util.ArrayList[Integer]].flatMap(k => List(k)).sorted
     val usrResponse = edata.getOrDefault(AssessmentConstants.RESVALUES, new util.ArrayList[util.ArrayList[util.Map[String, AnyRef]]]())
       .asInstanceOf[util.ArrayList[util.ArrayList[util.Map[String, AnyRef]]]]
