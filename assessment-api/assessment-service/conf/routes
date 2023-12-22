@@ -78,4 +78,4 @@ POST      /question/v5/editor/list                   controllers.v5.QuestionCont
 GET       /question/v5/editor/read/:identifier       controllers.v5.QuestionController.editorRead(identifier:String, mode:Option[String], fields:Option[String])
 
 # QuestionValidate API's
-POST    /questionset/v5/assestment/validate     	 controllers.v5.QuestionSetAssessController.assessment
+POST    /questionset/v5/assestment/validate     	 controllers.v5.QuestionSetController.assessment
