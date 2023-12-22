@@ -17,7 +17,7 @@ import org.sunbird.graph.schema.{DefinitionNode, ObjectCategoryDefinition}
 import org.sunbird.graph.utils.NodeUtil
 import org.sunbird.managers.HierarchyManager.hierarchyPrefix
 import org.sunbird.managers.{CopyManager, HierarchyManager, UpdateHierarchyManager}
-import org.sunbird.utils.{AssessmentErrorCodes, RequestUtil}
+import org.sunbird.utils.{AssessmentConstants, AssessmentErrorCodes, RequestUtil}
 import org.sunbird.v5.managers.AssessmentV5Manager
 
 import scala.collection.JavaConverters
@@ -46,6 +46,7 @@ class QuestionSetActor @Inject()(implicit oec: OntologyEngineContext) extends Ba
     case "importQuestionSet" => importQuestionSet(request)
     case "systemUpdateQuestionSet" => systemUpdate(request)
     case "copyQuestionSet" => copy(request)
+    case "assessQuestionSet" => assessment(request)
     case _ => ERROR(request.getOperation)
   }
 
@@ -238,5 +239,12 @@ class QuestionSetActor @Inject()(implicit oec: OntologyEngineContext) extends Ba
     CopyManager.copy(request)
   }
 
+  private def assessment(req: Request): Future[Response] = {
+    val assessments = req.getRequest.getOrDefault(AssessmentConstants.ASSESSMENTS, new util.ArrayList[util.Map[String, AnyRef]]).asInstanceOf[util.List[util.Map[String, AnyRef]]]
+    val quesDoIds = AssessmentV5Manager.validateAssessRequest(req)
+    val list: Response = AssessmentV5Manager.questionList(quesDoIds)
+    AssessmentV5Manager.calculateScore(list, assessments)
+    Future(ResponseHandler.OK.put(AssessmentConstants.QUESTIONS, req.getRequest))
+  }
 }
 

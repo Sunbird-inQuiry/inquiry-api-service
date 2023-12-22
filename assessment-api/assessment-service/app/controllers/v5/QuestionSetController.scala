@@ -187,4 +187,12 @@ class QuestionSetController @Inject()(@Named(ActorNames.QUESTION_SET_V5_ACTOR) q
     setRequestContext(readRequest, defaultVersion, objectType, schemaName)
     getResult(ApiId.GET_HIERARCHY, questionSetActor, readRequest)
   }
+
+
+  def assessment() = Action.async { implicit request =>
+    val headers = commonHeaders()
+    val body = requestBody()
+    val questionSetAssessRequest = getRequest(body, headers, QuestionSetOperations.assessQuestionSet.toString)
+    getResult(ApiId.ASSESS_QUESTION_SET, questionSetActor, questionSetAssessRequest)
+  }
 }
