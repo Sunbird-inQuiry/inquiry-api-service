@@ -213,4 +213,10 @@ class QuestionSetController @Inject()(@Named(ActorNames.QUESTION_SET_V5_ACTOR) q
       getResult(ApiId.READ_COMMENT_QUESTION_SET, questionSetActor, questionSetRequest)
 
     }
+    def assessment() = Action.async { implicit request =>
+      val headers = commonHeaders()
+      val body = requestBody()
+      val questionSetAssessRequest = getRequest(body, headers, QuestionSetOperations.assessQuestionSet.toString)
+      getResult(ApiId.ASSESS_QUESTION_SET, questionSetActor, questionSetAssessRequest)
+    }
 }
