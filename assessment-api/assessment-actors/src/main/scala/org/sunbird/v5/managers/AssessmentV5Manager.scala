@@ -563,6 +563,7 @@ object AssessmentV5Manager {
     val maxScoreMap = answerMaps._3
     log.info("printing maxScoreMap: {}", maxScoreMap)
     log.info("printing editorStateMap: {}", editorStateMap)
+    log.info("printing assessments: {}", assessments)
     //log.info("printing assessments: {}", assessments.get(0).getOrDefault("totalMaxScoreInput",0).asInstanceOf[Integer])
     assessments.get(0).get("totalMaxScoreInput") match {
       case Some(score: Integer) => log.info("printing assessments: {}", score)
