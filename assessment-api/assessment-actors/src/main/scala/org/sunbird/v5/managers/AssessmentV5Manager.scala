@@ -563,7 +563,11 @@ object AssessmentV5Manager {
     val maxScoreMap = answerMaps._3
     log.info("printing maxScoreMap: {}", maxScoreMap)
     log.info("printing editorStateMap: {}", editorStateMap)
-    log.info("printing assessments: {}", assessments.get(0).getOrDefault("totalMaxScoreInput",0).asInstanceOf[Integer])
+    //log.info("printing assessments: {}", assessments.get(0).getOrDefault("totalMaxScoreInput",0).asInstanceOf[Integer])
+    assessments.get(0).get("totalMaxScoreInput") match {
+      case Some(score: Integer) => log.info("printing assessments: {}", score)
+      case _ => log.warn("Unable to retrieve totalMaxScoreInput or it is not an Integer")
+    }
     assessments.foreach { k =>
       getListMap(k, AssessmentConstants.EVENTS).toList.foreach { event =>
         val edata = getMap(event, AssessmentConstants.EDATA)
