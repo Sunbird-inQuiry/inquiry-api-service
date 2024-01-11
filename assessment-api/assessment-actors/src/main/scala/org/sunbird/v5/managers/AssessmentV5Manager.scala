@@ -96,7 +96,7 @@ object AssessmentV5Manager {
     DataNode.read(request).map(node => {
       val serverEvaluable = node.getMetadata.get(AssessmentConstants.EVAL)
       val data = serverEvaluable
-      if (data  != null && data == AssessmentConstants.SERVER && !StringUtils.equals(request.getOrDefault("isEditor", "").asInstanceOf[String], "true")) {
+      if (data != null && data == AssessmentConstants.SERVER && !StringUtils.equals(request.getOrDefault("isEditor", "").asInstanceOf[String], "true")) {
         val hideEditorResponse = hideEditorStateAns(node)
         if (StringUtils.isNotEmpty(hideEditorResponse))
           node.getMetadata.put(AssessmentConstants.EDITOR_STATE, hideEditorResponse)
@@ -308,7 +308,7 @@ object AssessmentV5Manager {
 
   def processTimeLimits(data: util.Map[String, AnyRef]): Unit = {
     if (data.containsKey("timeLimits")) {
-      val timeLimits:util.Map[String, AnyRef] = if(data.get("timeLimits").isInstanceOf[util.Map[String, AnyRef]]) data.getOrDefault("timeLimits", Map().asJava).asInstanceOf[util.Map[String, AnyRef]] else JsonUtils.deserialize(data.get("timeLimits").asInstanceOf[String], classOf[java.util.Map[String, AnyRef]])
+      val timeLimits: util.Map[String, AnyRef] = if (data.get("timeLimits").isInstanceOf[util.Map[String, AnyRef]]) data.getOrDefault("timeLimits", Map().asJava).asInstanceOf[util.Map[String, AnyRef]] else JsonUtils.deserialize(data.get("timeLimits").asInstanceOf[String], classOf[java.util.Map[String, AnyRef]])
       val maxTime: Integer = timeLimits.getOrElse("maxTime", "0").asInstanceOf[String].toInt
       val updatedData: util.Map[String, AnyRef] = Map("questionSet" -> Map("max" -> maxTime, "min" -> 0.asInstanceOf[AnyRef]).asJava).asJava.asInstanceOf[util.Map[String, AnyRef]]
       data.put("timeLimits", updatedData)
@@ -368,7 +368,7 @@ object AssessmentV5Manager {
     if (StringUtils.equalsIgnoreCase("Subjective Question", data.getOrDefault("primaryCategory", "").toString)) {
       data.remove("responseDeclaration")
       data.remove("interactions")
-      if(data.containsKey("maxScore") && null != data.get("maxScore")) {
+      if (data.containsKey("maxScore") && null != data.get("maxScore")) {
         data.put("outcomeDeclaration", Map[String, AnyRef]("cardinality" -> "single", "type" -> "integer", "defaultValue" -> data.get("maxScore")).asJava)
       }
     } else {
@@ -538,14 +538,6 @@ object AssessmentV5Manager {
   }
 
   def calculateScore(privateList: Response, assessments: util.List[util.Map[String, AnyRef]]): Unit = {
-    //    val answerMaps: (Map[String, AnyRef], Map[String, AnyRef]) = getListMap(privateList.getResult, AssessmentConstants.QUESTIONS)
-    //      .map { que =>
-    //        ((que.get(AssessmentConstants.IDENTIFIER).toString -> que.get(AssessmentConstants.RESPONSE_DECLARATION)),
-    //          (que.get(AssessmentConstants.IDENTIFIER).toString -> que.get(AssessmentConstants.EDITOR_STATE)))
-    //        )
-    //      }.unzip match {
-    //      case (map1, map2) => (map1.toMap, map2.toMap)
-    //    }
     val answerMaps: (Map[String, AnyRef], Map[String, AnyRef], Map[String, AnyRef]) = {
       val listOfMaps = getListMap(privateList.getResult, AssessmentConstants.QUESTIONS)
         .map { que =>
@@ -561,12 +553,13 @@ object AssessmentV5Manager {
     val answerMap = answerMaps._1
     val editorStateMap = answerMaps._2
     val maxScoreMap = answerMaps._3
+    log.info("printing answerMap:{}", answerMap)
     log.info("printing maxScoreMap: {}", maxScoreMap)
     log.info("printing editorStateMap: {}", editorStateMap)
     log.info("printing assessments: {}", assessments)
     //log.info("printing assessments: {}", assessments.get(0).getOrDefault("totalMaxScoreInput",0).asInstanceOf[Integer])
     assessments.get(0).get("totalMaxScoreInput") match {
-      case Some(score: Integer) => log.info("printing assessments: {}", score)
+      case Some(score: Integer) => log.info("printing score: {}", score)
       case _ => log.warn("Unable to retrieve totalMaxScoreInput or it is not an Integer")
     }
     assessments.foreach { k =>
@@ -581,7 +574,8 @@ object AssessmentV5Manager {
         //  val maxScore = res.getOrDefault(AssessmentConstants.MAX_SCORE, 0.asInstanceOf[Integer]).asInstanceOf[Integer]
         val maxScoreOption = maxScoreMap.get(identifier)
         val maxScore = maxScoreOption.getOrElse(0).asInstanceOf[Integer]
-        log.info(s"printing maxScore: $maxScore")
+        log.info("printing cardinaltiy: {}", cardinality)
+        log.info("printing maxScore:{}",maxScore)
         cardinality match {
           case AssessmentConstants.MULTIPLE => populateMultiCardinality(res, edata, maxScore)
           case _ => populateSingleCardinality(res, edata, maxScore)
@@ -591,9 +585,10 @@ object AssessmentV5Manager {
     }
   }
 
-  private def getListMap(arg: util.Map[String, AnyRef], param: String) = {
-    arg.getOrDefault(param, new util.ArrayList[util.Map[String, AnyRef]]()).asInstanceOf[util.ArrayList[util.Map[String, AnyRef]]]
-  }
+    private def getListMap(arg: util.Map[String, AnyRef], param: String) = {
+      arg.getOrDefault(param, new util.ArrayList[util.Map[String, AnyRef]]()).asInstanceOf[util.ArrayList[util.Map[String, AnyRef]]]
+    }
+
 
   private def getMap(arg: util.Map[String, AnyRef], param: String) = {
     arg.getOrDefault(param, new util.HashMap[String, AnyRef]()).asInstanceOf[util.Map[String, AnyRef]]
@@ -649,7 +644,12 @@ object AssessmentV5Manager {
   private def populateSingleCardinality(res: util.Map[String, AnyRef], edata: util.Map[String, AnyRef], maxScore: Integer): Unit = {
     log.info("populateSingleCardinality: {}", res)
     val correctValue = getMap(res, AssessmentConstants.CORRECT_RESPONSE).getOrDefault(AssessmentConstants.VALUE, new util.ArrayList[Integer]).toString
-    val usrResponse = getListMap(edata, AssessmentConstants.RESVALUES).get(0).getOrDefault(AssessmentConstants.VALUE, "").toString
+    val item = getMap(edata, AssessmentConstants.ITEM)
+    var usrResponse = ""
+    if (item.get(AssessmentConstants.RESVALUES) != null) {
+      usrResponse = getListMap(edata, AssessmentConstants.RESVALUES).get(0).getOrDefault(AssessmentConstants.VALUE, "").toString
+    }
+    log.info("printing usrResponse: {}", usrResponse)
     StringUtils.equals(usrResponse, correctValue) match {
       case true => {
         edata.put(AssessmentConstants.SCORE, maxScore)
