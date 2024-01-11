@@ -644,9 +644,9 @@ object AssessmentV5Manager {
   private def populateSingleCardinality(res: util.Map[String, AnyRef], edata: util.Map[String, AnyRef], maxScore: Integer): Unit = {
     log.info("populateSingleCardinality: {}", res)
     val correctValue = getMap(res, AssessmentConstants.CORRECT_RESPONSE).getOrDefault(AssessmentConstants.VALUE, new util.ArrayList[Integer]).toString
-    val item = getMap(edata, AssessmentConstants.ITEM)
+    val resp = edata.get(AssessmentConstants.RESVALUES)
     var usrResponse = ""
-    if (item.get(AssessmentConstants.RESVALUES) != null) {
+    if (resp.toString != "[]") {
       usrResponse = getListMap(edata, AssessmentConstants.RESVALUES).get(0).getOrDefault(AssessmentConstants.VALUE, "").toString
     }
     log.info("printing usrResponse: {}", usrResponse)
