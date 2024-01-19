@@ -435,6 +435,7 @@ object AssessmentV5Manager {
         val ans = getAnswer(data)
         if (StringUtils.isNotBlank(ans))
           data.put("answer", ans)
+        data.put("compatibilityLevel", 5.asInstanceOf[AnyRef])
         data
       } else data
     } catch {
@@ -460,9 +461,12 @@ object AssessmentV5Manager {
         if (ch.containsKey("version")) ch.remove("version")
         processBloomsLevel(ch)
         processBooleanProps(ch)
+        if(StringUtils.equalsIgnoreCase("application/vnd.sunbird.question", ch.getOrDefault("mimeType", "").asInstanceOf[String]))
+          ch.put("compatibilityLevel", 5.asInstanceOf[AnyRef])
         if (StringUtils.equalsIgnoreCase("application/vnd.sunbird.questionset", ch.getOrDefault("mimeType", "").asInstanceOf[String])) {
           processTimeLimits(ch)
           processInstructions(ch)
+          ch.put("compatibilityLevel", 6.asInstanceOf[AnyRef])
           val nestedChildren = ch.getOrDefault("children", new util.ArrayList[java.util.Map[String, AnyRef]]).asInstanceOf[util.List[java.util.Map[String, AnyRef]]]
           tranformChildren(nestedChildren)
         }
@@ -479,6 +483,7 @@ object AssessmentV5Manager {
         processBloomsLevel(data)
         processBooleanProps(data)
         processTimeLimits(data)
+        data.put("compatibilityLevel", 6.asInstanceOf[AnyRef])
         data
       } else data
     } catch {
