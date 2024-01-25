@@ -85,33 +85,21 @@ object AssessmentManager {
 		})
 	}
 
-	def getValidatedNodeForUpdateComment(request: Request, errCode: String)(implicit ec: ExecutionContext, oec: OntologyEngineContext): Future[List[Node]] = {
-		val identifierList = new util.ArrayList[String]()
-		val readReq = new Request(request)
-		if (request.getRequest.getOrDefault("comments", new java.util.ArrayList[java.util.Map[String, Object]]).asInstanceOf[java.util.ArrayList[java.util.Map[String, Object]]].isEmpty)
-			throw new ClientException(errCode, "comments key is missing in the request body.")
-		val comments = request.getRequest.get("comments").asInstanceOf[java.util.ArrayList[java.util.Map[String, Object]]].asScala.toList
-		comments.foreach { comment =>
-			comment.containsKey("identifier") match {
-				case true =>
-					val identifier = comment.get("identifier").asInstanceOf[String]
-					identifierList.add(identifier)
-				case false =>
-					throw new ClientException(errCode, "identifier key is missing in the request body.")
-			}
-			if (!comment.containsKey("comment"))
-				throw new ClientException(errCode, "comment key is missing in the request body.")
-		}
-		readReq.put("identifiers", identifierList)
-		DataNode.list(readReq).flatMap { nodes =>
-			nodes.forEach { node =>
+	def getValidatedNodeForUpdateComment(request: Request, errCode: String)(implicit ec: ExecutionContext, oec: OntologyEngineContext): Future[Node] = {
+		val identifier = request.getContext.get("identifier")
+		val commentValue = request.getRequest.get("reviewComment").toString
+		if (commentValue == null || commentValue.trim.isEmpty){
+			throw new ClientException(errCode, "Comment key is missing or value is empty in the request body.")
+		} else {
+			val readReq = request
+			readReq.put("identifier", identifier)
+			DataNode.read(request).map(node => {
 				if (!StringUtils.equalsIgnoreCase("QuestionSet", node.getObjectType))
 					throw new ClientException(errCode, s"Node with Identifier ${node.getIdentifier} is not a Question Set.")
-				if (!StringUtils.equalsAnyIgnoreCase(node.getMetadata.getOrDefault("status", "").asInstanceOf[String], "Review")) {
+				if (!StringUtils.equalsAnyIgnoreCase(node.getMetadata.getOrDefault("status", "").asInstanceOf[String], "Review"))
 					throw new ClientException(errCode, s"Node with Identifier ${node.getIdentifier} does not have a status Review.")
-				}
-			}
-			Future.successful(nodes.asScala.toList)
+				node
+			})
 		}
 	}
 
@@ -336,7 +324,6 @@ object AssessmentManager {
 		val res = new java.util.ArrayList[java.util.Map[String, AnyRef]] {}
 		DataNode.read(request).map(node => {
 			val metadata = new java.util.HashMap().asInstanceOf[java.util.Map[String, AnyRef]]
-			metadata.put("identifier", node.getIdentifier.replace(".img", ""))
 			metadata.put("comment", node.getMetadata.getOrDefault("rejectComment", ""))
 			res.add(metadata)
 			if (!StringUtils.equalsIgnoreCase("QuestionSet", node.getObjectType))

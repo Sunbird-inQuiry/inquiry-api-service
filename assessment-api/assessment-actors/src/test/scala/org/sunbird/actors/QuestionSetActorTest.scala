@@ -717,57 +717,23 @@ class QuestionSetActorTest extends BaseSpec with MockFactory {
         (graphDB.readExternalProps(_: Request, _: List[String])).expects(*, *).returns(Future(new Response())).anyNumberOfTimes()
         (graphDB.upsertNode(_: String, _: Node, _: Request)).expects(*, qsNode, *).returns(Future(CopySpec.getUpsertNode())).anyNumberOfTimes()
         val request = getQuestionSetRequest()
-        val commentList = new java.util.ArrayList[java.util.Map[String, Object]] {}
-        commentList.add(mapAsJavaMap(Map(
-            "identifier" -> "do_9876",
-            "comment" -> "Comments made by the reviewer 1"
-        )))
-        request.getRequest.put("comments", commentList)
+        request.getRequest.put("reviewComment", "Comments made by the reviewer-1")
         request.getContext.put("identifier", "do_9876")
         request.setOperation("updateCommentQuestionSet")
         val response = callActor(request, Props(new QuestionSetActor()))
         response.getParams.getStatus shouldBe "successful"
     }
 
-    it should "return error response for 'updateCommentQuestionSet' when comments key is missing in the request body" in {
+    it should "return error response for 'updateCommentQuestionSet' when comments key is missing or empty in the request body" in {
         implicit val oec: OntologyEngineContext = mock[OntologyEngineContext]
         val request = getQuestionSetRequest()
         //Not passing comments key
+        request.getRequest.put("reviewComment", " ")
+        request.getContext.put("identifier", "do_9876")
         request.setOperation("updateCommentQuestionSet")
         val response = callActor(request, Props(new QuestionSetActor()))
-        response.getParams.getErrmsg shouldBe "comments key is missing in the request body."
+        response.getParams.getErrmsg shouldBe "Comment key is missing or value is empty in the request body."
     }
-
-    it should "return error response for 'updateCommentQuestionSet' when identifier key is missing in the request body" in {
-        implicit val oec: OntologyEngineContext = mock[OntologyEngineContext]
-        val request = getQuestionSetRequest()
-        val commentList = new java.util.ArrayList[java.util.Map[String, Object]] {}
-        commentList.add(mapAsJavaMap(Map(
-            //Not passing identifier key
-            "comment" -> "Comments made by the reviewer 1"
-        )))
-        request.getContext.put("identifier", "do_1234")
-        request.put("comments", commentList)
-        request.setOperation("updateCommentQuestionSet")
-        val response = callActor(request, Props(new QuestionSetActor()))
-        response.getParams.getErrmsg shouldBe "identifier key is missing in the request body."
-    }
-
-    it should "return error response for 'updateCommentQuestionSet' when comment key is missing in the request body" in {
-        implicit val oec: OntologyEngineContext = mock[OntologyEngineContext]
-        val request = getQuestionSetRequest()
-        val commentList = new java.util.ArrayList[java.util.Map[String, Object]] {}
-        commentList.add(mapAsJavaMap(Map(
-            "identifier" -> "do_1234"
-            //Not passing comment key
-        )))
-        request.getContext.put("identifier", "do_1234")
-        request.put("comments", commentList)
-        request.setOperation("updateCommentQuestionSet")
-        val response = callActor(request, Props(new QuestionSetActor()))
-        response.getParams.getErrmsg shouldBe "comment key is missing in the request body."
-    }
-
 
     it should "return error response for 'updateCommentQuestionSet' when status of the review is in Draft state" in {
         implicit val oec: OntologyEngineContext = mock[OntologyEngineContext]
@@ -778,16 +744,11 @@ class QuestionSetActorTest extends BaseSpec with MockFactory {
         qsNode.getMetadata.putAll(mapAsJavaMap(Map(
             "status" -> "Draft"
         )))
-        (graphDB.getNodeByUniqueId(_: String, _: String, _: Boolean, _: Request)).expects("domain", "do_1234", false, *).returns(Future(CopySpec.getNewRootNode())).anyNumberOfTimes()
-        (graphDB.getNodeByUniqueIds(_: String, _: SearchCriteria)).expects(*, *).returns(Future(util.Arrays.asList(qsNode))).anyNumberOfTimes()
+        (graphDB.getNodeByUniqueId(_: String, _: String, _: Boolean, _: Request)).expects(*, *, *, *).returns(Future(qsNode)).atLeastOnce()
+        (graphDB.upsertNode(_: String, _: Node, _: Request)).expects(*, qsNode, *).returns(Future(CopySpec.getUpsertNode())).anyNumberOfTimes()
         val request = getQuestionSetRequest()
-        val commentList = new java.util.ArrayList[java.util.Map[String, Object]] {}
-        commentList.add(mapAsJavaMap(Map(
-            "identifier" -> "do_1234",
-            "comment" -> "Comments made by the reviewer 1"
-        )))
         request.getContext.put("identifier", "do_1234")
-        request.put("comments", commentList)
+        request.put("reviewComment", "Comments made by the reviewer-1")
         request.setOperation("updateCommentQuestionSet")
         val response = callActor(request, Props(new QuestionSetActor()))
         response.getParams.getErrmsg shouldBe "Node with Identifier do_1234 does not have a status Review."
@@ -799,44 +760,14 @@ class QuestionSetActorTest extends BaseSpec with MockFactory {
         (oec.graphService _).expects().returns(graphDB).anyNumberOfTimes()
         val qsNode = getNode("Question", None)
         qsNode.setIdentifier("do_1234")
-        (graphDB.getNodeByUniqueId(_: String, _: String, _: Boolean, _: Request)).expects("domain", "do_1234", false, *).returns(Future(CopySpec.getNewRootNode())).anyNumberOfTimes()
-        (graphDB.getNodeByUniqueIds(_: String, _: SearchCriteria)).expects(*, *).returns(Future(util.Arrays.asList(qsNode))).anyNumberOfTimes()
+        (graphDB.getNodeByUniqueId(_: String, _: String, _: Boolean, _: Request)).expects(*, *, *, *).returns(Future(qsNode)).atLeastOnce()
+        (graphDB.upsertNode(_: String, _: Node, _: Request)).expects(*, qsNode, *).returns(Future(CopySpec.getUpsertNode())).anyNumberOfTimes()
         val request = getQuestionSetRequest()
-        val commentList = new java.util.ArrayList[java.util.Map[String, Object]] {}
-        commentList.add(mapAsJavaMap(Map(
-            "identifier" -> "do_1234",
-            "comment" -> "Comments made by the reviewer 1"
-        )))
         request.getContext.put("identifier", "do_1234")
-        request.put("comments", commentList)
+        request.put("reviewComment", "Comments made by the reviewer-1")
         request.setOperation("updateCommentQuestionSet")
         val response = callActor(request, Props(new QuestionSetActor()))
         response.getParams.getErrmsg shouldBe "Node with Identifier do_1234 is not a Question Set."
-    }
-
-    it should "return error response for 'updateCommentQuestionSet' when Request Identifier is not matching with Node Identifier" in {
-        implicit val oec: OntologyEngineContext = mock[OntologyEngineContext]
-        val graphDB = mock[GraphService]
-        (oec.graphService _).expects().returns(graphDB).anyNumberOfTimes()
-        val qsNode = getNode("QuestionSet", None)
-        qsNode.setIdentifier("do_1234")
-        qsNode.getMetadata.putAll(mapAsJavaMap(Map(
-            "rejectComment" -> "reviewer wants the question_set in Upper case",
-            "status" -> "Review"
-        )))
-        (graphDB.getNodeByUniqueId(_: String, _: String, _: Boolean, _: Request)).expects("domain", "do_1234", false, *).returns(Future(CopySpec.getNewRootNode())).anyNumberOfTimes()
-        (graphDB.getNodeByUniqueIds(_: String, _: SearchCriteria)).expects(*, *).returns(Future(util.Arrays.asList(qsNode))).anyNumberOfTimes()
-        val request = getQuestionSetRequest()
-        val commentList = new java.util.ArrayList[java.util.Map[String, Object]] {}
-        commentList.add(mapAsJavaMap(Map(
-            "identifier" -> "do_9876",
-            "comment" -> "Comments made by the reviewer 1"
-        )))
-        request.getContext.put("identifier", "do_1234")
-        request.put("comments", commentList)
-        request.setOperation("updateCommentQuestionSet")
-        val response = callActor(request, Props(new QuestionSetActor()))
-        response.getParams.getErrmsg shouldBe "Request Identifier is not matching with Node Identifier."
     }
 
     it should "return success response for 'readCommentQuestionSet'" in {
