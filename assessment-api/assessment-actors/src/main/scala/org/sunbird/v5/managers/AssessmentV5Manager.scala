@@ -101,11 +101,12 @@ object AssessmentV5Manager {
     } else {
       val readReq = request
       readReq.put("identifier", identifier)
+      readReq.put("mode", "edit")
       DataNode.read(request).map(node => {
         if (!StringUtils.equalsIgnoreCase("QuestionSet", node.getObjectType))
           throw new ClientException(errCode, s"Node with Identifier ${node.getIdentifier} is not a Question Set.")
         if (!StringUtils.equalsAnyIgnoreCase(node.getMetadata.getOrDefault("status", "").asInstanceOf[String], "Review"))
-          throw new ClientException(errCode, s"Node with Identifier ${node.getIdentifier} does not have a status Review.")
+          throw new ClientException(errCode, s"Node with Identifier ${node.getIdentifier.replace(".img", "")} does not have a status Review.")
         node
       })
     }

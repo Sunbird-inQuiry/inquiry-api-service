@@ -171,7 +171,7 @@ class QuestionSetActor @Inject()(implicit oec: OntologyEngineContext) extends Ba
 
 	def updateComment(request: Request): Future[Response] = {
 		val validatedNode = AssessmentManager.getValidatedNodeForUpdateComment(request, "ERR_QUESTION_SET_UPDATE_COMMENT")
-		val commentValue = request.getRequest.get("reviewComment").toString
+		val commentValue = request.getRequest.getOrDefault("reviewComment", "").asInstanceOf[String]
 		validatedNode.flatMap { node =>
 			val updateReq = new Request(request)
 			updateReq.getRequest.put("rejectComment", commentValue)

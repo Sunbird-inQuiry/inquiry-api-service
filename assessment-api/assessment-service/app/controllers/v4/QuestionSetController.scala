@@ -175,7 +175,7 @@ class QuestionSetController @Inject()(@Named(ActorNames.QUESTION_SET_ACTOR) ques
 		val headers = commonHeaders()
 		val body = requestBody()
 		val commentList = body.getOrElse("comments", new java.util.ArrayList[java.util.Map[String, Object]]()).asInstanceOf[java.util.ArrayList[java.util.Map[String, Object]]].asScala.toList
-		val filteredComment: Object = Option(commentList).flatMap(_.headOption.flatMap(_.asScala.toMap.get("comment").map(_.toString))).getOrElse("").asInstanceOf[Object]
+		val filteredComment: String = commentList.headOption.flatMap(comment => Option(comment.asScala.toMap.getOrElse("comment", "").asInstanceOf[String])).getOrElse("")
 		val questionSet = new java.util.HashMap().asInstanceOf[java.util.Map[String, Object]]
 		questionSet.putAll(headers)
 		questionSet.put("reviewComment", filteredComment)
