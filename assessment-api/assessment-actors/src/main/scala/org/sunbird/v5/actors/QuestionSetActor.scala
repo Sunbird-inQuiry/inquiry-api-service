@@ -242,33 +242,17 @@ class QuestionSetActor @Inject()(implicit oec: OntologyEngineContext) extends Ba
   }
 
   def updateComment(request: Request): Future[Response] = {
-    val validatedNodesFuture = AssessmentV5Manager.getValidatedNodeForUpdateComment(request, "ERR_QUESTION_SET_UPDATE_COMMENT")
-    val comments = request.getRequest.get("comments").asInstanceOf[java.util.ArrayList[java.util.Map[String, Object]]].asScala.toList
-    validatedNodesFuture.flatMap { nodes =>
-      val updateResults = Future.sequence(nodes.map { node =>
-        comments.find(comment => comment.get("identifier") == node.getIdentifier) match {
-          case Some(commentMap) =>
-            val updateReq = new Request(request)
-            updateReq.getRequest.clear()
-            updateReq.getRequest.put("rejectComment", commentMap.get("comment"))
-            updateReq.getContext.put("identifier", node.getIdentifier)
-            DataNode.update(updateReq).map { updatedNode =>
-              Some(updatedNode.getIdentifier)
-            }
-          case None =>
-            throw new ClientException("IDENTIFIER_MISMATCH", "Request Identifier is not matching with Node Identifier.")
-        }
-      })
-      updateResults.map { updatedNodeIdentifiers =>
-        val identifiersList = updatedNodeIdentifiers.flatten
-        val identifiersArrayList = new util.ArrayList[String](identifiersList.asJava)
-        val responseMap = Map("identifiers" -> identifiersArrayList.asInstanceOf[AnyRef])
+    val validatedNode = AssessmentV5Manager.getValidatedNodeForUpdateComment(request, "ERR_QUESTION_SET_UPDATE_COMMENT")
+    val commentValue = request.getRequest.getOrDefault("reviewComment", "").asInstanceOf[String]
+    validatedNode.flatMap { node =>
+      val updateReq = new Request(request)
+      updateReq.getRequest.put("rejectComment", commentValue)
+      updateReq.getContext.put("identifier", node.getIdentifier)
+      DataNode.update(updateReq).map { _ =>
+        val responseMap = Map("identifier" -> node.getIdentifier.replace(".img", "").asInstanceOf[AnyRef])
         val response = ResponseHandler.OK
         response.putAll(responseMap.asJava)
         response
-      }.recover {
-        case ex =>
-          throw ex
       }
     }
   }

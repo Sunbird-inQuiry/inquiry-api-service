@@ -41,7 +41,7 @@ POST      /questionset/v4/reject/:identifier         controllers.v4.QuestionSetC
 POST      /questionset/v4/import                     controllers.v4.QuestionSetController.importQuestionSet()
 PATCH     /questionset/v4/system/update/:identifier  controllers.v4.QuestionSetController.systemUpdate(identifier:String)
 POST      /questionset/v4/copy/:identifier           controllers.v4.QuestionSetController.copy(identifier:String, mode:Option[String], type:String?="deep")
-PATCH     /questionset/v4/comment/update             controllers.v4.QuestionSetController.updateComment
+PATCH     /questionset/v4/comment/update/:identifier controllers.v4.QuestionSetController.updateComment(identifier:String)
 GET       /questionset/v4/comment/read/:identifier   controllers.v4.QuestionSetController.readComment(identifier:String)
 
 
@@ -75,5 +75,5 @@ POST      /questionset/v5/reject/:identifier         controllers.v5.QuestionSetC
 POST      /questionset/v5/import                     controllers.v5.QuestionSetController.importQuestionSet()
 PATCH     /questionset/v5/system/update/:identifier  controllers.v5.QuestionSetController.systemUpdate(identifier:String)
 POST      /questionset/v5/copy/:identifier           controllers.v5.QuestionSetController.copy(identifier:String, mode:Option[String], type:String?="deep")
-PATCH     /questionset/v5/comment/update             controllers.v5.QuestionSetController.updateComment
+PATCH     /questionset/v5/comment/update/:identifier controllers.v5.QuestionSetController.updateComment(identifier:String)
 GET       /questionset/v5/comment/read/:identifier   controllers.v5.QuestionSetController.readComment(identifier:String)
