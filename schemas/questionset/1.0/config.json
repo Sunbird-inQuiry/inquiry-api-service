@@ -49,19 +49,22 @@
   "restrictProps": {
     "create": [
       "children",
-      "status"
+      "status",
+      "rejectComment"
     ],
     "update": [
       "children",
       "visibility",
       "code",
       "status",
-      "mimeType"
+      "mimeType",
+      "rejectComment"
     ],
     "updateHierarchy": [
       "variants",
       "config",
-      "reservedDialcodes"
+      "reservedDialcodes",
+      "rejectComment"
     ]
   },
   "external": {

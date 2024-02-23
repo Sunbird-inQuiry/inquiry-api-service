@@ -2,10 +2,12 @@ package controllers.v4
 
 import akka.actor.{ActorRef, ActorSystem}
 import controllers.BaseController
+
 import javax.inject.{Inject, Named}
 import play.api.mvc.ControllerComponents
 import utils.{ActorNames, ApiId, QuestionSetOperations}
 
+import scala.collection.JavaConversions.mapAsScalaMap
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext
 
@@ -55,7 +57,6 @@ class QuestionSetController @Inject()(@Named(ActorNames.QUESTION_SET_ACTOR) ques
 		questionSetRequest.getContext.put("identifier", identifier)
 		getResult(ApiId.UPDATE_QUESTION_SET, questionSetActor, questionSetRequest)
 	}
-
 	def review(identifier: String) = Action.async { implicit request =>
 		val headers = commonHeaders()
 		val body = requestBody()
@@ -168,5 +169,36 @@ class QuestionSetController @Inject()(@Named(ActorNames.QUESTION_SET_ACTOR) ques
 		val questionSetRequest = getRequest(questionSet, headers, QuestionSetOperations.copyQuestionSet.toString)
 		setRequestContext(questionSetRequest, version, objectType, schemaName)
 		getResult(ApiId.COPY_QUESTION_SET, questionSetActor, questionSetRequest)
+	}
+
+	def updateComment(identifier: String) = Action.async { implicit request =>
+		val headers = commonHeaders()
+		val body = requestBody()
+
+		val commentList = body.getOrDefault("comments", new java.util.ArrayList[java.util.Map[String, Object]] {}).asInstanceOf[java.util.ArrayList[java.util.Map[String, Object]]].asScala.toList
+
+		val filteredComments = commentList.groupBy(_.getOrElse("identifier", "")).values.map(_.last).toList
+		val javaFilteredComments = new java.util.ArrayList[java.util.Map[String, Object]](filteredComments.asJava)
+
+		val questionSet = new java.util.HashMap().asInstanceOf[java.util.Map[String, Object]];
+		questionSet.putAll(headers)
+		questionSet.put("comments", javaFilteredComments)
+
+		val questionSetRequest = getRequest(questionSet, headers, QuestionSetOperations.updateCommentQuestionSet.toString)
+		setRequestContext(questionSetRequest, version, objectType, schemaName)
+		questionSetRequest.getContext.put("identifier", identifier)
+		getResult(ApiId.UPDATE_COMMENT_QUESTION_SET, questionSetActor, questionSetRequest)
+
+
+	}
+
+	def readComment(identifier: String) = Action.async { implicit request =>
+		val headers = commonHeaders()
+		val questionSet = new java.util.HashMap().asInstanceOf[java.util.Map[String, Object]]
+		questionSet.putAll(headers)
+		questionSet.putAll(Map("identifier" -> identifier, "fields" -> "", "mode" -> "read").asJava)
+		val questionSetRequest = getRequest(questionSet, headers, QuestionSetOperations.readCommentQuestionSet.toString)
+		setRequestContext(questionSetRequest, version, objectType, schemaName)
+		getResult(ApiId.READ_COMMENT_QUESTION_SET, questionSetActor, questionSetRequest)
 	}
 }

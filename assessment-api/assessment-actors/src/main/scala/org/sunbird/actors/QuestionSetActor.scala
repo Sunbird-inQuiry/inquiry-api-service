@@ -1,7 +1,6 @@
 package org.sunbird.actors
 
 import java.util
-
 import javax.inject.Inject
 import org.apache.commons.collections4.CollectionUtils
 import org.apache.commons.lang3.StringUtils
@@ -10,13 +9,14 @@ import org.sunbird.actor.core.BaseActor
 import org.sunbird.cache.impl.RedisCache
 import org.sunbird.common.{DateUtils, Platform}
 import org.sunbird.common.dto.{Request, Response, ResponseHandler}
-import org.sunbird.graph.OntologyEngineContext
+import org.sunbird.graph.{OntologyEngineContext, nodes}
 import org.sunbird.graph.nodes.DataNode
 import org.sunbird.graph.dac.model.Node
 import org.sunbird.managers.HierarchyManager.hierarchyPrefix
 import org.sunbird.managers.{AssessmentManager, CopyManager, HierarchyManager, UpdateHierarchyManager}
 import org.sunbird.utils.RequestUtil
 
+import scala.collection.JavaConversions.asScalaBuffer
 import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -42,6 +42,8 @@ class QuestionSetActor @Inject()(implicit oec: OntologyEngineContext) extends Ba
 		case "importQuestionSet" => importQuestionSet(request)
 		case "systemUpdateQuestionSet" => systemUpdate(request)
 		case "copyQuestionSet" => copy(request)
+		case "updateCommentQuestionSet" => updateComment(request)
+		case "readCommentQuestionSet" => AssessmentManager.readComment(request, "comments")
 		case _ => ERROR(request.getOperation)
 	}
 
@@ -161,9 +163,50 @@ class QuestionSetActor @Inject()(implicit oec: OntologyEngineContext) extends Ba
 			DataNode.systemUpdate(request, response,"questionSet", Some(HierarchyManager.getHierarchy))
 		}).map(node => ResponseHandler.OK.put("identifier", identifier).put("status", "success"))
 	}
-
 	def copy(request: Request): Future[Response] ={
 		RequestUtil.restrictProperties(request)
 		CopyManager.copy(request)
 	}
+	def updateComment(request: Request): Future[Response] = {
+		AssessmentManager.getValidatedNodeForUpdateComment(request, "ERR_QUESTION_SET_UPDATE_COMMENT").flatMap(_ => updateInnerComment(request))
+	}
+	def updateInnerComment(request: Request): Future[Response] = {
+		val readReq = new Request(request)
+		val writeReq = new Request(request)
+
+		readReq.getRequest.remove("comments")
+		writeReq.getRequest.remove("comments")
+
+		val comments = request.getRequest.get("comments").asInstanceOf[java.util.ArrayList[java.util.Map[String, Object]]].asScala.toList
+		val futureResults = Future.traverse(comments) { comment =>
+			val identifier = comment.get("identifier").asInstanceOf[String]
+			val rejectComment = comment.get("comment")
+
+			readReq.getRequest.clear()
+			readReq.getRequest.put("rejectComment", rejectComment)
+			readReq.getContext.replace("identifier", identifier)
+
+			RequestUtil.validateRequest(readReq)
+			val identifiers = new util.ArrayList[String](){{
+				add(identifier)
+			}}
+			readReq.put("identifiers", identifiers)
+
+			DataNode.list(readReq).flatMap { response =>
+				writeReq.getRequest.clear()
+				writeReq.getRequest.put("rejectComment", rejectComment)
+				writeReq.getContext.replace("identifier", identifier)
+
+				DataNode.systemUpdate(writeReq, response, "questionSet")
+			}
+		}
+		futureResults.flatMap { nodes =>
+			val responseMap = Map("identifier" -> request.getContext.get("identifier"))
+			val response = ResponseHandler.OK
+			response.putAll(responseMap.asJava)
+			Future.successful(response)
+		}
+	}
+
+
 }
