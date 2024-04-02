@@ -35,11 +35,12 @@ object JwtUtils {
     payloadData.put("iat", System.currentTimeMillis / 1000)
     encodeToBase64Uri(JsonUtil.toJson(payloadData).getBytes)
   }
-
   private def encodeToBase64Uri(data: Array[Byte]): String = {
-    Base64Util.encodeToString(data, 11)
+    Base64.getUrlEncoder.encodeToString(data)
   }
-
+  def decodeFromBase64(data: String): Array[Byte] = {
+    Base64.getDecoder.decode(data)
+  }
   def verifyRS256Token(token: String, keyManager: KeyManager): (Boolean, Map[String, Any])= {
     val tokenElements = token.split("\\.")
     val header = tokenElements(0)
@@ -58,10 +59,10 @@ object JwtUtils {
     else
       (isValid,new util.HashMap[String,Any]())
   }
-
-  def decodeFromBase64(data: String): Array[Byte] = {
-    Base64Util.decode(data, 11)
-  }
+//
+//  def decodeFromBase64(data: String): Array[Byte] = {
+//    Base64Util.decode(data, 11)
+//  }
 
   def payload(encodedPayload: String): Map[String, Any] = {
     val decodedPayload = new String(Base64.getDecoder.decode(encodedPayload), StandardCharsets.UTF_8)
