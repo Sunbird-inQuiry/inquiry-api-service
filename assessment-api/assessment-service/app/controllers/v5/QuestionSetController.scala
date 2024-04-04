@@ -5,6 +5,7 @@ import org.sunbird.common.Platform
 import play.api.mvc.ControllerComponents
 import utils.{ActorNames, ApiId, QuestionSetOperations}
 
+import java.util.UUID
 import javax.inject.{Inject, Named}
 import scala.collection.JavaConverters._
 import scala.collection.convert.ImplicitConversions.`map AsScala`
@@ -70,10 +71,18 @@ class QuestionSetController @Inject()(@Named(ActorNames.QUESTION_SET_V5_ACTOR) q
 
   def publish(identifier: String) = Action.async { implicit request =>
     val headers = commonHeaders()
+    val value = request.headers.get("X-Request-Id")
+    val headerMap = if (value.isDefined && !value.isEmpty) {
+      collection.mutable.HashMap[String, Object]("requestId" -> value.get).asJava
+    } else {
+      collection.mutable.HashMap[String, Object]("requestId" -> UUID.randomUUID().toString).asJava
+    }
     val body = requestBody()
     val questionSet = body.getOrDefault("questionset", new java.util.HashMap()).asInstanceOf[java.util.Map[String, Object]];
     questionSet.putAll(headers)
-    val questionSetRequest = getRequest(questionSet, headers, QuestionSetOperations.publishQuestionSet.toString)
+    headerMap.putAll(headers)
+    println("headerMap ::: " + headerMap)
+    val questionSetRequest = getRequest(questionSet, headerMap, QuestionSetOperations.publishQuestionSet.toString)
     setRequestContext(questionSetRequest, defaultVersion, objectType, schemaName)
     questionSetRequest.getContext.put("identifier", identifier)
     getResult(ApiId.PUBLISH_QUESTION_SET, questionSetActor, questionSetRequest)

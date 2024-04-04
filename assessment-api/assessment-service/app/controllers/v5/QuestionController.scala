@@ -5,6 +5,7 @@ import org.sunbird.common.Platform
 import play.api.mvc.ControllerComponents
 import utils.{ActorNames, ApiId, QuestionOperations}
 
+import java.util.UUID
 import javax.inject.{Inject, Named}
 import scala.concurrent.ExecutionContext
 import scala.collection.JavaConverters._
@@ -69,10 +70,18 @@ class QuestionController @Inject()(@Named(ActorNames.QUESTION_V5_ACTOR) question
 
   def publish(identifier: String) = Action.async { implicit request =>
     val headers = commonHeaders()
+    val value = request.headers.get("X-Request-Id")
+    val headerMap = if (value.isDefined && !value.isEmpty) {
+      collection.mutable.HashMap[String, Object]("requestId" -> value.get).asJava
+    } else {
+      collection.mutable.HashMap[String, Object]("requestId" -> UUID.randomUUID().toString).asJava
+    }
     val body = requestBody()
     val question = body.getOrDefault("question", new java.util.HashMap()).asInstanceOf[java.util.Map[String, Object]];
     question.putAll(headers)
-    val questionRequest = getRequest(question, headers, QuestionOperations.publishQuestion.toString)
+    headerMap.putAll(headers)
+    println("headerMap ::: " + headerMap)
+    val questionRequest = getRequest(question, headerMap, QuestionOperations.publishQuestion.toString)
     setRequestContext(questionRequest, defaultVersion, objectType, schemaName)
     questionRequest.getContext.put("identifier", identifier)
     getResult(ApiId.PUBLISH_QUESTION, questionActor, questionRequest)
