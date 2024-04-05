@@ -1,12 +1,15 @@
 package filters
 
 import akka.util.ByteString
+import org.sunbird.telemetry.logger.TelemetryManager
+
 import javax.inject.Inject
 import org.sunbird.telemetry.util.TelemetryAccessEventUtil
 import play.api.Logging
 import play.api.libs.streams.Accumulator
 import play.api.mvc._
 
+import java.util.UUID
 import scala.concurrent.ExecutionContext
 import scala.collection.JavaConverters._
 
@@ -18,8 +21,12 @@ class AccessLogFilter @Inject() (implicit ec: ExecutionContext) extends Essentia
       def apply(requestHeader: RequestHeader) = {
 
         val startTime = System.currentTimeMillis
-
         val accumulator: Accumulator[ByteString, Result] = nextFilter(requestHeader)
+
+        if (requestHeader.uri.contains("/publish")) {
+          val requestId = requestHeader.headers.get("X-Request-ID").getOrElse(UUID.randomUUID().toString)
+          TelemetryManager.info(s"ENTRY:assessment: Request URL: ${requestHeader.uri} : Request Received For Publish.", Map("requestId" -> requestId).asJava.asInstanceOf[java.util.Map[String, AnyRef]])
+        }
 
         accumulator.map { result =>
           val endTime     = System.currentTimeMillis
@@ -38,8 +45,14 @@ class AccessLogFilter @Inject() (implicit ec: ExecutionContext) extends Essentia
                 "Method" -> requestHeader.method.toString)
             TelemetryAccessEventUtil.writeTelemetryEventLog((otherDetails ++ appHeaders).asInstanceOf[Map[String, AnyRef]].asJava)
           }
+          if (requestHeader.uri.contains("/publish")) {
+            val requestId = requestHeader.headers.get("X-Request-ID").getOrElse(UUID.randomUUID().toString)
+            val params = Map("requestId" -> requestId, "Status" -> result.header.status).asJava.asInstanceOf[java.util.Map[String, AnyRef]]
+            TelemetryManager.info(s"EXIT:assessment: Request URL: ${requestHeader.uri} : Response Provided.", params)
+          }
           result.withHeaders("Request-Time" -> requestTime.toString)
         }
       }
     }
+
   }

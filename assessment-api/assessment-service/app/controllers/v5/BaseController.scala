@@ -70,4 +70,13 @@ abstract class BaseController(protected val cc: ControllerComponents)(implicit e
     request.setObjectType(objectType);
     request.getContext().putAll(contextMap)
   }
+
+  def getRequestHeader(headerkey: String, targetKey: String, defaultValue: String = UUID.randomUUID().toString)(implicit request: Request[AnyContent]): java.util.Map[String, AnyRef] = {
+    val value = request.headers.get(headerkey)
+    if (value.isDefined && !value.isEmpty) {
+      collection.mutable.HashMap[String, Object](targetKey -> value.get).asJava
+    } else {
+      collection.mutable.HashMap[String, Object](targetKey -> defaultValue).asJava
+    }
+  }
 }

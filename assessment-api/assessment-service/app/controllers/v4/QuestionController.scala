@@ -71,10 +71,12 @@ class QuestionController @Inject()(@Named(ActorNames.QUESTION_ACTOR) questionAct
 
 	def publish(identifier: String) = Action.async { implicit request =>
 		val headers = commonHeaders()
+		val headerMap = getRequestHeader("X-Request-Id", "requestId")
 		val body = requestBody()
 		val question = body.getOrDefault("question", new java.util.HashMap()).asInstanceOf[java.util.Map[String, Object]];
 		question.putAll(headers)
-		val questionRequest = getRequest(question, headers, QuestionOperations.publishQuestion.toString)
+		headerMap.putAll(headers)
+		val questionRequest = getRequest(question, headerMap, QuestionOperations.publishQuestion.toString)
 		setRequestContext(questionRequest, version, objectType, schemaName)
 		questionRequest.getContext.put("identifier", identifier)
 		getResult(ApiId.PUBLISH_QUESTION, questionActor, questionRequest)
