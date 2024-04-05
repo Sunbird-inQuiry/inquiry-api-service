@@ -23,34 +23,39 @@ class AccessLogFilter @Inject() (implicit ec: ExecutionContext) extends Essentia
 
         val startTime = System.currentTimeMillis
         val defaultReqId = UUID.randomUUID().toString
-        val accumulator: Accumulator[ByteString, Result] = nextFilter(requestHeader)
 
-        if (requestHeader.uri.contains("/publish")) {
+
+        val newReqHeader = if (requestHeader.uri.contains("/publish")) {
           val requestId = requestHeader.headers.get("X-Request-Id").getOrElse("")
-          if(StringUtils.isEmpty(requestId))
+          val (reqHeader, reqId) = if(StringUtils.isEmpty(requestId)) {
             requestHeader.headers.add(("X-Request-Id" -> defaultReqId))
-          TelemetryManager.info(s"ENTRY:assessment: Request URL: ${requestHeader.uri} : Request Received For Publish.", Map("requestId" -> defaultReqId).asJava.asInstanceOf[java.util.Map[String, AnyRef]])
-        }
+            (requestHeader,defaultReqId)
+          } else (requestHeader, requestId)
+          TelemetryManager.info(s"ENTRY:assessment: Request URL: ${requestHeader.uri} : Request Received For Publish.", Map("requestId" -> reqId).asJava.asInstanceOf[java.util.Map[String, AnyRef]])
+          reqHeader
+        } else requestHeader
+
+        val accumulator: Accumulator[ByteString, Result] = nextFilter(newReqHeader)
 
         accumulator.map { result =>
           val endTime     = System.currentTimeMillis
           val requestTime = endTime - startTime
 
-          val path = requestHeader.uri
+          val path = newReqHeader.uri
           if(!path.contains("/health")){
-            val headers = requestHeader.headers.headers.groupBy(_._1).mapValues(_.map(_._2))
+            val headers = newReqHeader.headers.headers.groupBy(_._1).mapValues(_.map(_._2))
             val appHeaders = headers.filter(header => xHeaderNames.keySet.contains(header._1.toLowerCase))
                 .map(entry => (xHeaderNames.get(entry._1.toLowerCase()).get, entry._2.head))
             val otherDetails = Map[String, Any]("StartTime" -> startTime, "env" -> "assessment",
-                "RemoteAddress" -> requestHeader.remoteAddress,
+                "RemoteAddress" -> newReqHeader.remoteAddress,
                 "ContentLength" -> result.body.contentLength.getOrElse(0),
                 "Status" -> result.header.status, "Protocol" -> "http",
                 "path" -> path,
                 "Method" -> requestHeader.method.toString)
             TelemetryAccessEventUtil.writeTelemetryEventLog((otherDetails ++ appHeaders).asInstanceOf[Map[String, AnyRef]].asJava)
           }
-          if (requestHeader.uri.contains("/publish")) {
-            val requestId = requestHeader.headers.get("X-Request-Id").getOrElse("")
+          if (newReqHeader.uri.contains("/publish")) {
+            val requestId = newReqHeader.headers.get("X-Request-Id").getOrElse("")
             val params = Map("requestId" -> requestId, "Status" -> result.header.status).asJava.asInstanceOf[java.util.Map[String, AnyRef]]
             TelemetryManager.info(s"EXIT:assessment: Request URL: ${requestHeader.uri} : Response Provided.", params)
           }
