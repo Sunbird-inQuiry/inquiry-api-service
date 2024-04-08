@@ -54,7 +54,7 @@ abstract class BaseController(protected val cc: ControllerComponents)(implicit e
           case "api.questionset.publish" => "QuestionSet Publish V2 API"
         }
         val params = Map("requestId" -> request.getContext().getOrDefault("requestId", "").asInstanceOf[String], "Response Code" -> result.getResponseCode.code()).asJava.asInstanceOf[java.util.Map[String, AnyRef]]
-        TelemetryManager.info(s"EXIT:assessment: ${apiName} : Response Provided For Identifier ${request.getContext.getOrDefault("identifier", "").asInstanceOf[String]}.", params)
+        TelemetryManager.info(s"EXIT:assessment: ${apiName} | Response Provided For Identifier ${request.getContext.getOrDefault("identifier", "").asInstanceOf[String]}.", params)
       }
       result.getResponseCode match {
         case ResponseCode.OK => Ok(response).as("application/json")
