@@ -1,14 +1,14 @@
 package filters
 
 import akka.util.ByteString
-import javax.inject.Inject
 import org.sunbird.telemetry.util.TelemetryAccessEventUtil
 import play.api.Logging
 import play.api.libs.streams.Accumulator
 import play.api.mvc._
 
-import scala.concurrent.ExecutionContext
+import javax.inject.Inject
 import scala.collection.JavaConverters._
+import scala.concurrent.ExecutionContext
 
 class AccessLogFilter @Inject() (implicit ec: ExecutionContext) extends EssentialFilter with Logging {
 
@@ -18,7 +18,6 @@ class AccessLogFilter @Inject() (implicit ec: ExecutionContext) extends Essentia
       def apply(requestHeader: RequestHeader) = {
 
         val startTime = System.currentTimeMillis
-
         val accumulator: Accumulator[ByteString, Result] = nextFilter(requestHeader)
 
         accumulator.map { result =>
@@ -42,4 +41,5 @@ class AccessLogFilter @Inject() (implicit ec: ExecutionContext) extends Essentia
         }
       }
     }
+
   }

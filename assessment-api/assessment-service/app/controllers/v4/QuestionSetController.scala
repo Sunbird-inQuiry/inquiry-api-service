@@ -2,6 +2,8 @@ package controllers.v4
 
 import akka.actor.{ActorRef, ActorSystem}
 import controllers.BaseController
+import org.sunbird.telemetry.logger.TelemetryManager
+
 import javax.inject.{Inject, Named}
 import play.api.mvc.ControllerComponents
 import utils.{ActorNames, ApiId, QuestionSetOperations}
@@ -70,10 +72,13 @@ class QuestionSetController @Inject()(@Named(ActorNames.QUESTION_SET_ACTOR) ques
 
 	def publish(identifier: String) = Action.async { implicit request =>
 		val headers = commonHeaders()
+		val headerMap = getRequestHeader("X-Request-Id", "requestId")
+		TelemetryManager.info(s"ENTRY:assessment: QuestionSet Publish V1 API | Request URL: ${request.uri} : Request Received For Identifier: ${identifier}", Map("requestId" -> headerMap.get("requestId").asInstanceOf[String]).asJava.asInstanceOf[java.util.Map[String, AnyRef]])
 		val body = requestBody()
 		val questionSet = body.getOrDefault("questionset", new java.util.HashMap()).asInstanceOf[java.util.Map[String, Object]];
 		questionSet.putAll(headers)
-		val questionSetRequest = getRequest(questionSet, headers, QuestionSetOperations.publishQuestionSet.toString)
+		headerMap.putAll(headers)
+		val questionSetRequest = getRequest(questionSet, headerMap, QuestionSetOperations.publishQuestionSet.toString)
 		setRequestContext(questionSetRequest, version, objectType, schemaName)
 		questionSetRequest.getContext.put("identifier", identifier)
 		getResult(ApiId.PUBLISH_QUESTION_SET, questionSetActor, questionSetRequest)

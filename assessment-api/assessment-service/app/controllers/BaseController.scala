@@ -1,12 +1,12 @@
 package controllers
 
 import java.util.UUID
-
 import akka.actor.ActorRef
 import akka.pattern.Patterns
 import org.sunbird.common.DateUtils
 import org.sunbird.common.dto.{Response, ResponseHandler}
 import org.sunbird.common.exception.ResponseCode
+import org.sunbird.telemetry.logger.TelemetryManager
 import play.api.mvc._
 import utils.JavaJsonUtils
 
@@ -46,6 +46,15 @@ abstract class BaseController(protected val cc: ControllerComponents)(implicit e
             result.setId(apiId)
             setResponseEnvelope(result)
             val response = JavaJsonUtils.serialize(result);
+            val publishApis = List("api.question.publish", "api.questionset.publish")
+            if (publishApis.contains(apiId)) {
+                val apiName = apiId match {
+                    case "api.question.publish" => "Question Publish V1 API"
+                    case "api.questionset.publish" => "QuestionSet Publish V1 API"
+                }
+                val params = Map("requestId" -> request.getContext().getOrDefault("requestId", "").asInstanceOf[String], "Response Code" -> result.getResponseCode.code()).asJava.asInstanceOf[java.util.Map[String, AnyRef]]
+                TelemetryManager.info(s"EXIT:assessment: ${apiName} | Response Provided For Identifier ${request.getContext.getOrDefault("identifier", "").asInstanceOf[String]}.", params)
+            }
             result.getResponseCode match {
                 case ResponseCode.OK => Ok(response).as("application/json")
                 case ResponseCode.CLIENT_ERROR => BadRequest(response).as("application/json")
@@ -69,5 +78,14 @@ abstract class BaseController(protected val cc: ControllerComponents)(implicit e
         }};
         request.setObjectType(objectType);
         request.getContext().putAll(contextMap)
+    }
+
+    def getRequestHeader(headerKey: String, targetKey: String, defaultValue: String = UUID.randomUUID().toString)(implicit request: Request[AnyContent]): java.util.Map[String, AnyRef] = {
+        val value = request.headers.get(headerKey)
+        if (value.isDefined && !value.isEmpty) {
+            collection.mutable.HashMap[String, Object](targetKey -> value.get).asJava
+        } else {
+            collection.mutable.HashMap[String, Object](targetKey -> defaultValue).asJava
+        }
     }
 }

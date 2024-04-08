@@ -2,12 +2,13 @@ package controllers.v5
 
 import akka.actor.{ActorRef, ActorSystem}
 import org.sunbird.common.Platform
+import org.sunbird.telemetry.logger.TelemetryManager
 import play.api.mvc.ControllerComponents
 import utils.{ActorNames, ApiId, QuestionOperations}
 
 import javax.inject.{Inject, Named}
-import scala.concurrent.ExecutionContext
 import scala.collection.JavaConverters._
+import scala.concurrent.ExecutionContext
 
 class QuestionController @Inject()(@Named(ActorNames.QUESTION_V5_ACTOR) questionActor: ActorRef, cc: ControllerComponents, actorSystem: ActorSystem)(implicit exec: ExecutionContext) extends BaseController(cc) {
 
@@ -69,10 +70,13 @@ class QuestionController @Inject()(@Named(ActorNames.QUESTION_V5_ACTOR) question
 
   def publish(identifier: String) = Action.async { implicit request =>
     val headers = commonHeaders()
+    val headerMap = getRequestHeader("X-Request-Id", "requestId")
+    TelemetryManager.info(s"ENTRY:assessment: Question Publish V2 API | Request URL: ${request.uri} : Request Received For Identifier: ${identifier}", Map("requestId" -> headerMap.get("requestId").asInstanceOf[String]).asJava.asInstanceOf[java.util.Map[String, AnyRef]])
     val body = requestBody()
     val question = body.getOrDefault("question", new java.util.HashMap()).asInstanceOf[java.util.Map[String, Object]];
     question.putAll(headers)
-    val questionRequest = getRequest(question, headers, QuestionOperations.publishQuestion.toString)
+    headerMap.putAll(headers)
+    val questionRequest = getRequest(question, headerMap, QuestionOperations.publishQuestion.toString)
     setRequestContext(questionRequest, defaultVersion, objectType, schemaName)
     questionRequest.getContext.put("identifier", identifier)
     getResult(ApiId.PUBLISH_QUESTION, questionActor, questionRequest)

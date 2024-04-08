@@ -141,6 +141,7 @@ class QuestionSetActor @Inject()(implicit oec: OntologyEngineContext) extends Ba
 
   def publish(request: Request): Future[Response] = {
     val lastPublishedBy: String = request.getRequest.getOrDefault("lastPublishedBy", "").asInstanceOf[String]
+    val requestId = request.getContext().getOrDefault("requestId","").asInstanceOf[String]
     request.getRequest.put("identifier", request.getContext.get("identifier"))
     request.put("mode", "edit")
     AssessmentV5Manager.getValidatedNodeForPublish(request, AssessmentErrorCodes.ERR_OBJECT_VALIDATION).flatMap(node => {
@@ -152,7 +153,7 @@ class QuestionSetActor @Inject()(implicit oec: OntologyEngineContext) extends Ba
         AssessmentV5Manager.validateHierarchy(request, children, node.getMetadata.getOrDefault("createdBy", "").asInstanceOf[String])
         if (StringUtils.isNotBlank(lastPublishedBy))
           node.getMetadata.put("lastPublishedBy", lastPublishedBy)
-        AssessmentV5Manager.pushInstructionEvent(node.getIdentifier, node)
+        AssessmentV5Manager.pushInstructionEvent(node.getIdentifier, node, requestId)
         ResponseHandler.OK.putAll(Map[String, AnyRef]("identifier" -> node.getIdentifier.replace(".img", ""), "message" -> "QuestionSet is successfully sent for Publish").asJava)
       })
     })

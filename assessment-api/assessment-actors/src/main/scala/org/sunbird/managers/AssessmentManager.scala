@@ -296,15 +296,15 @@ object AssessmentManager {
 	}
 
 	@throws[Exception]
-	def pushInstructionEvent(identifier: String, node: Node)(implicit oec: OntologyEngineContext): Unit = {
-		val (actor, context, objData, eData) = generateInstructionEventMetadata(identifier.replace(".img", ""), node)
+	def pushInstructionEvent(identifier: String, node: Node, requestId: String)(implicit oec: OntologyEngineContext): Unit = {
+		val (actor, context, objData, eData) = generateInstructionEventMetadata(identifier.replace(".img", ""), node, requestId)
 		val beJobRequestEvent: String = LogTelemetryEventUtil.logInstructionEvent(actor.asJava, context.asJava, objData.asJava, eData)
 		val topic: String = Platform.getString("kafka.topics.instruction", "sunbirddev.learning.job.request")
 		if (StringUtils.isBlank(beJobRequestEvent)) throw new ClientException("BE_JOB_REQUEST_EXCEPTION", "Event is not generated properly.")
 		oec.kafkaClient.send(beJobRequestEvent, topic)
 	}
 
-	def generateInstructionEventMetadata(identifier: String, node: Node): (Map[String, AnyRef], Map[String, AnyRef], Map[String, AnyRef], util.Map[String, AnyRef]) = {
+	def generateInstructionEventMetadata(identifier: String, node: Node, requestId: String): (Map[String, AnyRef], Map[String, AnyRef], Map[String, AnyRef], util.Map[String, AnyRef]) = {
 		val metadata: util.Map[String, AnyRef] = node.getMetadata
 		val publishType = if (StringUtils.equalsIgnoreCase(metadata.getOrDefault("status", "").asInstanceOf[String], "Unlisted")) "unlisted" else "public"
 		val eventMetadata = Map("identifier" -> identifier, "mimeType" -> metadata.getOrDefault("mimeType", ""), "objectType" -> node.getObjectType.replace("Image", ""), "pkgVersion" -> metadata.getOrDefault("pkgVersion", 0.asInstanceOf[AnyRef]), "lastPublishedBy" -> metadata.getOrDefault("lastPublishedBy", ""))
@@ -313,6 +313,7 @@ object AssessmentManager {
 		val objData = Map("id" -> identifier, "ver" -> metadata.getOrDefault("versionKey", ""))
 		val eData: util.Map[String, AnyRef] = new util.HashMap[String, AnyRef] {{
 				put("action", "publish")
+				put("requestId", requestId)
 				put("publish_type", publishType)
 				put("metadata", eventMetadata.asJava)
 			}}

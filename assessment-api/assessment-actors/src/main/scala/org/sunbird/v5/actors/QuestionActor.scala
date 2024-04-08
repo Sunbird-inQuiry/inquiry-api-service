@@ -137,6 +137,7 @@ class QuestionActor @Inject()(implicit oec: OntologyEngineContext) extends BaseA
 
   def publish(request: Request): Future[Response] = {
     request.getRequest.put("identifier", request.getContext.get("identifier"))
+    val requestId = request.getContext().getOrDefault("requestId","").asInstanceOf[String]
     AssessmentV5Manager.getNodeWithExternalProps(request).map(node => {
       val version: Double = node.getMetadata.getOrDefault("qumlVersion", 1.0.asInstanceOf[AnyRef]).asInstanceOf[Double]
       if (version < 1.1)
@@ -151,7 +152,7 @@ class QuestionActor @Inject()(implicit oec: OntologyEngineContext) extends BaseA
       val lastPublishedBy: String = request.getRequest.getOrDefault("lastPublishedBy", "").asInstanceOf[String]
       if (StringUtils.isNotBlank(lastPublishedBy))
         node.getMetadata.put("lastPublishedBy", lastPublishedBy)
-      AssessmentV5Manager.pushInstructionEvent(node.getIdentifier, node)
+      AssessmentV5Manager.pushInstructionEvent(node.getIdentifier, node, requestId)
       ResponseHandler.OK.putAll(Map[String, AnyRef]("identifier" -> node.getIdentifier.replace(".img", ""), "message" -> "Question is successfully sent for Publish").asJava)
     })
   }
