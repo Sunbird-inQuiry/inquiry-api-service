@@ -102,7 +102,7 @@ class QuestionSetControllerSpec extends BaseSpec {
   }
 
   "updateComment should update the questionSet successfully" in {
-    val result = controller.updateComment()(FakeRequest())
+    val result = controller.updateComment("do_123")(FakeRequest())
     isOK(result)
     status(result)(defaultAwaitTimeout) must equalTo(OK)
   }

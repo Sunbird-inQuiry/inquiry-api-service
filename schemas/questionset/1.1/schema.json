@@ -715,6 +715,9 @@
     },
     "questionSetToken": {
       "type": "string"
+    },
+    "creator": {
+      "type": "string"
     }
   },
   "additionalProperties": false

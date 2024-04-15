@@ -80,50 +80,55 @@ class QuestionSetActor @Inject()(implicit oec: OntologyEngineContext) extends Ba
   }
 
   def getHierarchy(request: Request)(implicit oec: OntologyEngineContext, ec: ExecutionContext): Future[Response] = {
-    HierarchyManager.getHierarchy(request).map(resp => {
-      if (StringUtils.equalsIgnoreCase(resp.getResponseCode.toString, "OK")) {
-        val hierarchyMap = resp.getResult.get("questionSet").asInstanceOf[util.Map[String, AnyRef]]
-        val schemaVersion = hierarchyMap.getOrDefault("schemaVersion", "1.1").asInstanceOf[String]
-        val updateHierarchy = if (StringUtils.equalsIgnoreCase(schemaVersion, "1.0")) {
-          AssessmentV5Manager.getTransformedHierarchy(hierarchyMap).asInstanceOf[mutable.Map[String, AnyRef]]
-        } else {
-          mutable.Map[String, AnyRef](hierarchyMap.asScala.toSeq: _*)
-        }
-        val mode = request.getOrDefault("mode", "").asInstanceOf[String]
-        val serverEvaluable = request.getOrDefault(HierarchyConstants.SERVEREVALUABLE, HierarchyConstants.FALSE).asInstanceOf[String]
-        if (!mode.equals("edit") && serverEvaluable.equalsIgnoreCase(HierarchyConstants.TRUE)) {
-          val childrenList = updateHierarchy.get(HierarchyConstants.CHILDREN).getOrElse(new util.ArrayList[java.util.Map[String, AnyRef]]())
-            .asInstanceOf[util.ArrayList[java.util.Map[String, AnyRef]]]
-          val updatedChildrenList = childrenList.asScala.map(child => {
-            val maxQuestions = Option(child.get(HierarchyConstants.MAXQUESTIONS)).map(_.asInstanceOf[Int]).getOrElse(0)
-            val shuffle = Option(child.get(HierarchyConstants.SHUFFLE)).map(_.asInstanceOf[Boolean]).getOrElse(false)
-            val randomizedChild = if (shuffle) HierarchyManager.shuffleQuestions(child) else child
-            val limitedChild = HierarchyManager.limitQuestions(randomizedChild, maxQuestions)
-
-            limitedChild
-          }).asJava
-          val serverEvaluable = updatedChildrenList.get(0).get(HierarchyConstants.EVAL)
-          if (serverEvaluable != null && serverEvaluable == HierarchyConstants.SERVER) {
-            request.put(HierarchyConstants.EVAL_MODE, HierarchyConstants.SERVER)
-          } else {
-            request.put(HierarchyConstants.EVAL_MODE, HierarchyConstants.CLIENT)
-          }
-          val nestedChildrenIdentifiers = HierarchyManager.getNestedChildrenIdentifiers(updatedChildrenList)
-          val mergedMap: util.Map[String, String] = HierarchyManager.createMergedMap(request, nestedChildrenIdentifiers)
-          val userMapJson = JsonUtils.serialize(mergedMap)
-          val jwtToken = HierarchyManager.generateJwtToken(userMapJson)
-          updateHierarchy.put(HierarchyConstants.QUESTIONSETTOKEN, jwtToken)
-          updateHierarchy.put(HierarchyConstants.IDENTIFIER, request.get("contentID"))
-          updateHierarchy.put(HierarchyConstants.CHILDREN, updatedChildrenList)
-          resp.getResult.put("questionset", updateHierarchy.asJava)
-        }
-        resp
-     } else {
-        resp.getResult.remove("questionSet")
-        resp
+  HierarchyManager.getHierarchy(request).map(resp => {
+    if (StringUtils.equalsIgnoreCase(resp.getResponseCode.toString, "OK")) {
+      val hierarchyMap = resp.getResult.get("questionSet").asInstanceOf[util.Map[String, AnyRef]]
+      val schemaVersion = hierarchyMap.getOrDefault("schemaVersion", "1.1").asInstanceOf[String]
+      val updateHierarchy = if (StringUtils.equalsIgnoreCase(schemaVersion, "1.0")) {
+        val hStr: String = JsonUtils.serialize(hierarchyMap)
+        val regex = """\"identifier\":\"(.*?)\.img\""""
+        val pattern = regex.r
+        val updateHStr = pattern.replaceAllIn(hStr, m => s""""identifier":"${m.group(1)}"""")
+        val updatedHierarchyMap = JsonUtils.deserialize[util.Map[String, AnyRef]](updateHStr, classOf[util.Map[String, AnyRef]])
+        AssessmentV5Manager.getTransformedHierarchy(updatedHierarchyMap).asInstanceOf[mutable.Map[String, AnyRef]]
+      } else {
+        mutable.Map[String, AnyRef](hierarchyMap.asScala.toSeq: _*)
       }
-    })
-  }
+      val mode = request.getOrDefault("mode", "").asInstanceOf[String]
+      val serverEvaluable = request.getOrDefault(HierarchyConstants.SERVEREVALUABLE, HierarchyConstants.FALSE).asInstanceOf[String]
+      if (!mode.equals("edit") && serverEvaluable.equalsIgnoreCase(HierarchyConstants.TRUE)) {
+        val childrenList = updateHierarchy.get(HierarchyConstants.CHILDREN).getOrElse(new util.ArrayList[java.util.Map[String, AnyRef]]())
+          .asInstanceOf[util.ArrayList[java.util.Map[String, AnyRef]]]
+        val updatedChildrenList = childrenList.asScala.map(child => {
+          val maxQuestions = Option(child.get(HierarchyConstants.MAXQUESTIONS)).map(_.asInstanceOf[Int]).getOrElse(0)
+          val shuffle = Option(child.get(HierarchyConstants.SHUFFLE)).map(_.asInstanceOf[Boolean]).getOrElse(false)
+          val randomizedChild = if (shuffle) HierarchyManager.shuffleQuestions(child) else child
+          val limitedChild = HierarchyManager.limitQuestions(randomizedChild, maxQuestions)
+
+          limitedChild
+        }).asJava
+        val serverEvaluable = updatedChildrenList.get(0).get(HierarchyConstants.EVAL)
+        if (serverEvaluable != null && serverEvaluable == HierarchyConstants.SERVER) {
+          request.put(HierarchyConstants.EVAL_MODE, HierarchyConstants.SERVER)
+        } else {
+          request.put(HierarchyConstants.EVAL_MODE, HierarchyConstants.CLIENT)
+        }
+        val nestedChildrenIdentifiers = HierarchyManager.getNestedChildrenIdentifiers(updatedChildrenList)
+        val mergedMap: util.Map[String, String] = HierarchyManager.createMergedMap(request, nestedChildrenIdentifiers)
+        val userMapJson = JsonUtils.serialize(mergedMap)
+        val jwtToken = HierarchyManager.generateJwtToken(userMapJson)
+        updateHierarchy.put(HierarchyConstants.QUESTIONSETTOKEN, jwtToken)
+        updateHierarchy.put(HierarchyConstants.IDENTIFIER, request.get("contentID"))
+        updateHierarchy.put(HierarchyConstants.CHILDREN, updatedChildrenList)
+        resp.getResult.put("questionset", updateHierarchy.asJava)
+      }
+      resp
+   } else {
+      resp.getResult.remove("questionSet")
+      resp
+    }
+  })
+}
 
   @throws[Exception]
   def review(request: Request): Future[Response] = {
@@ -173,6 +178,7 @@ class QuestionSetActor @Inject()(implicit oec: OntologyEngineContext) extends Ba
 
   def publish(request: Request): Future[Response] = {
     val lastPublishedBy: String = request.getRequest.getOrDefault("lastPublishedBy", "").asInstanceOf[String]
+    val requestId = request.getContext().getOrDefault("requestId","").asInstanceOf[String]
     request.getRequest.put("identifier", request.getContext.get("identifier"))
     request.put("mode", "edit")
     AssessmentV5Manager.getValidatedNodeForPublish(request, AssessmentErrorCodes.ERR_OBJECT_VALIDATION).flatMap(node => {
@@ -184,7 +190,7 @@ class QuestionSetActor @Inject()(implicit oec: OntologyEngineContext) extends Ba
         AssessmentV5Manager.validateHierarchy(request, children, node.getMetadata.getOrDefault("createdBy", "").asInstanceOf[String])
         if (StringUtils.isNotBlank(lastPublishedBy))
           node.getMetadata.put("lastPublishedBy", lastPublishedBy)
-        AssessmentV5Manager.pushInstructionEvent(node.getIdentifier, node)
+        AssessmentV5Manager.pushInstructionEvent(node.getIdentifier, node, requestId)
         ResponseHandler.OK.putAll(Map[String, AnyRef]("identifier" -> node.getIdentifier.replace(".img", ""), "message" -> "QuestionSet is successfully sent for Publish").asJava)
       })
     })
@@ -279,33 +285,17 @@ class QuestionSetActor @Inject()(implicit oec: OntologyEngineContext) extends Ba
   }
 
   def updateComment(request: Request): Future[Response] = {
-    val validatedNodesFuture = AssessmentV5Manager.getValidatedNodeForUpdateComment(request, "ERR_QUESTION_SET_UPDATE_COMMENT")
-    val comments = request.getRequest.get("comments").asInstanceOf[java.util.ArrayList[java.util.Map[String, Object]]].asScala.toList
-    validatedNodesFuture.flatMap { nodes =>
-      val updateResults = Future.sequence(nodes.map { node =>
-        comments.find(comment => comment.get("identifier") == node.getIdentifier) match {
-          case Some(commentMap) =>
-            val updateReq = new Request(request)
-            updateReq.getRequest.clear()
-            updateReq.getRequest.put("rejectComment", commentMap.get("comment"))
-            updateReq.getContext.put("identifier", node.getIdentifier)
-            DataNode.update(updateReq).map { updatedNode =>
-              Some(updatedNode.getIdentifier)
-            }
-          case None =>
-            throw new ClientException("IDENTIFIER_MISMATCH", "Request Identifier is not matching with Node Identifier.")
-        }
-      })
-      updateResults.map { updatedNodeIdentifiers =>
-        val identifiersList = updatedNodeIdentifiers.flatten
-        val identifiersArrayList = new util.ArrayList[String](identifiersList.asJava)
-        val responseMap = Map("identifiers" -> identifiersArrayList.asInstanceOf[AnyRef])
+    val validatedNode = AssessmentV5Manager.getValidatedNodeForUpdateComment(request, "ERR_QUESTION_SET_UPDATE_COMMENT")
+    val commentValue = request.getRequest.getOrDefault("reviewComment", "").asInstanceOf[String]
+    validatedNode.flatMap { node =>
+      val updateReq = new Request(request)
+      updateReq.getRequest.put("rejectComment", commentValue)
+      updateReq.getContext.put("identifier", node.getIdentifier)
+      DataNode.update(updateReq).map { _ =>
+        val responseMap = Map("identifier" -> node.getIdentifier.replace(".img", "").asInstanceOf[AnyRef])
         val response = ResponseHandler.OK
         response.putAll(responseMap.asJava)
         response
-      }.recover {
-        case ex =>
-          throw ex
       }
     }
   }
