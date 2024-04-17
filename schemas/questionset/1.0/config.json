@@ -86,7 +86,7 @@
   },
   "PII_Fields": {
     "user": {
-      "createdBy": ["creator","author"]
+      "createdBy": ["creator"]
     },
     "org": {
     }
