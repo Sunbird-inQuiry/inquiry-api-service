@@ -73,7 +73,7 @@ class QuestionController @Inject()(@Named(ActorNames.QUESTION_ACTOR) questionAct
 	def publish(identifier: String) = Action.async { implicit request =>
 		val headers = commonHeaders()
 		val headerMap = getRequestHeader("X-Request-Id", "requestId")
-		TelemetryManager.info(s"ENTRY:assessment: Question Publish V1 API | Request URL: ${request.uri} : Request Received For Identifier: ${identifier}", Map("requestId" -> headerMap.get("requestId").asInstanceOf[String]).asJava.asInstanceOf[java.util.Map[String, AnyRef]])
+		TelemetryManager.info(s"ENTRY:assessment: Question Publish V1 API | Request URL: ${request.uri} : Request Received For Identifier: ${identifier}", Map("requestId" -> headerMap.get("requestId").asInstanceOf[String], "cdata" -> Map("type" -> "Feature", "id" -> "QuestionPublish").asJava).asJava.asInstanceOf[java.util.Map[String, AnyRef]])
 		val body = requestBody()
 		val question = body.getOrDefault("question", new java.util.HashMap()).asInstanceOf[java.util.Map[String, Object]];
 		question.putAll(headers)
