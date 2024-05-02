@@ -49,8 +49,8 @@ abstract class BaseController(protected val cc: ControllerComponents)(implicit e
             val publishApis = List("api.question.publish", "api.questionset.publish")
             if (publishApis.contains(apiId)) {
                 val (apiName, featureId) = apiId match {
-                    case "api.question.publish" => ("Question Publish V2 API", "QuestionPublish")
-                    case "api.questionset.publish" => ("QuestionSet Publish V2 API", "QuestionsetPublish")
+                    case "api.question.publish" => ("Question Publish V1 API", "QuestionPublish")
+                    case "api.questionset.publish" => ("QuestionSet Publish V1 API", "QuestionsetPublish")
                 }
                 val params = Map("requestId" -> request.getContext().getOrDefault("requestId", "").asInstanceOf[String], "Response Code" -> result.getResponseCode.code(), "cdata" -> Map("type" -> "Feature", "id" -> featureId).asJava).asJava.asInstanceOf[java.util.Map[String, AnyRef]]
                 TelemetryManager.info(s"EXIT:assessment: ${apiName} | Response Provided For Identifier ${request.getContext.getOrDefault("identifier", "").asInstanceOf[String]}.", params)
