@@ -184,6 +184,9 @@ class QuestionSetActor @Inject()(implicit oec: OntologyEngineContext) extends Ba
         throw new ClientException(AssessmentErrorCodes.ERR_OBJECT_VALIDATION, "QuestionSet can't be updated as data is not in QuML 1.1 format.")
       val schemaVersion = node.getMetadata.getOrDefault("schemaVersion", "1.0").asInstanceOf[String]
       request.getContext.put("version", schemaVersion)
+      val prevStatus = node.getMetadata().getOrDefault("status", "").asInstanceOf[String]
+      if (StringUtils.isNotBlank(prevStatus) && List("Live", "Unlisted").contains(prevStatus))
+        request.getRequest.put("prevStatus", prevStatus)
       DataNode.update(request).map(node => {
         ResponseHandler.OK.putAll(Map("identifier" -> node.getIdentifier.replace(".img", ""), "versionKey" -> node.getMetadata.get("versionKey")).asJava)
       })
