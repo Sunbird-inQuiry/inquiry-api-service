@@ -464,8 +464,11 @@ object UpdateHierarchyManager {
         updatedHierarchy.put(HierarchyConstants.CHILDREN, children)
         val req = new Request(request)
         req.getContext.put(HierarchyConstants.IDENTIFIER, rootId)
+        val prevStatus = node.getMetadata().getOrDefault("status", "").asInstanceOf[String]
         val metadata = cleanUpRootData(node)
         req.getRequest.putAll(metadata)
+        if(StringUtils.isNotBlank(prevStatus) && List("Live","Unlisted").contains(prevStatus))
+            req.getRequest.put("prevStatus", prevStatus)
         req.put(HierarchyConstants.HIERARCHY, ScalaJsonUtils.serialize(updatedHierarchy))
         req.put(HierarchyConstants.IDENTIFIER, rootId)
         req.put(HierarchyConstants.CHILDREN, new java.util.ArrayList())
