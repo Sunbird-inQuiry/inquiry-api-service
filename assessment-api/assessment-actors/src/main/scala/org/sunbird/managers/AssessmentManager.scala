@@ -1,27 +1,25 @@
 package org.sunbird.managers
 
-import java.util
-
 import org.apache.commons.lang3.StringUtils
-import org.sunbird.common.{DateUtils, JsonUtils, Platform}
 import org.sunbird.common.dto.{Request, Response, ResponseHandler}
-import org.sunbird.common.exception.{ClientException, ResourceNotFoundException, ServerException}
+import org.sunbird.common.exception.{ClientException, ServerException}
+import org.sunbird.common.{DateUtils, JsonUtils, Platform}
 import org.sunbird.graph.OntologyEngineContext
 import org.sunbird.graph.dac.model.{Node, Relation}
 import org.sunbird.graph.nodes.DataNode
 import org.sunbird.graph.schema.{DefinitionNode, ObjectCategoryDefinition}
 import org.sunbird.graph.utils.NodeUtil
 import org.sunbird.graph.utils.NodeUtil.{convertJsonProperties, handleKeyNames}
-import org.sunbird.telemetry.logger.TelemetryManager
 import org.sunbird.telemetry.util.LogTelemetryEventUtil
 import org.sunbird.utils.RequestUtil
 
-import scala.concurrent.{Await, ExecutionContext, Future}
-import scala.collection.convert.ImplicitConversions._
+import java.util
 import scala.collection.JavaConverters
 import scala.collection.JavaConverters._
+import scala.collection.convert.ImplicitConversions._
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, ExecutionContext, Future}
 
 object AssessmentManager {
 
@@ -296,15 +294,15 @@ object AssessmentManager {
 	}
 
 	@throws[Exception]
-	def pushInstructionEvent(identifier: String, node: Node, requestId: String)(implicit oec: OntologyEngineContext): Unit = {
-		val (actor, context, objData, eData) = generateInstructionEventMetadata(identifier.replace(".img", ""), node, requestId)
+	def pushInstructionEvent(identifier: String, node: Node, requestId: String, featureName: String)(implicit oec: OntologyEngineContext): Unit = {
+		val (actor, context, objData, eData) = generateInstructionEventMetadata(identifier.replace(".img", ""), node, requestId, featureName)
 		val beJobRequestEvent: String = LogTelemetryEventUtil.logInstructionEvent(actor.asJava, context.asJava, objData.asJava, eData)
 		val topic: String = Platform.getString("kafka.topics.instruction", "sunbirddev.learning.job.request")
 		if (StringUtils.isBlank(beJobRequestEvent)) throw new ClientException("BE_JOB_REQUEST_EXCEPTION", "Event is not generated properly.")
 		oec.kafkaClient.send(beJobRequestEvent, topic)
 	}
 
-	def generateInstructionEventMetadata(identifier: String, node: Node, requestId: String): (Map[String, AnyRef], Map[String, AnyRef], Map[String, AnyRef], util.Map[String, AnyRef]) = {
+	def generateInstructionEventMetadata(identifier: String, node: Node, requestId: String, featureName: String): (Map[String, AnyRef], Map[String, AnyRef], Map[String, AnyRef], util.Map[String, AnyRef]) = {
 		val metadata: util.Map[String, AnyRef] = node.getMetadata
 		val publishType = if (StringUtils.equalsIgnoreCase(metadata.getOrDefault("status", "").asInstanceOf[String], "Unlisted")) "unlisted" else "public"
 		val eventMetadata = Map("identifier" -> identifier, "mimeType" -> metadata.getOrDefault("mimeType", ""), "objectType" -> node.getObjectType.replace("Image", ""), "pkgVersion" -> metadata.getOrDefault("pkgVersion", 0.asInstanceOf[AnyRef]), "lastPublishedBy" -> metadata.getOrDefault("lastPublishedBy", ""))
@@ -314,6 +312,7 @@ object AssessmentManager {
 		val eData: util.Map[String, AnyRef] = new util.HashMap[String, AnyRef] {{
 				put("action", "publish")
 				put("requestId", requestId)
+				put("featureName", featureName)
 				put("publish_type", publishType)
 				put("metadata", eventMetadata.asJava)
 			}}
