@@ -1,25 +1,24 @@
 package org.sunbird.v5.actors
 
-import java.util
-import javax.inject.Inject
 import org.apache.commons.collections4.CollectionUtils
 import org.apache.commons.lang3.StringUtils
 import org.sunbird.`object`.importer.{ImportConfig, ImportManager}
 import org.sunbird.actor.core.BaseActor
 import org.sunbird.cache.impl.RedisCache
-import org.sunbird.common.{DateUtils, JsonUtils, Platform}
 import org.sunbird.common.dto.{Request, Response, ResponseHandler}
 import org.sunbird.common.exception.ClientException
+import org.sunbird.common.{DateUtils, JsonUtils, Platform}
 import org.sunbird.graph.OntologyEngineContext
-import org.sunbird.graph.nodes.DataNode
 import org.sunbird.graph.dac.model.Node
-import org.sunbird.graph.schema.{DefinitionNode, ObjectCategoryDefinition}
-import org.sunbird.graph.utils.NodeUtil
+import org.sunbird.graph.nodes.DataNode
+import org.sunbird.graph.schema.DefinitionNode
 import org.sunbird.managers.HierarchyManager.hierarchyPrefix
 import org.sunbird.managers.{CopyManager, HierarchyManager, UpdateHierarchyManager}
 import org.sunbird.utils.{AssessmentErrorCodes, RequestUtil}
 import org.sunbird.v5.managers.AssessmentV5Manager
 
+import java.util
+import javax.inject.Inject
 import scala.collection.JavaConverters
 import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
@@ -142,6 +141,7 @@ class QuestionSetActor @Inject()(implicit oec: OntologyEngineContext) extends Ba
   def publish(request: Request): Future[Response] = {
     val lastPublishedBy: String = request.getRequest.getOrDefault("lastPublishedBy", "").asInstanceOf[String]
     val requestId = request.getContext().getOrDefault("requestId","").asInstanceOf[String]
+    val featureName = request.getContext().getOrDefault("featureName","").asInstanceOf[String]
     request.getRequest.put("identifier", request.getContext.get("identifier"))
     request.put("mode", "edit")
     AssessmentV5Manager.getValidatedNodeForPublish(request, AssessmentErrorCodes.ERR_OBJECT_VALIDATION).flatMap(node => {
@@ -153,7 +153,7 @@ class QuestionSetActor @Inject()(implicit oec: OntologyEngineContext) extends Ba
         AssessmentV5Manager.validateHierarchy(request, children, node.getMetadata.getOrDefault("createdBy", "").asInstanceOf[String])
         if (StringUtils.isNotBlank(lastPublishedBy))
           node.getMetadata.put("lastPublishedBy", lastPublishedBy)
-        AssessmentV5Manager.pushInstructionEvent(node.getIdentifier, node, requestId)
+        AssessmentV5Manager.pushInstructionEvent(node.getIdentifier, node, requestId, featureName)
         ResponseHandler.OK.putAll(Map[String, AnyRef]("identifier" -> node.getIdentifier.replace(".img", ""), "message" -> "QuestionSet is successfully sent for Publish").asJava)
       })
     })
