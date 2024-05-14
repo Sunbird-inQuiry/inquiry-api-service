@@ -70,15 +70,15 @@ class QuestionSetController @Inject()(@Named(ActorNames.QUESTION_SET_V5_ACTOR) q
   }
 
   def publish(identifier: String) = Action.async { implicit request =>
-    val commonHeaders = commonHeaders()
+    val headers = commonHeaders()
     val headerMap = getRequestHeader("X-Request-Id", "requestId")
     val featureMap = getRequestHeader("X-Feature-Name", "featureName", "QuestionsetPublish")
     headerMap.putAll(featureMap)
     TelemetryManager.info(s"ENTRY:assessment: QuestionSet Publish V2 API | Request URL: ${request.uri} : Request Received For Identifier: ${identifier}", Map("requestId" -> headerMap.get("requestId").asInstanceOf[String], "cdata" -> Map("type" -> "Feature", "id" -> featureMap.get("featureName").asInstanceOf[String]).asJava).asJava.asInstanceOf[java.util.Map[String, AnyRef]])
     val body = requestBody()
     val questionSet = body.getOrDefault("questionset", new java.util.HashMap()).asInstanceOf[java.util.Map[String, Object]];
-    questionSet.putAll(commonHeaders)
-    headerMap.putAll(commonHeaders)
+    questionSet.putAll(headers)
+    headerMap.putAll(headers)
     val questionSetRequest = getRequest(questionSet, headerMap, QuestionSetOperations.publishQuestionSet.toString)
     setRequestContext(questionSetRequest, defaultVersion, objectType, schemaName)
     questionSetRequest.getContext.put("identifier", identifier)
