@@ -4,31 +4,31 @@
 	"values": [
 		{
 			"key": "host",
-			"value": "https://dev.sunbirded.org/api",
+			"value": "{{ inquiry_host_url }}",
 			"type": "default",
 			"enabled": true
 		},
 		{
 			"key": "api_version",
-			"value": "v2",
+			"value": "{{ inquiry_api_version }}",
 			"type": "default",
 			"enabled": true
 		},
 		{
 			"key": "api_key",
-			"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJlNmI4Nzg2MmVmNjg0MWU0OWE5YzM5MGEzOTZmNTk0NyJ9.WkIHjIn77-OkC48a3KresX5Bh21RtlwHobTWUDVPEsQ",
+			"value": "{{ inquiry_api_key }}",
 			"type": "default",
 			"enabled": true
 		},
 		{
 			"key": "channel_id",
-			"value": "ft_v2_test",
+			"value": "{{ inquiry_channel_id }}",
 			"type": "default",
 			"enabled": true
 		},
 		{
 			"key": "framework_id",
-			"value": "tn_k-12",
+			"value": "{{ inquiry_framework_id }}",
 			"type": "default",
 			"enabled": true
 		}
