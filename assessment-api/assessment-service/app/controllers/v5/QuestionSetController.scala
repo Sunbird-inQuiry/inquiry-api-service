@@ -2,6 +2,7 @@ package controllers.v5
 
 import akka.actor.{ActorRef, ActorSystem}
 import org.sunbird.common.Platform
+import org.sunbird.common.exception.ClientException
 import org.sunbird.telemetry.logger.TelemetryManager
 import play.api.mvc.ControllerComponents
 import utils.{ActorNames, ApiId, QuestionSetOperations}
@@ -51,6 +52,8 @@ class QuestionSetController @Inject()(@Named(ActorNames.QUESTION_SET_V5_ACTOR) q
     val headers = commonHeaders()
     val body = requestBody()
     val questionSet = body.getOrDefault("questionset", new java.util.HashMap()).asInstanceOf[java.util.Map[String, Object]];
+    if(null == questionSet || questionSet.isEmpty)
+      throw new ClientException("ERR_INVALID_REQUEST", "Please provide valid request.")
     questionSet.putAll(headers)
     val questionSetRequest = getRequest(questionSet, headers, QuestionSetOperations.updateQuestionSet.toString)
     setRequestContext(questionSetRequest, defaultVersion, objectType, schemaName)
