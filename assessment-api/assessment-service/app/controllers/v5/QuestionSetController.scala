@@ -2,7 +2,6 @@ package controllers.v5
 
 import akka.actor.{ActorRef, ActorSystem}
 import org.sunbird.common.Platform
-import org.sunbird.common.exception.ClientException
 import org.sunbird.telemetry.logger.TelemetryManager
 import play.api.mvc.ControllerComponents
 import utils.{ActorNames, ApiId, QuestionSetOperations}
