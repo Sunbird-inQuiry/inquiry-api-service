@@ -176,6 +176,9 @@ class QuestionSetActor @Inject()(implicit oec: OntologyEngineContext) extends Ba
   def update(request: Request): Future[Response] = {
     RequestUtil.restrictProperties(request)
     request.getRequest.put("identifier", request.getContext.get("identifier"))
+    val versionKey = request.getRequest.getOrDefault("versionKey","").asInstanceOf[String];
+    if (null == versionKey || versionKey.isEmpty)
+      throw new ClientException("ERR_INVALID_REQUEST", "Please provide valid request.")
     DataNode.read(request).map(node => {
       if (StringUtils.equalsIgnoreCase(node.getMetadata.getOrDefault("visibility", "").asInstanceOf[String], "Parent"))
         throw new ClientException(AssessmentErrorCodes.ERR_OBJECT_VALIDATION, node.getMetadata.getOrDefault("objectType", "").asInstanceOf[String].replace("Image", "") + " with visibility Parent, can't be updated individually.")
