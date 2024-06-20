@@ -1,8 +1,9 @@
 package org.sunbird.managers
 
+import com.fasterxml.jackson.databind.ObjectMapper
+
 import java.util
 import java.util.concurrent.CompletionException
-
 import org.apache.commons.collections4.{CollectionUtils, MapUtils}
 import org.apache.commons.lang3.StringUtils
 import org.sunbird.common.dto.{Request, Response, ResponseHandler}
@@ -25,13 +26,23 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object UpdateHierarchyManager {
     val neo4jCreateTypes: java.util.List[String] = Platform.getStringList("neo4j_objecttypes_enabled", List("Question").asJava)
-
+    val mapper: ObjectMapper = new ObjectMapper()
     @throws[Exception]
     def updateHierarchy(request: Request)(implicit oec: OntologyEngineContext, ec: ExecutionContext): Future[Response] = {
         val (nodesModified, hierarchy) = validateRequest(request)
         val rootId: String = getRootId(nodesModified, hierarchy)
         request.getContext.put(HierarchyConstants.ROOT_ID, rootId)
         getValidatedRootNode(rootId, request).map(node => {
+            var mode = node.getMetadata.get(HierarchyConstants.EVAL).asInstanceOf[String]
+            if (nodesModified.get(rootId) != null) {
+                val updMode = nodesModified.get(rootId)
+                  .asInstanceOf[java.util.LinkedHashMap[String, AnyRef]]
+                  .get(HierarchyConstants.METADATA).asInstanceOf[java.util.LinkedHashMap[String, AnyRef]]
+                  .get(HierarchyConstants.EVAL).asInstanceOf[String]
+                if (StringUtils.isNotEmpty(mode) && !mode.equals(updMode))
+                    throw new ClientException(ErrorCodes.ERR_BAD_REQUEST.name(), "QuestionSet evaluation mode status cannot be modified")
+                mode = updMode
+            }
             getExistingHierarchy(request, node).map(existingHierarchy => {
                 val existingChildren = existingHierarchy.getOrElse(HierarchyConstants.CHILDREN, new java.util.ArrayList[java.util.HashMap[String, AnyRef]]()).asInstanceOf[java.util.List[java.util.Map[String, AnyRef]]]
                 val nodes = List(node)

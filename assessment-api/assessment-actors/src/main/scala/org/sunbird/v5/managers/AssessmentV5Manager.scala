@@ -1,5 +1,6 @@
 package org.sunbird.v5.managers
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import org.apache.commons.collections4.CollectionUtils
 import org.apache.commons.lang3.StringUtils
 import org.sunbird.common.{DateUtils, JsonUtils, Platform}
@@ -12,7 +13,7 @@ import org.sunbird.graph.schema.{DefinitionNode, ObjectCategoryDefinition}
 import org.sunbird.graph.utils.NodeUtil
 import org.sunbird.managers.HierarchyManager
 import org.sunbird.telemetry.util.LogTelemetryEventUtil
-import org.sunbird.utils.{AssessmentErrorCodes, RequestUtil}
+import org.sunbird.utils.{AssessmentConstants, AssessmentErrorCodes, RequestUtil}
 
 import java.util
 import java.util.UUID
@@ -22,6 +23,11 @@ import scala.collection.convert.ImplicitConversions._
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.Duration
+import com.mashape.unirest.http.Unirest
+import org.apache.http.HttpResponse
+import org.sunbird.utils.{AssessmentConstants, JavaJsonUtils, RequestUtil}
+import com.fasterxml.jackson.databind.node.{ArrayNode, ObjectNode}
+import org.sunbird.common.exception.{ClientException, ErrorCodes, ResourceNotFoundException, ServerException}
 
 object AssessmentV5Manager {
 
@@ -29,6 +35,8 @@ object AssessmentV5Manager {
   val supportedVersions: java.util.List[Number] = Platform.config.getNumberList("v5_supported_qumlVersions")
   val skipValidation: Boolean = Platform.getBoolean("assessment.skip.validation", false)
   val validStatus = List("Draft", "Review")
+  val mapper = new ObjectMapper()
+  val map = Map("userId" -> "userID", "attemptId" -> "attemptID")
 
   def validateAndGetVersion(ver: AnyRef): AnyRef = {
     if (supportedVersions.contains(ver)) ver else throw new ClientException(AssessmentErrorCodes.ERR_REQUEST_DATA_VALIDATION, s"Platform doesn't support quml version ${ver} | Currently Supported quml version are: ${supportedVersions}")
@@ -85,6 +93,16 @@ object AssessmentV5Manager {
   def getValidateNodeForReject(request: Request, errCode: String)(implicit ec: ExecutionContext, oec: OntologyEngineContext): Future[Node] = {
     request.put("mode", "edit")
     DataNode.read(request).map(node => {
+      val serverEvaluable = node.getMetadata.get(AssessmentConstants.EVAL)
+      val data = serverEvaluable
+      if (data  != null && data == AssessmentConstants.SERVER && !StringUtils.equals(request.getOrDefault("isEditor", "").asInstanceOf[String], "true")) {
+        val hideEditorResponse = hideEditorStateAns(node)
+        if (StringUtils.isNotEmpty(hideEditorResponse))
+          node.getMetadata.put(AssessmentConstants.EDITOR_STATE, hideEditorResponse)
+        val hideCorrectAns = hideCorrectResponse(node)
+        if (StringUtils.isNotEmpty(hideCorrectAns))
+          node.getMetadata.put(AssessmentConstants.RESPONSE_DECLARATION, hideCorrectAns)
+      }
       if (StringUtils.equalsIgnoreCase(node.getMetadata.getOrDefault("visibility", "").asInstanceOf[String], "Parent"))
         throw new ClientException(errCode, s"${node.getObjectType.replace("Image", "")} with visibility Parent, can't be sent for reject individually.")
       if (!StringUtils.equalsIgnoreCase("Review", node.getMetadata.get("status").asInstanceOf[String]))
@@ -190,6 +208,7 @@ object AssessmentV5Manager {
   def updateHierarchy(hierarchy: util.Map[String, AnyRef], status: String, rootUserId: String): (java.util.Map[String, AnyRef], java.util.List[String]) = {
     val keys = List("identifier", "children").asJava
     hierarchy.keySet().retainAll(keys)
+
     val children = hierarchy.getOrDefault("children", new util.ArrayList[java.util.Map[String, AnyRef]]).asInstanceOf[util.List[java.util.Map[String, AnyRef]]]
     val childrenToUpdate: List[String] = updateChildrenRecursive(children, status, List(), rootUserId)
     (hierarchy, childrenToUpdate.asJava)
@@ -516,6 +535,167 @@ object AssessmentV5Manager {
     }
   }
 
+
+  def validateAssessRequest(req: Request) = {
+    val body = req.getRequest
+    val jwt = body.getOrDefault(AssessmentConstants.QUESTION_SET_TOKEN, "").asInstanceOf[String]
+    val payload = try {
+      val tuple = HierarchyManager.verifyRS256Token(jwt)
+      if (tuple._1 == false)
+        throw new ClientException(ErrorCodes.ERR_BAD_REQUEST.name(), "Token Authentication Failed")
+      tuple._2.get("data").asInstanceOf[String]
+    } catch {
+      case e: Exception => throw new ClientException(ErrorCodes.ERR_BAD_REQUEST.name(), "Token Authentication Failed")
+    }
+    val questToken = JavaJsonUtils.deserialize[java.util.Map[String, AnyRef]](payload)
+    val assessments = body.getOrDefault(AssessmentConstants.ASSESSMENTS, new util.ArrayList[util.Map[String, AnyRef]]).asInstanceOf[util.List[util.Map[String, AnyRef]]]
+    val courseMetaData = Option(assessments.get(0)).getOrElse(new util.HashMap[String, AnyRef])
+    val count = map.filter(key => StringUtils.equals(courseMetaData.get(key._1).asInstanceOf[String], questToken.get(key._2).asInstanceOf[String])).size
+    if (count != map.size)
+      throw new ClientException(ErrorCodes.ERR_BAD_REQUEST.name(), "Token Authentication Failed")
+    questToken.get(AssessmentConstants.QUESTION_LIST).asInstanceOf[String].split(",").asInstanceOf[Array[String]]
+  }
+
+  def questionList(fields: Array[String]): Response = {
+    val url: String = Platform.getString(AssessmentConstants.QUESTION_LIST_EDITOR_URL, "")
+    val bdy = "{\"request\":{\"search\":{\"identifier\":" + JavaJsonUtils.serialize(fields) + "}}}"
+    val httpResponse = post(url, bdy)
+    if (200 != httpResponse.status) throw new ServerException("ERR_QUESTION_LIST_API_COMM", "Error communicating to question list api")
+    JsonUtils.deserialize(httpResponse.body, classOf[Response])
+  }
+
+  def calculateScore(privateList: Response, assessments: util.List[util.Map[String, AnyRef]]): Unit = {
+//    val answerMaps: (Map[String, AnyRef], Map[String, AnyRef]) = getListMap(privateList.getResult, AssessmentConstants.QUESTIONS)
+//      .map { que =>
+//        ((que.get(AssessmentConstants.IDENTIFIER).toString -> que.get(AssessmentConstants.RESPONSE_DECLARATION)),
+//          (que.get(AssessmentConstants.IDENTIFIER).toString -> que.get(AssessmentConstants.EDITOR_STATE)))
+//        )
+//      }.unzip match {
+//      case (map1, map2) => (map1.toMap, map2.toMap)
+//    }
+val answerMaps: (Map[String, AnyRef], Map[String, AnyRef], Map[String, AnyRef]) = {
+  val listOfMaps = getListMap(privateList.getResult, AssessmentConstants.QUESTIONS)
+    .map { que =>
+      (
+        que.get(AssessmentConstants.IDENTIFIER).toString -> que.get(AssessmentConstants.RESPONSE_DECLARATION),
+        que.get(AssessmentConstants.IDENTIFIER).toString -> que.get(AssessmentConstants.EDITOR_STATE),
+        que.get(AssessmentConstants.IDENTIFIER).toString -> que.get(AssessmentConstants.MAX_SCORE)
+      )
+    }
+  val (map1, map2, map3) = (listOfMaps.map(_._1).toMap, listOfMaps.map(_._2).toMap, listOfMaps.map(_._3).toMap)
+  (map1, map2, map3)
+}
+    val answerMap = answerMaps._1
+    val editorStateMap = answerMaps._2
+    val maxScoreMap = answerMaps._3
+    assessments.foreach { k =>
+      getListMap(k, AssessmentConstants.EVENTS).toList.foreach { event =>
+        val edata = getMap(event, AssessmentConstants.EDATA)
+        val item = getMap(edata, AssessmentConstants.ITEM)
+        val identifier = item.getOrDefault(AssessmentConstants.ID, "").asInstanceOf[String]
+        if (!answerMap.contains(identifier))
+          throw new ClientException(ErrorCodes.ERR_BAD_REQUEST.name(), "Invalid Request")
+        val res = getMap(answerMap.get(identifier).asInstanceOf[Some[util.Map[String, AnyRef]]].x, AssessmentConstants.RESPONSE1)
+        val cardinality = res.getOrDefault(AssessmentConstants.CARDINALITY, "").asInstanceOf[String]
+      //  val maxScore = res.getOrDefault(AssessmentConstants.MAX_SCORE, 0.asInstanceOf[Integer]).asInstanceOf[Integer]
+        val maxScoreOption = maxScoreMap.get(identifier)
+        val maxScore = maxScoreOption.getOrElse(0).asInstanceOf[Integer]
+        cardinality match {
+          case AssessmentConstants.MULTIPLE => populateMultiCardinality(res, edata, maxScore)
+          case _ => populateSingleCardinality(res, edata, maxScore)
+        }
+        populateParams(item, editorStateMap)
+      }
+    }
+  }
+
+  private def getListMap(arg: util.Map[String, AnyRef], param: String) = {
+    arg.getOrDefault(param, new util.ArrayList[util.Map[String, AnyRef]]()).asInstanceOf[util.ArrayList[util.Map[String, AnyRef]]]
+  }
+
+  private def getMap(arg: util.Map[String, AnyRef], param: String) = {
+    arg.getOrDefault(param, new util.HashMap[String, AnyRef]()).asInstanceOf[util.Map[String, AnyRef]]
+  }
+
+  def hideEditorStateAns(node: Node): String = {
+    // Modify editorState
+    Option(node.getMetadata.get("editorState")) match {
+      case Some(jsonStr: String) =>
+        val jsonNode = mapper.readTree(jsonStr)
+        //if (jsonNode != null && jsonNode.has("question")) {
+        //val questionNode = jsonNode.get("question")
+        if (jsonNode != null && jsonNode.has("options")) {
+          val optionsNode = jsonNode.get("options").asInstanceOf[ArrayNode]
+          val iterator = optionsNode.elements()
+          while (iterator.hasNext) {
+            val optionNode = iterator.next().asInstanceOf[ObjectNode]
+            optionNode.remove("answer")
+          }
+          //}
+        }
+        mapper.writeValueAsString(jsonNode)
+      case _ => ""
+    }
+  }
+
+  def hideCorrectResponse(node: Node): String = {
+    val responseDeclaration = Option(node.getMetadata.get("responseDeclaration")) match {
+      case Some(jsonStr: String) => jsonStr
+      case _ => ""
+    }
+    val jsonNode = mapper.readTree(responseDeclaration)
+    if (null != jsonNode && jsonNode.has("response1")) {
+      val responseNode = jsonNode.get("response1").asInstanceOf[ObjectNode]
+      responseNode.remove("correctResponse")
+      mapper.writeValueAsString(jsonNode)
+    }
+    else
+      ""
+  }
+
+  private def populateParams(item: util.Map[String, AnyRef], editorState: Map[String, AnyRef]) = {
+    item.put(AssessmentConstants.PARAMS, editorState.get(item.get(AssessmentConstants.ID)).asInstanceOf[util.Map[String, AnyRef]].get(AssessmentConstants.OPTIONS))
+  }
+
+  private def post(url: String, requestBody: String, headers: Map[String, String] = Map[String, String]("Content-Type" -> "application/json")): HTTPResponse = {
+    val res = Unirest.post(url).headers(headers.asJava).body(requestBody).asString()
+    HTTPResponse(res.getStatus, res.getBody)
+  }
+
+  private case class HTTPResponse(status: Int, body: String) extends Serializable
+
+  private def populateSingleCardinality(res: util.Map[String, AnyRef], edata: util.Map[String, AnyRef], maxScore: Integer): Unit = {
+    val correctValue = getMap(res, AssessmentConstants.CORRECT_RESPONSE).getOrDefault(AssessmentConstants.VALUE, new util.ArrayList[Integer]).toString
+    val usrResponse = getListMap(edata, AssessmentConstants.RESVALUES).get(0).getOrDefault(AssessmentConstants.VALUE, "").toString
+    StringUtils.equals(usrResponse, correctValue) match {
+      case true => {
+        edata.put(AssessmentConstants.SCORE, maxScore)
+        edata.put(AssessmentConstants.PASS, AssessmentConstants.YES)
+      }
+      case _ => {
+        edata.put(AssessmentConstants.SCORE, 0.asInstanceOf[Integer])
+        edata.put(AssessmentConstants.PASS, AssessmentConstants.NO)
+      }
+    }
+  }
+
+  private def populateMultiCardinality(res: util.Map[String, AnyRef], edata: util.Map[String, AnyRef], maxScore: Integer) = {
+    val correctValue = getMap(res, AssessmentConstants.CORRECT_RESPONSE).getOrDefault(AssessmentConstants.VALUE, new util.ArrayList[Integer]).asInstanceOf[util.ArrayList[Integer]].flatMap(k => List(k)).sorted
+    val usrResponse = edata.getOrDefault(AssessmentConstants.RESVALUES, new util.ArrayList[util.ArrayList[util.Map[String, AnyRef]]]())
+      .asInstanceOf[util.ArrayList[util.ArrayList[util.Map[String, AnyRef]]]]
+      .flatMap(_.flatMap(res => List(res.getOrDefault(AssessmentConstants.VALUE, -1.asInstanceOf[Integer]).asInstanceOf[Integer]))).sorted
+    correctValue.equals(usrResponse) match {
+      case true => edata.put(AssessmentConstants.SCORE, maxScore)
+      case _ => {
+        var ttlScr = 0.0d
+        getListMap(res, AssessmentConstants.MAPPING).foreach(k => if (usrResponse.contains(k.getOrDefault(AssessmentConstants.RESPONSE, -1.asInstanceOf[Integer]).asInstanceOf[Integer]))
+          ttlScr += getMap(k, AssessmentConstants.OUTCOMES).get(AssessmentConstants.SCORE).asInstanceOf[Double])
+        edata.put(AssessmentConstants.SCORE, ttlScr.asInstanceOf[AnyRef])
+        if (ttlScr > 0) edata.put(AssessmentConstants.PASS, AssessmentConstants.YES) else edata.put(AssessmentConstants.PASS, AssessmentConstants.NO)
+      }
+    }
+  }
+
   def readComment(request: Request, resName: String)(implicit oec: OntologyEngineContext, ec: ExecutionContext): Future[Response] = {
     val fields: util.List[String] = JavaConverters.seqAsJavaListConverter(request.get("fields").asInstanceOf[String].split(",").filter(field => StringUtils.isNotBlank(field) && !StringUtils.equalsIgnoreCase(field, "null"))).asJava
     request.getRequest.put("fields", fields)
@@ -534,5 +714,6 @@ object AssessmentV5Manager {
       }
     })
   }
+
 
 }

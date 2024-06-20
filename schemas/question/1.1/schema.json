@@ -677,6 +677,13 @@
         "No"
       ]
     },
+    "evalMode": {
+      "type": "string",
+      "enum": [
+        "server",
+        "client"
+      ]
+    },
     "allowAnonymousAccess": {
       "type": "string",
       "enum": [

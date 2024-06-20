@@ -650,6 +650,13 @@
         "type": "object"
       }
     },
+    "evalMode": {
+      "type": "string",
+      "enum": [
+        "server",
+        "client"
+      ]
+    },
     "origin": {
       "type": "string"
     },
@@ -705,6 +712,9 @@
     "artifactUrl": {
       "type": "string",
       "format": "url"
+    },
+    "questionSetToken": {
+      "type": "string"
     },
     "creator": {
       "type": "string"

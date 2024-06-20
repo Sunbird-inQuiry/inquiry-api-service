@@ -26,14 +26,8 @@ class QuestionController @Inject()(@Named(ActorNames.QUESTION_V5_ACTOR) question
     getResult(ApiId.CREATE_QUESTION, questionActor, questionRequest)
   }
 
-  def read(identifier: String, mode: Option[String], fields: Option[String]) = Action.async { implicit request =>
-    val headers = commonHeaders()
-    val question = new java.util.HashMap().asInstanceOf[java.util.Map[String, Object]]
-    question.putAll(headers)
-    question.putAll(Map("identifier" -> identifier, "fields" -> fields.getOrElse(""), "mode" -> mode.getOrElse("read")).asJava)
-    val questionRequest = getRequest(question, headers, QuestionOperations.readQuestion.toString)
-    setRequestContext(questionRequest, defaultVersion, objectType, schemaName)
-    getResult(ApiId.READ_QUESTION, questionActor, questionRequest)
+  def read(identifier: String, mode: Option[String], fields: Option[String]) = {
+    readQuestion(identifier, mode, fields, false)
   }
 
   def privateRead(identifier: String, mode: Option[String], fields: Option[String]) = Action.async { implicit request =>
@@ -115,16 +109,8 @@ class QuestionController @Inject()(@Named(ActorNames.QUESTION_V5_ACTOR) question
     getResult(ApiId.SYSTEM_UPDATE_QUESTION, questionActor, questionRequest)
   }
 
-  def list(fields: Option[String]) = Action.async { implicit request =>
-    val headers = commonHeaders()
-    val body = requestBody()
-    val question = body.getOrDefault("search", new java.util.HashMap()).asInstanceOf[java.util.Map[String, Object]];
-    question.putAll(headers)
-    question.put("fields", fields.getOrElse(""))
-    val questionRequest = getRequest(question, headers, QuestionOperations.listQuestions.toString)
-    questionRequest.put("identifiers", questionRequest.get("identifier"))
-    setRequestContext(questionRequest, defaultVersion, objectType, schemaName)
-    getResult(ApiId.LIST_QUESTIONS, questionActor, questionRequest)
+  def list(fields: Option[String]) = {
+    fetchQuestions(fields, false)
   }
 
   def reject(identifier: String) = Action.async { implicit request =>
@@ -147,5 +133,37 @@ class QuestionController @Inject()(@Named(ActorNames.QUESTION_V5_ACTOR) question
     val questionRequest = getRequest(question, headers, QuestionOperations.copyQuestion.toString)
     setRequestContext(questionRequest, defaultVersion, objectType, schemaName)
     getResult(ApiId.COPY_QUESTION, questionActor, questionRequest)
+  }
+
+  def editorList(fields: Option[String]) = {
+    fetchQuestions(fields, true)
+  }
+
+  def editorRead(identifier: String, mode: Option[String], fields: Option[String]) = {
+    readQuestion(identifier, mode, fields, true)
+  }
+
+  private def readQuestion(identifier: String, mode: Option[String], fields: Option[String], exclusive: Boolean) = Action.async { implicit request =>
+    val headers = commonHeaders()
+    val question = new java.util.HashMap().asInstanceOf[java.util.Map[String, Object]]
+    question.putAll(headers)
+    question.putAll(Map("identifier" -> identifier, "fields" -> fields.getOrElse(""), "mode" -> mode.getOrElse("read")).asJava)
+    if (exclusive) question.put("isEditor", "true")
+    val questionRequest = getRequest(question, headers, QuestionOperations.readQuestion.toString)
+    setRequestContext(questionRequest, defaultVersion, objectType, schemaName)
+    getResult(ApiId.READ_QUESTION, questionActor, questionRequest)
+  }
+
+  private def fetchQuestions(fields: Option[String], exclusive: Boolean) = Action.async { implicit request =>
+    val headers = commonHeaders()
+    val body = requestBody()
+    val question = body.getOrDefault("search", new java.util.HashMap()).asInstanceOf[java.util.Map[String, Object]];
+    question.putAll(headers)
+    question.put("fields", fields.getOrElse(""))
+    if (exclusive) question.put("isEditor", "true")
+    val questionRequest = getRequest(question, headers, QuestionOperations.listQuestions.toString)
+    questionRequest.put("identifiers", questionRequest.get("identifier"))
+    setRequestContext(questionRequest, defaultVersion, objectType, schemaName)
+    getResult(ApiId.LIST_QUESTIONS, questionActor, questionRequest)
   }
 }
