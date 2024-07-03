@@ -16,6 +16,7 @@ import org.sunbird.utils.{AssessmentErrorCodes, RequestUtil}
 
 import java.util
 import java.util.UUID
+import scala.collection.JavaConverters
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.collection.convert.ImplicitConversions._
 import scala.collection.JavaConverters._
@@ -90,6 +91,25 @@ object AssessmentV5Manager {
         throw new ClientException(errCode, s"${node.getObjectType.replace("Image", "")} is not in 'Review' state for identifier: " + node.getIdentifier)
       node
     })
+  }
+
+  def getValidatedNodeForUpdateComment(request: Request, errCode: String)(implicit ec: ExecutionContext, oec: OntologyEngineContext): Future[Node] = {
+    val identifier = request.getContext.get("identifier")
+    val commentValue = request.getRequest.get("reviewComment").toString
+    if (commentValue == null || commentValue.trim.isEmpty){
+      throw new ClientException(errCode, "Comment key is missing or value is empty in the request body.")
+    } else {
+      val readReq = request
+      readReq.put("identifier", identifier)
+      readReq.put("mode", "edit")
+      DataNode.read(request).map(node => {
+        if (!StringUtils.equalsIgnoreCase("QuestionSet", node.getObjectType))
+          throw new ClientException(errCode, s"Node with Identifier ${node.getIdentifier} is not a Question Set.")
+        if (!StringUtils.equalsAnyIgnoreCase(node.getMetadata.getOrDefault("status", "").asInstanceOf[String], "Review"))
+          throw new ClientException(errCode, s"Node with Identifier ${node.getIdentifier.replace(".img", "")} does not have a status Review.")
+        node
+      })
+    }
   }
 
   def getValidatedNodeForRetire(request: Request, errCode: String)(implicit ec: ExecutionContext, oec: OntologyEngineContext): Future[Node] = {
@@ -435,6 +455,7 @@ object AssessmentV5Manager {
         val ans = getAnswer(data)
         if (StringUtils.isNotBlank(ans))
           data.put("answer", ans)
+        data.put("compatibilityLevel", 5.asInstanceOf[AnyRef])
         data
       } else data
     } catch {
@@ -460,9 +481,12 @@ object AssessmentV5Manager {
         if (ch.containsKey("version")) ch.remove("version")
         processBloomsLevel(ch)
         processBooleanProps(ch)
+        if(StringUtils.equalsIgnoreCase("application/vnd.sunbird.question", ch.getOrDefault("mimeType", "").asInstanceOf[String]))
+          ch.put("compatibilityLevel", 5.asInstanceOf[AnyRef])
         if (StringUtils.equalsIgnoreCase("application/vnd.sunbird.questionset", ch.getOrDefault("mimeType", "").asInstanceOf[String])) {
           processTimeLimits(ch)
           processInstructions(ch)
+          ch.put("compatibilityLevel", 6.asInstanceOf[AnyRef])
           val nestedChildren = ch.getOrDefault("children", new util.ArrayList[java.util.Map[String, AnyRef]]).asInstanceOf[util.List[java.util.Map[String, AnyRef]]]
           tranformChildren(nestedChildren)
         }
@@ -479,6 +503,7 @@ object AssessmentV5Manager {
         processBloomsLevel(data)
         processBooleanProps(data)
         processTimeLimits(data)
+        data.put("compatibilityLevel", 6.asInstanceOf[AnyRef])
         data
       } else data
     } catch {
@@ -487,6 +512,25 @@ object AssessmentV5Manager {
         throw new ServerException("ERR_QUML_DATA_TRANSFORM", s"Error Occurred While Converting Data To Quml 1.1 Format for ${data.get("identifier")}")
       }
     }
+  }
+
+  def readComment(request: Request, resName: String)(implicit oec: OntologyEngineContext, ec: ExecutionContext): Future[Response] = {
+    val fields: util.List[String] = JavaConverters.seqAsJavaListConverter(request.get("fields").asInstanceOf[String].split(",").filter(field => StringUtils.isNotBlank(field) && !StringUtils.equalsIgnoreCase(field, "null"))).asJava
+    request.getRequest.put("fields", fields)
+    val res = new java.util.ArrayList[java.util.Map[String, AnyRef]] {}
+    DataNode.read(request).map(node => {
+      val metadata = new java.util.HashMap().asInstanceOf[java.util.Map[String, AnyRef]]
+      metadata.put("comment", node.getMetadata.getOrDefault("rejectComment", ""))
+      res.add(metadata)
+      if (!StringUtils.equalsIgnoreCase("QuestionSet", node.getObjectType))
+        throw new ClientException("ERR_QUESTION_SET_READ_COMMENT", s"Node with Identifier ${node.getIdentifier} is not a Question Set.")
+      if (!StringUtils.equalsIgnoreCase(node.getMetadata.get("visibility").asInstanceOf[String], "Private")) {
+        ResponseHandler.OK.put(resName, res)
+      }
+      else {
+        throw new ClientException("ERR_ACCESS_DENIED", s"visibility of ${node.getIdentifier.replace(".img", "")} is private hence access denied")
+      }
+    })
   }
 
 }

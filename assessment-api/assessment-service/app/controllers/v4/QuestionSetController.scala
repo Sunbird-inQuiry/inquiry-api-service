@@ -7,6 +7,7 @@ import play.api.mvc.ControllerComponents
 import utils.{ActorNames, ApiId, QuestionSetOperations}
 
 import scala.collection.JavaConverters._
+import scala.collection.convert.ImplicitConversions.`map AsScala`
 import scala.concurrent.ExecutionContext
 
 class QuestionSetController @Inject()(@Named(ActorNames.QUESTION_SET_ACTOR) questionSetActor: ActorRef, cc: ControllerComponents, actorSystem: ActorSystem)(implicit exec: ExecutionContext) extends BaseController(cc) {
@@ -168,5 +169,29 @@ class QuestionSetController @Inject()(@Named(ActorNames.QUESTION_SET_ACTOR) ques
 		val questionSetRequest = getRequest(questionSet, headers, QuestionSetOperations.copyQuestionSet.toString)
 		setRequestContext(questionSetRequest, version, objectType, schemaName)
 		getResult(ApiId.COPY_QUESTION_SET, questionSetActor, questionSetRequest)
+	}
+
+	def updateComment(identifier: String) = Action.async { implicit request =>
+		val headers = commonHeaders()
+		val body = requestBody()
+		val commentList = body.getOrElse("comments", new java.util.ArrayList[java.util.Map[String, Object]]()).asInstanceOf[java.util.ArrayList[java.util.Map[String, Object]]].asScala.toList
+		val filteredComment: String = commentList.headOption.flatMap(comment => Option(comment.asScala.toMap.getOrElse("comment", "").asInstanceOf[String])).getOrElse("")
+		val questionSet = new java.util.HashMap().asInstanceOf[java.util.Map[String, Object]]
+		questionSet.putAll(headers)
+		questionSet.put("reviewComment", filteredComment)
+		val questionSetRequest = getRequest(questionSet, headers, QuestionSetOperations.updateCommentQuestionSet.toString)
+		setRequestContext(questionSetRequest, version, objectType, schemaName)
+		questionSetRequest.getContext.put("identifier", identifier)
+		getResult(ApiId.UPDATE_COMMENT_QUESTION_SET, questionSetActor, questionSetRequest)
+	}
+
+	def readComment(identifier: String) = Action.async { implicit request =>
+		val headers = commonHeaders()
+		val questionSet = new java.util.HashMap().asInstanceOf[java.util.Map[String, Object]]
+		questionSet.putAll(headers)
+		questionSet.putAll(Map("identifier" -> identifier, "fields" -> "", "mode" -> "read").asJava)
+		val questionSetRequest = getRequest(questionSet, headers, QuestionSetOperations.readCommentQuestionSet.toString)
+		setRequestContext(questionSetRequest, version, objectType, schemaName)
+		getResult(ApiId.READ_COMMENT_QUESTION_SET, questionSetActor, questionSetRequest)
 	}
 }

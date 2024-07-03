@@ -47,6 +47,8 @@ class QuestionSetActor @Inject()(implicit oec: OntologyEngineContext) extends Ba
     case "importQuestionSet" => importQuestionSet(request)
     case "systemUpdateQuestionSet" => systemUpdate(request)
     case "copyQuestionSet" => copy(request)
+    case "updateCommentQuestionSet" => updateComment(request)
+    case "readCommentQuestionSet" => AssessmentV5Manager.readComment(request, "comments")
     case _ => ERROR(request.getOperation)
   }
 
@@ -239,5 +241,20 @@ class QuestionSetActor @Inject()(implicit oec: OntologyEngineContext) extends Ba
     CopyManager.copy(request)
   }
 
+  def updateComment(request: Request): Future[Response] = {
+    val validatedNode = AssessmentV5Manager.getValidatedNodeForUpdateComment(request, "ERR_QUESTION_SET_UPDATE_COMMENT")
+    val commentValue = request.getRequest.getOrDefault("reviewComment", "").asInstanceOf[String]
+    validatedNode.flatMap { node =>
+      val updateReq = new Request(request)
+      updateReq.getRequest.put("rejectComment", commentValue)
+      updateReq.getContext.put("identifier", node.getIdentifier)
+      DataNode.update(updateReq).map { _ =>
+        val responseMap = Map("identifier" -> node.getIdentifier.replace(".img", "").asInstanceOf[AnyRef])
+        val response = ResponseHandler.OK
+        response.putAll(responseMap.asJava)
+        response
+      }
+    }
+  }
 }
 

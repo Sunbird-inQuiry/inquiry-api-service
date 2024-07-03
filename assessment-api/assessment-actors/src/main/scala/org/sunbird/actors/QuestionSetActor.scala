@@ -1,7 +1,6 @@
 package org.sunbird.actors
 
 import java.util
-
 import javax.inject.Inject
 import org.apache.commons.collections4.CollectionUtils
 import org.apache.commons.lang3.StringUtils
@@ -10,6 +9,7 @@ import org.sunbird.actor.core.BaseActor
 import org.sunbird.cache.impl.RedisCache
 import org.sunbird.common.{DateUtils, Platform}
 import org.sunbird.common.dto.{Request, Response, ResponseHandler}
+import org.sunbird.common.exception.ClientException
 import org.sunbird.graph.OntologyEngineContext
 import org.sunbird.graph.nodes.DataNode
 import org.sunbird.graph.dac.model.Node
@@ -42,6 +42,8 @@ class QuestionSetActor @Inject()(implicit oec: OntologyEngineContext) extends Ba
 		case "importQuestionSet" => importQuestionSet(request)
 		case "systemUpdateQuestionSet" => systemUpdate(request)
 		case "copyQuestionSet" => copy(request)
+		case "updateCommentQuestionSet" => updateComment(request)
+		case "readCommentQuestionSet" => AssessmentManager.readComment(request, "comments")
 		case _ => ERROR(request.getOperation)
 	}
 
@@ -165,5 +167,21 @@ class QuestionSetActor @Inject()(implicit oec: OntologyEngineContext) extends Ba
 	def copy(request: Request): Future[Response] ={
 		RequestUtil.restrictProperties(request)
 		CopyManager.copy(request)
+	}
+
+	def updateComment(request: Request): Future[Response] = {
+		val validatedNode = AssessmentManager.getValidatedNodeForUpdateComment(request, "ERR_QUESTION_SET_UPDATE_COMMENT")
+		val commentValue = request.getRequest.getOrDefault("reviewComment", "").asInstanceOf[String]
+		validatedNode.flatMap { node =>
+			val updateReq = new Request(request)
+			updateReq.getRequest.put("rejectComment", commentValue)
+			updateReq.getContext.put("identifier", node.getIdentifier)
+			DataNode.update(updateReq).map { _ =>
+				val responseMap = Map("identifier" -> node.getIdentifier.replace(".img", "").asInstanceOf[AnyRef])
+				val response = ResponseHandler.OK
+				response.putAll(responseMap.asJava)
+				response
+			}
+		}
 	}
 }
