@@ -1,0 +1,105 @@
+name: PR Checks
+on:
+  pull_request:
+    branches:
+      - '**'
+env:
+  CLOUD_STORE_GROUP_ID: ${{ vars.CLOUD_STORE_GROUP_ID }}
+  CLOUD_STORE_ARTIFACT_ID: ${{ vars.CLOUD_STORE_ARTIFACT_ID }}
+  CLOUD_STORE_VERSION: ${{ vars.CLOUD_STORE_VERSION }}
+  KNOWLG_CORE_RELEASE_TAG: ${{ vars.KNOWLG_CORE_RELEASE_TAG }}
+  SONAR_PROJECT_KEY: ${{vars.SONAR_PROJECT_KEY}}
+  SONAR_ORG_KEY: ${{vars.SONAR_ORG_KEY}}
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up JDK 11
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+      - name: Cache Maven packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+      - name: Clone and build knowledge platform
+        run: |
+          git clone --branch ${{ env.KNOWLG_CORE_RELEASE_TAG }} https://github.com/Sunbird-Knowlg/knowledge-platform.git
+          cd knowledge-platform
+          mvn clean install -DskipTests=true -DCLOUD_STORE_GROUP_ID=${{env.CLOUD_STORE_GROUP_ID }} -DCLOUD_STORE_ARTIFACT_ID=${{ env.CLOUD_STORE_ARTIFACT_ID }} -DCLOUD_STORE_VERSION=${{ env. CLOUD_STORE_VERSION }} -Pknowlg-core
+      - name: Build complete inquiry service
+        run: mvn clean install -DskipTests=true
+      - name: Run Tests and Generate Coverage Report (assessment-service only)
+        working-directory: assessment-api/assessment-service
+        run: mvn clean verify scoverage:report
+
+      - name: Upload Coverage Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            assessment-api/assessment-service/target/site/scoverage/scoverage.xml
+            assessment-api/assessment-service/target/scoverage.xml
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: 'assessment-api/assessment-service/target/surefire-reports/*.xml'
+      - name: Publish Test Results to PR
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: Test Results
+          path: assessment-api/assessment-service/target/surefire-reports/*.xml
+          reporter: java-junit
+          fail-on-error: true
+
+  code-quality:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - name: Cache Maven packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+      - name: Download Coverage Report
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-report
+          path: assessment-api/assessment-service/target/
+
+      - name: SonarCloud Scan
+        run: |
+          mvn verify sonar:sonar \
+            -Dsonar.projectKey=${{ env.SONAR_PROJECT_KEY }} \
+            -Dsonar.organization=${{env.SONAR_ORG_KEY}} \
+            -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
+            -Dsonar.coverage.exclusions=**/CustomProblemHandler.java \
+            -Dsonar.scala.coverage.reportPaths=target/site/scoverage/scoverage.xml,target/scoverage.xml \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.sources=app \
+            -Dsonar.tests=test \
+            -DargLine="--add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/java.lang.reflect=ALL-UNNAMED"
+        working-directory: assessment-api/assessment-service
+
+
+
+
