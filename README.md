@@ -13,10 +13,18 @@ Repository for inQuiry API Service
 
 **Why?** Akka changed its license from open-source (Apache 2.0) to commercial (BSL), requiring migration to Apache Pekko.
 
-📖 **Quick Start**: See [MIGRATION_EXECUTIVE_SUMMARY.md](./MIGRATION_EXECUTIVE_SUMMARY.md)  
-📋 **Full Details**: See [UPGRADE_COMPATIBILITY_REPORT.md](./UPGRADE_COMPATIBILITY_REPORT.md)
+### 📚 Migration Documentation
 
-**Status**: Planning phase - no code changes yet. Review documents before proceeding.
+- 🚀 **Start Here**: [MIGRATION_INDEX.md](./MIGRATION_INDEX.md) - Complete documentation guide
+- ⚡ **Quick Reference**: [QUICK_REFERENCE.md](./QUICK_REFERENCE.md) - One-page summary (5 min)
+- 📊 **Executive Summary**: [MIGRATION_EXECUTIVE_SUMMARY.md](./MIGRATION_EXECUTIVE_SUMMARY.md) - Management overview (15 min)
+- 📖 **Full Report**: [UPGRADE_COMPATIBILITY_REPORT.md](./UPGRADE_COMPATIBILITY_REPORT.md) - Complete analysis (1 hour)
+- ✅ **Checklist**: [MIGRATION_CHECKLIST.md](./MIGRATION_CHECKLIST.md) - Step-by-step guide
+- 💻 **Code Examples**: [MIGRATION_CODE_EXAMPLES.md](./MIGRATION_CODE_EXAMPLES.md) - Implementation patterns
+
+**Status**: 🟡 Planning phase - no code changes yet. Review documents before proceeding.
+
+**Critical**: External dependencies from `knowlg-core` must be upgraded to Scala 2.13 + Pekko first!
 
 ---
 
