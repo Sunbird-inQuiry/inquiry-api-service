@@ -50,7 +50,7 @@ object UpdateHierarchyManager {
                               val response = ResponseHandler.OK()
                               response.put(HierarchyConstants.IDENTIFIER, rootId)
                               idMap.remove(rootId)
-                              response.put(HierarchyConstants.IDENTIFIERS, mapAsJavaMap(idMap))
+                              response.put(HierarchyConstants.IDENTIFIERS, idMap.asJava)
                               if (request.getContext.getOrDefault("shouldImageDelete", false.asInstanceOf[AnyRef]).asInstanceOf[Boolean])
                                   deleteHierarchy(request)
                               Future(response)
@@ -522,7 +522,7 @@ object UpdateHierarchyManager {
 
 
     def sortByIndex(childrenMaps: java.util.List[java.util.Map[String, AnyRef]]): java.util.List[java.util.Map[String, AnyRef]] = {
-        bufferAsJavaList(childrenMaps.sortBy(_.get("index").asInstanceOf[Int]))
+        childrenMaps.sortBy(_.get("index").asInstanceOf[Int]).asJava
     }
 
 
