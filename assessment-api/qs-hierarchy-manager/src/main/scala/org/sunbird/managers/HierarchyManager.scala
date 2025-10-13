@@ -13,8 +13,7 @@ import org.sunbird.graph.nodes.DataNode
 import org.sunbird.graph.utils.{NodeUtil, ScalaJsonUtils}
 
 import scala.collection.convert.ImplicitConversions._
-import scala.collection.JavaConverters._
-import scala.collection.JavaConverters
+import scala.jdk.CollectionConverters._
 import scala.concurrent.{ExecutionContext, Future}
 import com.mashape.unirest.http.HttpResponse
 import com.mashape.unirest.http.Unirest
@@ -454,7 +453,7 @@ object HierarchyManager {
         var maxIndex:Integer = 0
         var leafNodeMap: java.util.Map[String, java.util.Map[String, AnyRef]] =  new util.HashMap[String, java.util.Map[String, AnyRef]]()
         for(leafNode <- leafNodes){
-            leafNodeMap.put(leafNode.get("identifier").asInstanceOf[String], JavaConverters.mapAsJavaMapConverter(leafNode).asJava)
+            leafNodeMap.put(leafNode.get("identifier").asInstanceOf[String], leafNode.asJava)
         }
         var filteredLeafNodes: java.util.List[java.util.Map[String, AnyRef]] = new util.ArrayList[java.util.Map[String, AnyRef]]()
         if(null != childList && !childList.isEmpty) {
@@ -672,7 +671,7 @@ object HierarchyManager {
             request.put("identifiers", leafNodeIds)
             DataNode.list(request).map(nodes => {
                 val leafNodeMap: Map[String, AnyRef] = nodes.toList.map(node => (node.getIdentifier, NodeUtil.serialize(node, null, node.getObjectType.toLowerCase.replace("image", ""), HierarchyConstants.SCHEMA_VERSION, true).asInstanceOf[AnyRef])).toMap
-                val imageNodeIds: util.List[String] = JavaConverters.seqAsJavaListConverter(leafNodeIds.toList.map(id => id + HierarchyConstants.IMAGE_SUFFIX)).asJava
+                val imageNodeIds: util.List[String] = leafNodeIds.toList.map(id => id + HierarchyConstants.IMAGE_SUFFIX).asJava
                 request.put("identifiers", imageNodeIds)
                 DataNode.list(request).map(imageNodes => {
                     val imageLeafNodeMap: Map[String, AnyRef] = imageNodes.toList.map(imageNode => {
@@ -682,7 +681,7 @@ object HierarchyManager {
                         (identifier, metadata.asInstanceOf[AnyRef])
                     }).toMap
                     val updatedMap = leafNodeMap ++ imageLeafNodeMap
-                    JavaConverters.mapAsJavaMapConverter(updatedMap).asJava
+                    updatedMap.asJava
                 })
             }).flatMap(f => f)
         } else {

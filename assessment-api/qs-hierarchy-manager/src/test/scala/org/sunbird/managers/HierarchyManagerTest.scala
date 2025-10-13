@@ -11,7 +11,7 @@ import org.sunbird.graph.OntologyEngineContext
 import org.sunbird.utils.HierarchyConstants
 
 import scala.collection.convert.ImplicitConversions._
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.ExecutionContext
 
 /*class HierarchyManagerTest extends BaseSpec {
