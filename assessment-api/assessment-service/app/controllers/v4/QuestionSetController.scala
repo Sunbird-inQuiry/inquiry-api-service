@@ -8,7 +8,7 @@ import javax.inject.{Inject, Named}
 import play.api.mvc.ControllerComponents
 import utils.{ActorNames, ApiId, QuestionSetOperations}
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.collection.convert.ImplicitConversions.`map AsScala`
 import scala.concurrent.ExecutionContext
 

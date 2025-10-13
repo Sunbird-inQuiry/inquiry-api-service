@@ -2,32 +2,6 @@
 
 Repository for inQuiry API Service
 
----
-
-## 🔔 Important Notice: Technology Upgrade Planning
-
-**A comprehensive compatibility report is available for upgrading this service to:**
-- **Play Framework 3.0.5** (from 2.7.2)
-- **Scala 2.13.12** (from 2.12.11)
-- **Apache Pekko 1.0.3** (from Akka 2.5.22)
-
-**Why?** Akka changed its license from open-source (Apache 2.0) to commercial (BSL), requiring migration to Apache Pekko.
-
-### 📚 Migration Documentation
-
-- 🚀 **Start Here**: [MIGRATION_INDEX.md](./MIGRATION_INDEX.md) - Complete documentation guide
-- ⚡ **Quick Reference**: [QUICK_REFERENCE.md](./QUICK_REFERENCE.md) - One-page summary (5 min)
-- 📊 **Executive Summary**: [MIGRATION_EXECUTIVE_SUMMARY.md](./MIGRATION_EXECUTIVE_SUMMARY.md) - Management overview (15 min)
-- 📖 **Full Report**: [UPGRADE_COMPATIBILITY_REPORT.md](./UPGRADE_COMPATIBILITY_REPORT.md) - Complete analysis (1 hour)
-- ✅ **Checklist**: [MIGRATION_CHECKLIST.md](./MIGRATION_CHECKLIST.md) - Step-by-step guide
-- 💻 **Code Examples**: [MIGRATION_CODE_EXAMPLES.md](./MIGRATION_CODE_EXAMPLES.md) - Implementation patterns
-
-**Status**: 🟡 Planning phase - no code changes yet. Review documents before proceeding.
-
-**Critical**: External dependencies from `knowlg-core` must be upgraded to Scala 2.13 + Pekko first!
-
----
-
 ## inquiry-api-service local setup
 This readme file contains the instruction to set up and run the assessment-service in local machine.
 

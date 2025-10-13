@@ -31,7 +31,7 @@
         </pluginRepository>
     </pluginRepositories>
     <properties>
-        <play2.version>2.7.2</play2.version>
+        <play2.version>3.0.5</play2.version>
         <play2.plugin.version>1.0.0-rc5</play2.plugin.version>
         <sbt-compiler.plugin.version>1.0.0</sbt-compiler.plugin.version>
     </properties>
@@ -53,7 +53,7 @@
             <version>3.0</version>
         </dependency>
         <dependency>
-            <groupId>com.typesafe.play</groupId>
+            <groupId>org.playframework</groupId>
             <artifactId>play_${scala.major.version}</artifactId>
             <version>${play2.version}</version>
             <exclusions>
@@ -64,7 +64,7 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>com.typesafe.play</groupId>
+            <groupId>org.playframework</groupId>
             <artifactId>play-guice_${scala.major.version}</artifactId>
             <version>${play2.version}</version>
             <exclusions>
@@ -75,19 +75,19 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>com.typesafe.play</groupId>
+            <groupId>org.playframework</groupId>
             <artifactId>filters-helpers_${scala.major.version}</artifactId>
             <version>${play2.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.typesafe.play</groupId>
+            <groupId>org.playframework</groupId>
             <artifactId>play-logback_${scala.major.version}</artifactId>
             <version>${play2.version}</version>
             <scope>runtime</scope>
         </dependency>
         <dependency>
-            <groupId>com.typesafe.play</groupId>
-            <artifactId>play-netty-server_${scala.major.version}</artifactId>
+            <groupId>org.playframework</groupId>
+            <artifactId>play-pekko-http-server_${scala.major.version}</artifactId>
             <version>${play2.version}</version>
             <scope>runtime</scope>
         </dependency>
@@ -115,7 +115,7 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.typesafe.play</groupId>
+            <groupId>org.playframework</groupId>
             <artifactId>play-specs2_${scala.maj.version}</artifactId>
             <version>${play2.version}</version>
             <scope>test</scope>

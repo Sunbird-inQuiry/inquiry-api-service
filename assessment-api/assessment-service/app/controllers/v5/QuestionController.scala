@@ -1,13 +1,13 @@
 package controllers.v5
 
-import akka.actor.{ActorRef, ActorSystem}
+import org.apache.pekko.actor.{ActorRef, ActorSystem}
 import org.sunbird.common.Platform
 import org.sunbird.telemetry.logger.TelemetryManager
 import play.api.mvc.ControllerComponents
 import utils.{ActorNames, ApiId, QuestionOperations}
 
 import javax.inject.{Inject, Named}
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.ExecutionContext
 
 class QuestionController @Inject()(@Named(ActorNames.QUESTION_V5_ACTOR) questionActor: ActorRef, cc: ControllerComponents, actorSystem: ActorSystem)(implicit exec: ExecutionContext) extends BaseController(cc) {
