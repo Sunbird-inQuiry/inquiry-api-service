@@ -364,15 +364,15 @@ object HierarchyManager {
                 TelemetryManager.info(s"Branching Updated for ${child.get("identifier")}. Updated Branching Rules Are : ${child.get(HierarchyConstants.BRANCHING_LOGIC)}")
             }
             if(null != child.get("children") && !child.get("children").asInstanceOf[java.util.List[java.util.Map[String,AnyRef]]].isEmpty) {
-                var filteredLeafNodes = child.get("children").asInstanceOf[java.util.List[java.util.Map[String,AnyRef]]].filter(existingLeafNode => {
+                var filteredLeafNodes = child.get("children").asInstanceOf[java.util.List[java.util.Map[String,AnyRef]]].asScala.filter(existingLeafNode => {
                     !leafNodeIds.contains(existingLeafNode.get("identifier").asInstanceOf[String])
-                })
+                }).toList
                 var index: Integer = 1
-                filteredLeafNodes.asScala.toList.sortBy(x => x.get("index").asInstanceOf[Integer]).foreach(node => {
+                filteredLeafNodes.sortBy(x => x.get("index").asInstanceOf[Integer]).foreach(node => {
                     node.put("index", index)
                     index += 1
                 })
-                child.put("children", filteredLeafNodes)
+                child.put("children", filteredLeafNodes.asJava)
             }
         } else {
             for(child <- children) {
@@ -457,15 +457,15 @@ object HierarchyManager {
         }
         var filteredLeafNodes: java.util.List[java.util.Map[String, AnyRef]] = new util.ArrayList[java.util.Map[String, AnyRef]]()
         if(null != childList && !childList.isEmpty) {
-            val childMap:Map[String, java.util.Map[String, AnyRef]] = childList.toList.map(f => f.get("identifier").asInstanceOf[String] -> f).toMap
+            val childMap:Map[String, java.util.Map[String, AnyRef]] = childList.asScala.toList.map(f => f.get("identifier").asInstanceOf[String] -> f).toMap
             val existingLeafNodes = childMap.filter(p => leafNodeIds.contains(p._1))
             existingLeafNodes.map(en => {
                 leafNodeMap.get(en._1).put("index", en._2.get("index").asInstanceOf[Integer])
             })
-            filteredLeafNodes = childList.filter(existingLeafNode => {
+            filteredLeafNodes = childList.asScala.filter(existingLeafNode => {
                 !leafNodeIds.contains(existingLeafNode.get("identifier").asInstanceOf[String])
-            }).asJava
-            maxIndex = childMap.values.asScala.toList.map(child => child.get("index").asInstanceOf[Integer]).max.asInstanceOf[Integer]
+            }).toList.asJava
+            maxIndex = childMap.values.map(child => child.get("index").asInstanceOf[Integer]).max.asInstanceOf[Integer]
         }
         leafNodeIds.foreach(id => {
             var node = leafNodeMap.getOrDefault(id, new util.HashMap[String, AnyRef]())
