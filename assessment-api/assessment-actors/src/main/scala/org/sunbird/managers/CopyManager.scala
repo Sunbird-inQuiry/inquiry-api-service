@@ -102,7 +102,7 @@ object CopyManager {
       val nodesModified: java.util.HashMap[String, AnyRef] = hierarchyRequest.getRequest.get(HierarchyConstants.NODES_MODIFIED).asInstanceOf[java.util.HashMap[String, AnyRef]]
       val branchingRecord = BranchingUtil.generateBranchingRecord(nodesModified)
       val originalRequest = JsonUtils.deserialize(ScalaJsonUtils.serialize(hierarchyRequest), classOf[Request])
-      val BLExists = branchingRecord.exists(BLRecord => BLRecord._2.asInstanceOf[util.HashMap[String, AnyRef]].get(AssessmentConstants.CONTAINS_BL) == true)
+      val BLExists = branchingRecord.asScala.exists(BLRecord => BLRecord._2.asInstanceOf[util.HashMap[String, AnyRef]].get(AssessmentConstants.CONTAINS_BL) == true)
       val (updateHierarchyReq, branchingUpdateReq) = if (BLExists) (hierarchyRequest, JsonUtils.deserialize(ScalaJsonUtils.serialize(hierarchyRequest), classOf[Request])) else (originalRequest, new Request())
       UpdateHierarchyManager.updateHierarchy(updateHierarchyReq).map(response => {
         if (!ResponseHandler.checkError(response)) response

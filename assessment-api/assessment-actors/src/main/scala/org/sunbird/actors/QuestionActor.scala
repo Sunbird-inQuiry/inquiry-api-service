@@ -37,7 +37,7 @@ class QuestionActor @Inject()(implicit oec: OntologyEngineContext) extends BaseA
 		case "listQuestions" => listQuestions(request)
 		case "rejectQuestion" => reject(request)
 		case "copyQuestion" => copy(request)
-		case _ => ERROR(request.getOperation)
+		case _ => Future(ResponseHandler.ERROR(ResponseHandler.SERVER_ERROR, "INVALID_OPERATION", "Operation '" + request.getOperation + "' not supported"))
 	}
 
 	def update(request: Request): Future[Response] = {

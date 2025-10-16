@@ -27,7 +27,7 @@ class ItemSetActor @Inject() (implicit oec: OntologyEngineContext) extends BaseA
 		case "updateItemSet" => update(request)
 		case "reviewItemSet" => review(request)
 		case "retireItemSet" => retire(request)
-		case _ => ERROR(request.getOperation)
+		case _ => Future(ResponseHandler.ERROR(ResponseHandler.SERVER_ERROR, "INVALID_OPERATION", "Operation '" + request.getOperation + "' not supported"))
 	}
 
 

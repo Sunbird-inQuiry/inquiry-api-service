@@ -43,7 +43,7 @@ class QuestionSetActor @Inject()(implicit oec: OntologyEngineContext) extends Ba
 		case "copyQuestionSet" => copy(request)
 		case "updateCommentQuestionSet" => updateComment(request)
 		case "readCommentQuestionSet" => AssessmentManager.readComment(request, "comments")
-		case _ => ERROR(request.getOperation)
+		case _ => Future(ResponseHandler.ERROR(ResponseHandler.SERVER_ERROR, "INVALID_OPERATION", "Operation '" + request.getOperation + "' not supported"))
 	}
 
 	def update(request: Request): Future[Response] = {
