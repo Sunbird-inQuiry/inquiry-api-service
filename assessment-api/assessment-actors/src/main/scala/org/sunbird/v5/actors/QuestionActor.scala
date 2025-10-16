@@ -4,7 +4,7 @@ import org.apache.commons.lang3.StringUtils
 import org.sunbird.`object`.importer.{ImportConfig, ImportManager}
 import org.sunbird.actor.core.BaseActor
 import org.sunbird.common.dto.{Request, Response, ResponseHandler}
-import org.sunbird.common.exception.ClientException
+import org.sunbird.common.exception.{ClientException, ResponseCode}
 import org.sunbird.common.{DateUtils, Platform}
 import org.sunbird.graph.OntologyEngineContext
 import org.sunbird.graph.nodes.DataNode
@@ -40,7 +40,7 @@ class QuestionActor @Inject()(implicit oec: OntologyEngineContext) extends BaseA
     case "importQuestion" => importQuestion(request)
     case "systemUpdateQuestion" => systemUpdate(request)
     case "copyQuestion" => copy(request)
-    case _ => Future(ResponseHandler.ERROR(ResponseHandler.SERVER_ERROR, "INVALID_OPERATION", "Operation '" + request.getOperation + "' not supported"))
+    case _ => Future(ResponseHandler.ERROR(ResponseCode.CLIENT_ERROR, "INVALID_OPERATION", "Operation '" + request.getOperation + "' not supported"))
   }
 
   def read(request: Request)(implicit oec: OntologyEngineContext, ec: ExecutionContext): Future[Response] = {

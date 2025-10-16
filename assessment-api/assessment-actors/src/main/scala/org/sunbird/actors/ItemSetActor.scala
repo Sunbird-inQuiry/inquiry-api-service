@@ -7,6 +7,7 @@ import org.apache.commons.collections4.CollectionUtils
 import org.apache.commons.lang3.StringUtils
 import org.sunbird.actor.core.BaseActor
 import org.sunbird.common.dto.{Request, Response, ResponseHandler}
+import org.sunbird.common.exception.ResponseCode
 import org.sunbird.graph.OntologyEngineContext
 import org.sunbird.graph.dac.model.Relation
 import org.sunbird.graph.nodes.DataNode
@@ -27,7 +28,7 @@ class ItemSetActor @Inject() (implicit oec: OntologyEngineContext) extends BaseA
 		case "updateItemSet" => update(request)
 		case "reviewItemSet" => review(request)
 		case "retireItemSet" => retire(request)
-		case _ => Future(ResponseHandler.ERROR(ResponseHandler.SERVER_ERROR, "INVALID_OPERATION", "Operation '" + request.getOperation + "' not supported"))
+		case _ => Future(ResponseHandler.ERROR(ResponseCode.CLIENT_ERROR, "INVALID_OPERATION", "Operation '" + request.getOperation + "' not supported"))
 	}
 
 
