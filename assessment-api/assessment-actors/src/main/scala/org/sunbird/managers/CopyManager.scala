@@ -18,8 +18,7 @@ import org.sunbird.utils.{AssessmentConstants, BranchingUtil, HierarchyConstants
 import java.util
 import java.util.concurrent.{CompletionException}
 import java.util.{Optional, UUID}
-import scala.collection.JavaConversions.{mapAsScalaMap}
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.{ExecutionContext, Future}
 
 object CopyManager {
