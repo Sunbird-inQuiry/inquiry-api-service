@@ -21,7 +21,7 @@ All Maven POM files have been updated to use:
 - Apache Pekko 1.0.3 instead of Akka
 
 External dependencies have been updated to use Scala 2.13 versions:
-- graph-engine_2.13
+- graph-engine_2.12 (temporarily using 2.12 version due to package structure changes in 2.13)
 - Other knowlg-core dependencies
 
 ### Code Changes
@@ -89,6 +89,15 @@ mvn test
 ## Known Issues
 
 The build requires knowlg-core dependencies to be upgraded to Scala 2.13 with Pekko 1.0.3 first. Without these dependencies, the build will fail with dependency resolution errors.
+
+### Temporary Workaround for graph-engine Dependency
+
+Currently using graph-engine_2.12 instead of graph-engine_2.13 due to package structure changes in the Scala 2.13 version. The graph-engine_2.13 version has moved or renamed the following packages:
+- org.sunbird.graph.nodes.DataNode
+- org.sunbird.graph.utils.NodeUtil
+- org.sunbird.graph.utils.ScalaJsonUtils
+
+This temporary workaround allows the code to compile but may have binary compatibility implications. Once the Scala 2.13 version of graph-engine is properly updated or the correct package paths are identified, this should be reverted to use graph-engine_2.13.
 
 ## Additional Information
 
