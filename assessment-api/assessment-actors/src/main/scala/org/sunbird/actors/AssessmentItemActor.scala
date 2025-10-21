@@ -33,43 +33,27 @@ class AssessmentItemActor @Inject()(implicit oec: OntologyEngineContext) extends
   }
 
   def create(request: Request): Future[Response] = {
-    // Set default mimeType if not provided
     val assessmentItem = request.getRequest
     if (!assessmentItem.containsKey("mimeType")) {
       assessmentItem.put("mimeType", AssessmentConstants.ASSESSMENT_ITEM_MIME_TYPE)
     }
     
-    // Replace media items with variants before create
     replaceMediaItemsWithVariants(request)
-    
-    // AssessmentManager.create will use schema-based validation via DataNode.create
-    // which validates against schemas/assessmentitem/1.0/schema.json
     AssessmentManager.create(request, "ERR_ASSESSMENT_ITEM_CREATE")
   }
 
   def read(request: Request): Future[Response] = {
-    // Use AssessmentManager.read for consistent behavior
-    // This handles field filtering and serialization using schema
     AssessmentManager.read(request, "assessment_item")
   }
 
   def update(request: Request): Future[Response] = {
-    // Set identifier from context
     request.getRequest.put("identifier", request.getContext.get("identifier"))
-    
-    // Replace media items with variants before update
     replaceMediaItemsWithVariants(request)
-    
-    // RequestUtil.restrictProperties will be called by AssessmentManager
-    // Schema-based validation will be applied by DataNode.update
     AssessmentManager.getValidatedNodeForUpdate(request, "ERR_ASSESSMENT_ITEM_UPDATE").flatMap(_ => AssessmentManager.updateNode(request))
   }
 
   def retire(request: Request): Future[Response] = {
-    // Set identifier from context
     request.getRequest.put("identifier", request.getContext.get("identifier"))
-    
-    // Use AssessmentManager for validation and update
     AssessmentManager.getValidatedNodeForRetire(request, "ERR_ASSESSMENT_ITEM_RETIRE").flatMap(node => {
       val updateRequest = new Request(request)
       updateRequest.put("status", "Retired")
@@ -79,14 +63,6 @@ class AssessmentItemActor @Inject()(implicit oec: OntologyEngineContext) extends
     })
   }
 
-  /**
-   * Replaces media items with their low resolution variants based on asset metadata.
-   * This method reads the media property from the assessment item, fetches the asset nodes
-   * for each media item, and replaces the src URL with the low resolution variant if available.
-   * 
-   * Based on original logic from sunbird-learning-platform (release-5.7.0_RC8)
-   * AssessmentManagerImpl.replaceMediaItemsWithVariants()
-   */
   private def replaceMediaItemsWithVariants(request: Request): Unit = {
     try {
       val assessmentItem = request.getRequest
@@ -98,14 +74,10 @@ class AssessmentItemActor @Inject()(implicit oec: OntologyEngineContext) extends
         
         if (mediaList != null && !mediaList.isEmpty) {
           var replaced = false
-          val resolution = "low" // Default resolution
-          
-          // Process each media item in the list
+          val resolution = "low"
           val mediaIterator = mediaList.iterator()
           while (mediaIterator.hasNext) {
             val mediaItem = mediaIterator.next()
-            
-            // Get asset_id (try both asset_id and assetId)
             var assetId = mediaItem.get("asset_id")
             if (assetId == null) {
               assetId = mediaItem.get("assetId")
@@ -113,7 +85,6 @@ class AssessmentItemActor @Inject()(implicit oec: OntologyEngineContext) extends
             
             if (assetId != null && StringUtils.isNotBlank(assetId.toString)) {
               try {
-                // Fetch the asset node to get variants
                 val assetRequest = new Request(request)
                 assetRequest.put("identifier", assetId.toString)
                 assetRequest.setOperation("getDataNode")
@@ -144,7 +115,6 @@ class AssessmentItemActor @Inject()(implicit oec: OntologyEngineContext) extends
             }
           }
           
-          // Update media property if any replacements were made
           if (replaced) {
             val updatedMedia = mapper.writeValueAsString(mediaList)
             assessmentItem.put("media", updatedMedia)
@@ -157,10 +127,6 @@ class AssessmentItemActor @Inject()(implicit oec: OntologyEngineContext) extends
     }
   }
 
-  /**
-   * Helper method to await Future result synchronously
-   * Note: This is a simplified version. In production, consider using Await.result with proper timeout
-   */
   private def awaitResult(future: Future[Node]): Node = {
     import scala.concurrent.Await
     import scala.concurrent.duration._

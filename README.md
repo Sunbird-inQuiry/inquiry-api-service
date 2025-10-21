@@ -2,17 +2,6 @@
 
 Repository for inQuiry API Service
 
-## Documentation
-
-### Assessment Item API 
-Documentation and implementation for Assessment Item APIs:
-- 📘 [Migration Guide](ASSESSMENT_ITEM_API_MIGRATION.md) - Complete technical analysis and migration planning
-- 📋 [Executive Summary](ASSESSMENT_ITEM_API_MIGRATION_SUMMARY.md) - Quick overview and effort estimation
-- ✅ [Developer Checklist](ASSESSMENT_ITEM_API_MIGRATION_CHECKLIST.md) - Step-by-step implementation guide
-- 🚀 [Implementation Guide](ASSESSMENT_ITEM_API_IMPLEMENTATION.md) - Complete implementation with API examples and code flows
-- 💼 [Business Logic Guide](ASSESSMENT_ITEM_BUSINESS_LOGIC.md) - Comprehensive business logic implementation details
-- 🔧 [Schema Validation Guide](ASSESSMENT_ITEM_SCHEMA_VALIDATION.md) - **NEW**: How schema-based validation works
-
 ## inquiry-api-service local setup
 This readme file contains the instruction to set up and run the assessment-service in local machine.
 
