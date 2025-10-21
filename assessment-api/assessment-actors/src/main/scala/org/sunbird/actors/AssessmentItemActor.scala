@@ -21,8 +21,6 @@ class AssessmentItemActor @Inject()(implicit oec: OntologyEngineContext) extends
     case "createItem" => create(request)
     case "readItem" => read(request)
     case "updateItem" => update(request)
-    case "searchItem" => search(request)
-    case "listItem" => list(request)
     case "retireItem" => retire(request)
     case _ => ERROR(request.getOperation)
   }
@@ -45,22 +43,6 @@ class AssessmentItemActor @Inject()(implicit oec: OntologyEngineContext) extends
   def update(request: Request): Future[Response] = {
     request.getRequest.put("identifier", request.getContext.get("identifier"))
     AssessmentManager.getValidatedNodeForUpdate(request, "ERR_ASSESSMENT_ITEM_UPDATE").flatMap(_ => AssessmentManager.updateNode(request))
-  }
-
-  def search(request: Request): Future[Response] = {
-    // TODO: Implement search functionality with search criteria
-    // For now, return a basic response
-    Future.successful(ResponseHandler.OK.put("assessment_items", new util.ArrayList[util.Map[String, AnyRef]]()))
-  }
-
-  def list(request: Request): Future[Response] = {
-    // TODO: Implement list functionality with pagination
-    // Extract limit and offset parameters
-    val limit = request.getRequest.getOrDefault("limit", 200).asInstanceOf[Int]
-    val offset = request.getRequest.getOrDefault("offset", 0).asInstanceOf[Int]
-    
-    // For now, return a basic response
-    Future.successful(ResponseHandler.OK.put("assessment_items", new util.ArrayList[util.Map[String, AnyRef]]()).put("count", 0))
   }
 
   def retire(request: Request): Future[Response] = {

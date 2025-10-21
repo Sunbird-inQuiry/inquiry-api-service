@@ -49,28 +49,6 @@ class AssessmentItemController @Inject()(@Named(ActorNames.ASSESSMENT_ITEM_ACTOR
     getResult(ApiId.UPDATE_ASSESSMENT_ITEM, assessmentItemActor, assessmentItemRequest)
   }
 
-  def search() = Action.async { implicit request =>
-    val headers = commonHeaders()
-    val body = requestBody()
-    val searchCriteria = body.getOrDefault("request", new java.util.HashMap()).asInstanceOf[java.util.Map[String, Object]]
-    searchCriteria.putAll(headers)
-    val assessmentItemRequest = getRequest(searchCriteria, headers, AssessmentItemOperations.searchItem.toString)
-    setRequestContext(assessmentItemRequest, version, objectType, schemaName)
-    getResult(ApiId.SEARCH_ASSESSMENT_ITEM, assessmentItemActor, assessmentItemRequest)
-  }
-
-  def list(limit: Option[Int], offset: Option[Int]) = Action.async { implicit request =>
-    val headers = commonHeaders()
-    val body = requestBody()
-    val listParams = new java.util.HashMap[String, Object]()
-    listParams.putAll(headers)
-    listParams.put("limit", limit.getOrElse(200).asInstanceOf[Object])
-    listParams.put("offset", offset.getOrElse(0).asInstanceOf[Object])
-    val assessmentItemRequest = getRequest(listParams, headers, AssessmentItemOperations.listItem.toString)
-    setRequestContext(assessmentItemRequest, version, objectType, schemaName)
-    getResult(ApiId.LIST_ASSESSMENT_ITEM, assessmentItemActor, assessmentItemRequest)
-  }
-
   def retire(identifier: String) = Action.async { implicit request =>
     val headers = commonHeaders()
     val assessmentItem = new java.util.HashMap().asInstanceOf[java.util.Map[String, Object]]

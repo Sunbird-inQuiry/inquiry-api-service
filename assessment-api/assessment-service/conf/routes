@@ -15,8 +15,6 @@ DELETE    /itemset/v3/retire/:identifier    controllers.v3.ItemSetController.ret
 POST      /assessment/v3/items/create         controllers.v3.AssessmentItemController.create
 GET       /assessment/v3/items/read/:id       controllers.v3.AssessmentItemController.read(id:String, ifields:Option[String], fields:Option[String])
 PATCH     /assessment/v3/items/update/:id     controllers.v3.AssessmentItemController.update(id:String)
-POST      /assessment/v3/items/search         controllers.v3.AssessmentItemController.search
-POST      /assessment/v3/items/list           controllers.v3.AssessmentItemController.list(limit:Option[Int], offset:Option[Int])
 DELETE    /assessment/v3/items/retire/:id     controllers.v3.AssessmentItemController.retire(id:String)
 
 # Question API's
