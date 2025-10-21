@@ -1,0 +1,253 @@
+{
+  "$id": "assessmentitem-schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AssessmentItem",
+  "type": "object",
+  "required": [
+    "name",
+    "code",
+    "mimeType"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "code": {
+      "type": "string",
+      "minLength": 1
+    },
+    "description": {
+      "type": "string"
+    },
+    "mimeType": {
+      "type": "string",
+      "enum": [
+        "application/vnd.ekstep.ecml-archive",
+        "application/vnd.sunbird.question"
+      ]
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "mcq",
+        "mmcq",
+        "ftb",
+        "mtf",
+        "reference",
+        "sequence",
+        "speech_question"
+      ],
+      "description": "Type of assessment item"
+    },
+    "visibility": {
+      "type": "string",
+      "default": "Default",
+      "enum": [
+        "Default",
+        "Parent",
+        "Private",
+        "Protected"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "default": "Draft",
+      "enum": [
+        "Draft",
+        "Review",
+        "Live",
+        "Retired"
+      ]
+    },
+    "framework": {
+      "type": "string",
+      "description": "Framework identifier"
+    },
+    "channel": {
+      "type": "string",
+      "description": "Channel identifier"
+    },
+    "body": {
+      "type": "string",
+      "description": "HTML content of the question"
+    },
+    "answer": {
+      "type": ["string", "object"],
+      "description": "Answer for the assessment item"
+    },
+    "options": {
+      "type": "array",
+      "description": "Options for MCQ type questions",
+      "items": {
+        "type": "object",
+        "required": ["value"],
+        "properties": {
+          "value": {
+            "type": ["string", "object"]
+          },
+          "answer": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "num_answers": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Number of correct answers"
+    },
+    "hints": {
+      "type": "array",
+      "description": "Hints for the question",
+      "items": {
+        "type": "object",
+        "properties": {
+          "order": {
+            "type": "integer"
+          },
+          "content": {
+            "type": "string"
+          },
+          "anchor": {
+            "type": "string"
+          },
+          "content_type": {
+            "type": "string"
+          },
+          "start": {
+            "type": "string"
+          },
+          "timing": {
+            "type": "string"
+          },
+          "on_next": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "responses": {
+      "type": "array",
+      "description": "Response declaration",
+      "items": {
+        "type": "object"
+      }
+    },
+    "editorState": {
+      "type": "object",
+      "description": "Editor state for question creation"
+    },
+    "solutions": {
+      "type": "array",
+      "description": "Solutions for the question",
+      "items": {
+        "type": "object"
+      }
+    },
+    "question": {
+      "type": "string",
+      "description": "Question text"
+    },
+    "media": {
+      "type": "array",
+      "description": "Media assets",
+      "items": {
+        "type": "object"
+      }
+    },
+    "createdBy": {
+      "type": "string"
+    },
+    "createdFor": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "creator": {
+      "type": "string"
+    },
+    "author": {
+      "type": "string"
+    },
+    "copyright": {
+      "type": "string"
+    },
+    "license": {
+      "type": "string"
+    },
+    "language": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "audience": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "ageGroup": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "attributions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "owner": {
+      "type": "string"
+    },
+    "consumerId": {
+      "type": "string"
+    },
+    "keywords": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "bloomsLevel": {
+      "type": "string"
+    },
+    "board": {
+      "type": "string"
+    },
+    "medium": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "gradeLevel": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "subject": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "topic": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "learningOutcome": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}
