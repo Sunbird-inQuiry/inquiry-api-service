@@ -61,17 +61,14 @@ class AssessmentItemActor @Inject()(implicit oec: OntologyEngineContext) extends
       metadata.remove("level")
     }
 
-    // Ensure metadata.objectType is set for schema validation
-    if (!metadata.containsKey("objectType")) {
-      metadata.put("objectType", "AssessmentItem")
-    }
-
     if (!skipValidation) {
       TelemetryManager.info(s"AssessmentItemActor.create: Calling validator with requestData keys: ${requestData.keySet()}")
       AssessmentItemValidator.validateAssessmentItemRequest(requestData, "ASSESSMENT_ITEM_CREATE")
     }
 
     replaceMediaItemsWithVariants(metadata)
+    requestData.remove("metadata")
+    requestData.putAll(metadata)
     
     println("Before creating DataNode - request : " + request)
     DataNode.create(request).map { node =>
@@ -125,11 +122,6 @@ class AssessmentItemActor @Inject()(implicit oec: OntologyEngineContext) extends
 
       if (metadata.containsKey("level")) {
         metadata.remove("level")
-      }
-
-      // Ensure metadata.objectType is set for schema validation
-      if (!metadata.containsKey("objectType")) {
-        metadata.put("objectType", "AssessmentItem")
       }
 
       val externalProps = handleExternalProperties(metadata)

@@ -4,13 +4,119 @@
   "title": "AssessmentItem",
   "type": "object",
   "required": [
-    "objectType",
-    "metadata"
+    "code",
+    "type"
   ],
   "properties": {
-    "objectType": {
+    "mimeType": {
       "type": "string",
-      "enum": ["AssessmentItem"]
+      "default": "application/vnd.sunbird.assessmentitem"
+    },
+    "framework": {
+      "type": "string",
+      "default": "NCF"
+    },
+    "version": {
+      "type": "integer",
+      "default": 1
+    },
+    "name": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": ["mcq", "mmcq", "ftb", "mtf", "ordering", "subjective", "speech_question", "canvas_question", "recognition"]
+    },
+    "status": {
+      "type": "string",
+      "default": "Draft",
+      "enum": ["Draft", "Review", "Live", "Retired"]
+    },
+    "visibility": {
+      "type": "string",
+      "default": "Default",
+      "enum": ["Default", "Parent", "Private", "Protected"]
+    },
+    "channel": {
+      "type": "string"
+    },
+    "body": {
+      "type": "string"
+    },
+    "question": {
+      "type": "string"
+    },
+    "answer": {
+      "type": ["string", "object"]
+    },
+    "options": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "solutions": {
+      "type": "array",
+      "items": {
+        "type": "object"
+          }
+    },
+    "hints": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "media": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "editorstate": {
+      "type": "object"
+    },
+    "createdBy": {
+      "type": "string"
+    },
+    "createdFor": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "board": {
+      "type": "string"
+    },
+    "medium": {
+      "type": ["string", "array"]
+    },
+    "gradeLevel": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "subject": {
+      "type": ["string", "array"]
+    },
+    "topic": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "copyright": {
+      "type": "string"
+    },
+    "license": {
+      "type": "string"
+    },
+    "author": {
+      "type": "string"
     },
     "outRelations": {
       "type": "array",
@@ -18,127 +124,6 @@
       "items": {
         "type": "object"
       }
-    },
-    "metadata": {
-      "type": "object",
-      "required": ["objectType"],
-      "properties": {
-        "objectType": {
-          "type": "string",
-          "enum": ["AssessmentItem"]
-        },
-        "mimeType": {
-          "type": "string",
-          "default": "application/vnd.sunbird.assessmentitem"
-        },
-        "framework": {
-          "type": "string",
-          "default": "NCF"
-        },
-        "version": {
-          "type": "integer",
-          "default": 1
-        },
-        "name": {
-          "type": "string"
-        },
-        "code": {
-          "type": "string"
-        },
-        "type": {
-          "type": "string",
-          "enum": ["mcq", "mmcq", "ftb", "mtf", "ordering", "subjective", "speech_question", "canvas_question", "recognition"]
-        },
-        "status": {
-          "type": "string",
-          "default": "Draft",
-          "enum": ["Draft", "Review", "Live", "Retired"]
-        },
-        "visibility": {
-          "type": "string",
-          "default": "Default",
-          "enum": ["Default", "Parent", "Private", "Protected"]
-        },
-        "channel": {
-          "type": "string"
-        },
-        "body": {
-          "type": "string"
-        },
-        "question": {
-          "type": "string"
-        },
-        "answer": {
-          "type": ["string", "object"]
-        },
-        "options": {
-          "type": "array",
-          "items": {
-            "type": "object"
-          }
-        },
-        "solutions": {
-          "type": "array",
-          "items": {
-            "type": "object"
-          }
-        },
-        "hints": {
-          "type": "array",
-          "items": {
-            "type": "object"
-          }
-        },
-        "media": {
-          "type": "array",
-          "items": {
-            "type": "object"
-          }
-        },
-        "editorstate": {
-          "type": "object"
-        },
-        "createdBy": {
-          "type": "string"
-        },
-        "createdFor": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "board": {
-          "type": "string"
-        },
-        "medium": {
-          "type": ["string", "array"]
-        },
-        "gradeLevel": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "subject": {
-          "type": ["string", "array"]
-        },
-        "topic": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "copyright": {
-          "type": "string"
-        },
-        "license": {
-          "type": "string"
-        },
-        "author": {
-          "type": "string"
-        }
-      },
-      "additionalProperties": true
     }
   },
   "additionalProperties": true
