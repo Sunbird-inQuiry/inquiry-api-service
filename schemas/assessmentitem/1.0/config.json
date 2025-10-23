@@ -25,36 +25,27 @@
   "orgFrameworkTerms": ["boardIds", "gradeLevelIds", "subjectIds", "mediumIds", "topicsIds"],
   "targetFrameworkTerms": ["targetFWIds", "targetBoardIds", "targetGradeLevelIds", "targetSubjectIds", "targetMediumIds", "targetTopicIds"],
   "cacheEnabled": false,
-  "schema_restrict_api": true,
+  "schema_restrict_api": false,
   "external": {
-    "tableName": "assessment_item_data",
+    "tableName": "question_data",
     "properties": {
       "body": {
         "type": "blob"
       },
-      "editorState": {
-        "type": "string"
-      },
-      "answer": {
+      "editorstate": {
         "type": "blob"
-      },
-      "solutions": {
-        "type": "string"
       },
       "question": {
         "type": "blob"
       },
-      "hints": {
-        "type": "string"
+      "last_updated_on": {
+          "type": "timestamp"
       },
-      "media": {
-        "type": "string"
-      },
-      "responses": {
-        "type": "string"
+      "solutions": {
+        "type": "blob"
       }
     },
-    "primaryKey": ["identifier"]
+    "primaryKey": ["question_id"]
   },
   "PII_Fields": {
     "user": {

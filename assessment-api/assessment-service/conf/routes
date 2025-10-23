@@ -16,6 +16,7 @@ POST      /assessment/v3/items/create         controllers.v3.AssessmentItemContr
 GET       /assessment/v3/items/read/:id       controllers.v3.AssessmentItemController.read(id:String, ifields:Option[String], fields:Option[String])
 PATCH     /assessment/v3/items/update/:id     controllers.v3.AssessmentItemController.update(id:String)
 DELETE    /assessment/v3/items/retire/:id     controllers.v3.AssessmentItemController.retire(id:String)
+POST      /assessment/v3/items/search         controllers.v3.AssessmentItemController.search
 
 # Question API's
 POST      /question/v4/create                     controllers.v4.QuestionController.create()

@@ -1,5 +1,5 @@
 package utils
 
 object AssessmentItemOperations extends Enumeration {
-  val createItem, readItem, updateItem, retireItem = Value
+  val createItem, readItem, updateItem, retireItem, searchItem = Value
 }

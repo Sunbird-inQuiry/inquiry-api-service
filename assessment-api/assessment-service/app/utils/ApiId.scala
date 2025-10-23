@@ -17,6 +17,7 @@ object ApiId {
 	val READ_ASSESSMENT_ITEM = "api.assessment.item.read"
 	val UPDATE_ASSESSMENT_ITEM = "api.assessment.item.update"
 	val RETIRE_ASSESSMENT_ITEM = "api.assessment.item.retire"
+	val SEARCH_ASSESSMENT_ITEM = "api.assessment.item.search"
 
 	//Question APIs
 	val CREATE_QUESTION = "api.question.create"
