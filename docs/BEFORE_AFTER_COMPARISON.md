@@ -2,158 +2,136 @@
 
 ## The Problem
 
-### What Was Happening (BEFORE)
+### Root Cause: Schema Structure Mismatch
 
-```scala
-// In AssessmentItemActor.create() - Lines 69-71 (OLD CODE)
-replaceMediaItemsWithVariants(metadata)
-requestData.remove("metadata")      // ❌ Removes metadata wrapper
-requestData.putAll(metadata)        // ❌ Flattens to top level
-```
+The AssessmentItem schema had a **nested structure** while all other schemas (Question, QuestionSet, ItemSet) use a **flat structure**. This inconsistency caused validation failures in the knowledge-platform's DataNode.
 
-### Request Structure After Flattening (INVALID)
+### Schema Comparison
+
+**AssessmentItem (WRONG - nested):**
 ```json
 {
-  "objectType": "AssessmentItem",
-  "type": "mcq",
-  "name": "Test Question",
-  "code": "test-001",
-  "options": [...],
-  "mimeType": "application/vnd.sunbird.assessmentitem",
-  "framework": "NCF"
-  // ❌ NO metadata wrapper!
-  // ❌ NO metadata.objectType!
-}
-```
-
-### Schema Validation Failure
-The schema (`schemas/assessmentitem/1.0/schema.json`) requires:
-```json
-{
-  "required": ["objectType", "metadata"],  // ❌ metadata missing
+  "required": ["objectType", "metadata"],
   "properties": {
+    "objectType": {"enum": ["AssessmentItem"]},
     "metadata": {
-      "required": ["objectType"],  // ❌ metadata.objectType missing
-      ...
+      "required": ["objectType"],
+      "properties": {
+        "objectType": {"enum": ["AssessmentItem"]},
+        "type": {...},
+        "name": {...},
+        // ... all fields nested inside metadata
+      }
     }
   }
 }
 ```
 
-**Result**: `ClientException: Validation Errors`
+**Question/QuestionSet (CORRECT - flat):**
+```json
+{
+  "required": ["name", "code", "mimeType", "primaryCategory"],
+  "properties": {
+    "name": {...},
+    "code": {...},
+    "mimeType": {...},
+    "type": {...},
+    // ... all fields at root level
+  }
+}
+```
+
+### Why This Failed
+
+The knowledge-platform DataNode expects:
+1. Controller extracts request body wrapper
+2. Actor flattens `metadata` to root level
+3. DataNode validates against **flat schema**
+
+The nested AssessmentItem schema broke step 3, causing "Required Metadata objectType not set" error.
 
 ---
 
 ## The Solution
 
-### What's Happening Now (AFTER)
+### Fixed Schema Structure (AFTER)
 
-```scala
-// In AssessmentItemActor.create() - Lines 64-74 (NEW CODE)
-// Ensure metadata.objectType is set for schema validation
-if (!metadata.containsKey("objectType")) {
-  metadata.put("objectType", "AssessmentItem")  // ✅ Set objectType
-}
-
-if (!skipValidation) {
-  TelemetryManager.info(s"AssessmentItemActor.create: Calling validator with requestData keys: ${requestData.keySet()}")
-  AssessmentItemValidator.validateAssessmentItemRequest(requestData, "ASSESSMENT_ITEM_CREATE")
-}
-
-replaceMediaItemsWithVariants(metadata)
-// ✅ Lines removed - metadata wrapper is preserved!
-```
-
-### Request Structure Preserved (VALID)
 ```json
 {
-  "objectType": "AssessmentItem",         // ✅ Present
-  "metadata": {                            // ✅ Present
-    "objectType": "AssessmentItem",       // ✅ Present (set by fix)
-    "type": "mcq",
-    "name": "Test Question",
-    "code": "test-001",
-    "options": [...],
-    "mimeType": "application/vnd.sunbird.assessmentitem",
-    "framework": "NCF"
-  },
-  "outRelations": []
-}
-```
-
-### Schema Validation Success
-```json
-{
-  "required": ["objectType", "metadata"],  // ✅ Both present
+  "required": ["code", "type"],
   "properties": {
-    "metadata": {
-      "required": ["objectType"],          // ✅ Present
-      ...
-    }
+    "code": {"type": "string"},
+    "type": {"type": "string", "enum": ["mcq", "mmcq", ...]},
+    "mimeType": {"type": "string", "default": "application/vnd.sunbird.assessmentitem"},
+    "framework": {"type": "string", "default": "NCF"},
+    "name": {"type": "string"},
+    "options": {"type": "array"},
+    // ... all other fields at root level
   }
 }
 ```
 
-**Result**: ✅ AssessmentItem created successfully with identifier
+### Code Was Already Correct!
+
+The original flattening code was RIGHT - it matches the pattern used by all other actors:
+
+```scala
+// This is CORRECT and necessary:
+replaceMediaItemsWithVariants(metadata)
+requestData.remove("metadata")      // Remove wrapper
+requestData.putAll(metadata)        // Flatten to root
+```
 
 ---
 
-## Code Changes Summary
+## Changes Summary
+
+### File: `schemas/assessmentitem/1.0/schema.json`
+
+```diff
+{
+-  "required": ["objectType", "metadata"],
++  "required": ["code", "type"],
+   "properties": {
+-    "objectType": {"enum": ["AssessmentItem"]},
+-    "metadata": {
+-      "required": ["objectType"],
+-      "properties": {
+-        "objectType": {"enum": ["AssessmentItem"]},
+         "code": {"type": "string"},
+         "type": {"type": "string", "enum": [...]},
+         "mimeType": {"type": "string", "default": "..."},
+         // ... all other fields
+-      }
+-    }
+   }
+}
+```
 
 ### File: `assessment-api/assessment-actors/src/main/scala/org/sunbird/actors/AssessmentItemActor.scala`
 
-#### In `create()` method:
-```diff
-  if (metadata.containsKey("level")) {
-    metadata.remove("level")
-  }
+**Reverted to original** - the flattening code was correct all along!
 
-+ // Ensure metadata.objectType is set for schema validation
-+ if (!metadata.containsKey("objectType")) {
-+   metadata.put("objectType", "AssessmentItem")
-+ }
-+
-  if (!skipValidation) {
-    TelemetryManager.info(s"AssessmentItemActor.create: Calling validator with requestData keys: ${requestData.keySet()}")
-    AssessmentItemValidator.validateAssessmentItemRequest(requestData, "ASSESSMENT_ITEM_CREATE")
-  }
-
-  replaceMediaItemsWithVariants(metadata)
-- requestData.remove("metadata")
-- requestData.putAll(metadata)
-  
-  println("Before creating DataNode - request : " + request)
-```
-
-#### In `update()` method:
-```diff
-  if (metadata.containsKey("level")) {
-    metadata.remove("level")
-  }
-
-+ // Ensure metadata.objectType is set for schema validation
-+ if (!metadata.containsKey("objectType")) {
-+   metadata.put("objectType", "AssessmentItem")
-+ }
-+
-  val externalProps = handleExternalProperties(metadata)
+```scala
+// This code is CORRECT:
+replaceMediaItemsWithVariants(metadata)
+requestData.remove("metadata")
+requestData.putAll(metadata)
 ```
 
 ---
 
 ## Impact
 
-### Lines Changed: 10
-- **Added**: 6 lines (3 in `create()`, 3 in `update()`)
-- **Removed**: 2 lines (in `create()`)
-- **Modified**: 0 lines
+### Lines Changed: ~110 lines
+- **Schema file**: Complete restructuring from nested to flat
+- **Code file**: Reverted to original (no net change)
 
-### Files Changed: 1
-- `assessment-api/assessment-actors/src/main/scala/org/sunbird/actors/AssessmentItemActor.scala`
+### Files Changed: 1 (schema only)
+- `schemas/assessmentitem/1.0/schema.json` - restructured to flat
 
-### Scope: Minimal and Surgical
-✅ Only fixes the specific validation issue
-✅ No changes to API contracts
-✅ No changes to database schema
-✅ No changes to external dependencies
-✅ Maintains backward compatibility
+### Scope: Schema fix only
+✅ Fixed schema structure to match other objects
+✅ Original code was already correct
+✅ No behavior changes needed in the actor
+✅ Maintains consistency with knowledge-platform patterns

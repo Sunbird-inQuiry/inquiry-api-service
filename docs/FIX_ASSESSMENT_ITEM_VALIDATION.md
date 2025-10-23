@@ -6,88 +6,88 @@ When creating an AssessmentItem through the `/assessment/v3/items/create` API en
 
 ```
 Exception occurred - class :org.sunbird.common.exception.ClientException with message :Validation Errors
+Result: "Required Metadata objectType not set"
 ```
 
-This error occurred even though the request contained the required `objectType` field.
+This error occurred even after ensuring both top-level and nested `objectType` fields were present.
 
 ## Root Cause Analysis
 
-### Schema Requirements
+### The Real Issue: Schema Structure Inconsistency
 
-The AssessmentItem schema (`schemas/assessmentitem/1.0/schema.json`) requires:
+After analyzing the knowledge-platform's DataNode code and comparing with other schemas, the root cause was that **the AssessmentItem schema had an incorrect nested structure**.
 
+**AssessmentItem schema (WRONG - nested structure):**
 ```json
 {
-  "required": [
-    "objectType",     // Required at top level
-    "metadata"        // Required at top level
-  ],
+  "required": ["objectType", "metadata"],
   "properties": {
-    "objectType": {
-      "type": "string",
-      "enum": ["AssessmentItem"]
-    },
+    "objectType": {...},
     "metadata": {
-      "type": "object",
-      "required": ["objectType"],  // Also required inside metadata
+      "required": ["objectType"],
       "properties": {
-        "objectType": {
-          "type": "string",
-          "enum": ["AssessmentItem"]
-        },
-        ...
+        /* all actual fields nested here */
       }
     }
   }
 }
 ```
 
-### The Bug
-
-In `AssessmentItemActor.scala`, the `create()` method was:
-
-1. Extracting the `metadata` object from the request
-2. Adding/modifying properties within metadata
-3. **Removing the metadata wrapper** and **flattening all properties to the top level**:
-
-```scala
-// BEFORE (buggy code):
-requestData.remove("metadata")      // Line 70 - removes metadata wrapper
-requestData.putAll(metadata)        // Line 71 - flattens all to top level
+**Other schemas like Question, QuestionSet, ItemSet (CORRECT - flat structure):**
+```json
+{
+  "required": ["name", "code", "mimeType", ...],
+  "properties": {
+    "name": {...},
+    "code": {...},
+    "mimeType": {...},
+    /* all fields at root level */
+  }
+}
 ```
 
-After this flattening:
-- ✅ Top-level `objectType` existed
-- ❌ Top-level `metadata` object was missing
-- ❌ `metadata.objectType` didn't exist (because metadata object was removed)
+### Why This Caused the Error
 
-This violated the schema requirements, causing validation to fail in `DataNode.create()`.
+The knowledge-platform's `DataNode` expects ALL schemas to follow the **flat pattern**:
+1. The controller extracts the request body (e.g., `assessment_item` wrapper)
+2. The actor flattens the `metadata` properties to root level
+3. DataNode receives a flat structure and validates against the schema
+
+The nested AssessmentItem schema broke this pattern, causing the "Required Metadata objectType not set" error even though the data was present - the schema structure itself was wrong.
 
 ## Solution
 
-The fix involves two changes to `AssessmentItemActor.scala`:
+The fix was to **change the schema structure** to be flat like all other object types, not to change the code.
 
-### 1. Preserve the Metadata Structure
+### 1. Fixed Schema Structure
 
-Remove the code that flattens the metadata structure:
+Changed `schemas/assessmentitem/1.0/schema.json` from nested to flat:
 
-```scala
-// AFTER (fixed code):
-// Lines 70-71 removed - no longer flattening metadata
-```
-
-This ensures the request maintains the proper structure with the `metadata` object intact.
-
-### 2. Ensure metadata.objectType is Set
-
-Add a check to ensure `metadata.objectType` is present:
-
-```scala
-// Ensure metadata.objectType is set for schema validation
-if (!metadata.containsKey("objectType")) {
-  metadata.put("objectType", "AssessmentItem")
+```json
+// NEW SCHEMA (flat structure)
+{
+  "required": ["code", "type"],
+  "properties": {
+    "code": {"type": "string"},
+    "type": {"type": "string", "enum": ["mcq", "mmcq", ...]},
+    "mimeType": {"type": "string", "default": "application/vnd.sunbird.assessmentitem"},
+    "framework": {"type": "string", "default": "NCF"},
+    // ... all other fields at root level
+  }
 }
 ```
+
+### 2. Reverted Code Changes
+
+The **original code was correct** - it properly flattens the metadata:
+
+```scala
+// This flattening is CORRECT and needed:
+requestData.remove("metadata")      // Remove wrapper
+requestData.putAll(metadata)        // Flatten to root level
+```
+
+This matches the pattern used by Question, QuestionSet, and all other actors.
 
 ## Request Structure
 
@@ -119,9 +119,13 @@ if (!metadata.containsKey("objectType")) {
 
 ## Files Modified
 
+- `schemas/assessmentitem/1.0/schema.json`
+  - Changed from nested to flat structure
+  - Removed `objectType` and `metadata` wrapper requirements
+  - Made schema consistent with Question, QuestionSet, ItemSet patterns
+
 - `assessment-api/assessment-actors/src/main/scala/org/sunbird/actors/AssessmentItemActor.scala`
-  - `create()` method: Added metadata.objectType check and removed flattening logic
-  - `update()` method: Added metadata.objectType check for consistency
+  - Reverted to original implementation (the flattening code was correct)
 
 ## Testing
 
