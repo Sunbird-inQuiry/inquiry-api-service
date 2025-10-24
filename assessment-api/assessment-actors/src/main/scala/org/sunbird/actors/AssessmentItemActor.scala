@@ -46,6 +46,11 @@ class AssessmentItemActor @Inject()(implicit oec: OntologyEngineContext) extends
       throw new ClientException("ERR_ASSESSMENT_ITEM_CREATE", "Assessment Item metadata is missing")
     }
     
+    // Ensure objectType is present in metadata
+    if (!metadata.containsKey("objectType")) {
+      metadata.put("objectType", "AssessmentItem")
+    }
+    
     if (!metadata.containsKey("mimeType")) {
       metadata.put("mimeType", "application/vnd.sunbird.assessmentitem")
     }
@@ -61,16 +66,25 @@ class AssessmentItemActor @Inject()(implicit oec: OntologyEngineContext) extends
       metadata.remove("level")
     }
 
-    if (!skipValidation) {
-      TelemetryManager.info(s"AssessmentItemActor.create: Calling validator with requestData keys: ${requestData.keySet()}")
-      AssessmentItemValidator.validateAssessmentItemRequest(requestData, "ASSESSMENT_ITEM_CREATE")
-    }
-
     replaceMediaItemsWithVariants(metadata)
-    requestData.remove("metadata")
-    requestData.putAll(metadata)
+    
+    // Extract all metadata fields and put them directly in the request at root level
+    // Remove the nested metadata structure completely and work directly with request
+    request.getRequest.remove("metadata")
+    request.getRequest.putAll(metadata)
+    
+    // Ensure objectType is at root level for knowledge platform validation
+    if (!request.getRequest.containsKey("objectType")) {
+      request.getRequest.put("objectType", "AssessmentItem")
+    }
+    
+    if (!skipValidation) {
+      TelemetryManager.info(s"AssessmentItemActor.create: Calling validator with request keys: ${request.getRequest.keySet()}")
+      AssessmentItemValidator.validateAssessmentItemRequest(request.getRequest, "ASSESSMENT_ITEM_CREATE")
+    }
     
     println("Before creating DataNode - request : " + request)
+    println("Before creating DataNode - request.getObjectType : " + request.getObjectType)
     DataNode.create(request).map { node =>
       ResponseHandler.OK.put("identifier", node.getIdentifier.replace(".img", ""))
     }

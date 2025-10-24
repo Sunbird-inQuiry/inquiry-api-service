@@ -4,10 +4,20 @@
   "title": "AssessmentItem",
   "type": "object",
   "required": [
-    "code",
-    "type"
+    "objectType"
   ],
   "properties": {
+    "objectType": {
+      "type": "string",
+      "enum": ["AssessmentItem"]
+    },
+    "outRelations": {
+      "type": "array",
+      "description": "Output relations for the assessment item",
+      "items": {
+        "type": "object"
+      }
+    },
     "mimeType": {
       "type": "string",
       "default": "application/vnd.sunbird.assessmentitem"
@@ -62,7 +72,7 @@
       "type": "array",
       "items": {
         "type": "object"
-          }
+      }
     },
     "hints": {
       "type": "array",
@@ -117,13 +127,6 @@
     },
     "author": {
       "type": "string"
-    },
-    "outRelations": {
-      "type": "array",
-      "description": "Output relations for the assessment item",
-      "items": {
-        "type": "object"
-      }
     }
   },
   "additionalProperties": true
