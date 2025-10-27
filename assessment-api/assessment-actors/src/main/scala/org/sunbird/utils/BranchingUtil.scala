@@ -3,8 +3,7 @@ package org.sunbird.utils
 import org.apache.commons.lang3.StringUtils
 import org.sunbird.common.dto.Request
 import java.util
-import scala.collection.JavaConverters._
-import scala.collection.JavaConversions.{asScalaBuffer}
+import scala.jdk.CollectionConverters._
 
 object BranchingUtil {
 
@@ -52,7 +51,7 @@ object BranchingUtil {
 			val nodeHierarchy = hierarchy.get(id).asInstanceOf[util.HashMap[String, AnyRef]]
 			val children = nodeHierarchy.get(AssessmentConstants.CHILDREN).asInstanceOf[util.ArrayList[String]]
 			val newChildrenList = new util.ArrayList[String]
-			children.map(identifier => {
+			children.asScala.map(identifier => {
 				if (identifiers.containsKey(identifier)) newChildrenList.add(identifiers.get(identifier)) else newChildrenList.add(identifier)
 			})
 			nodeHierarchy.put(AssessmentConstants.CHILDREN, newChildrenList)
@@ -93,7 +92,7 @@ object BranchingUtil {
 	def branchingLogicArrayHandler(nodeBL: util.HashMap[String, AnyRef], name: String, oldToNewIdMap: util.Map[String, String]) = {
 		val branchingLogicArray = nodeBL.getOrDefault(name, new util.ArrayList[String]).asInstanceOf[util.ArrayList[String]]
 		val newBranchingLogicArray = new util.ArrayList[String]()
-		branchingLogicArray.map(id => {
+		branchingLogicArray.asScala.map(id => {
 			if (oldToNewIdMap.containsKey(id)) {
 				newBranchingLogicArray.add(oldToNewIdMap.get(id))
 			} else newBranchingLogicArray.add(id)

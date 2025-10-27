@@ -1,6 +1,6 @@
 package controllers.v5
 
-import akka.actor.ActorRef
+import org.apache.pekko.actor.ActorRef
 import akka.pattern.Patterns
 import org.sunbird.common.DateUtils
 import org.sunbird.common.dto.{Response, ResponseHandler}

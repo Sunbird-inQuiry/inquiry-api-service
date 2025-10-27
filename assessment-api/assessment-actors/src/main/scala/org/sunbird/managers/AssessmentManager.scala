@@ -261,7 +261,7 @@ object AssessmentManager {
 		val outRelations: List[Relation] = if (node.getOutRelations != null) node.getOutRelations.asScala.toList else List[Relation]()
 		val visibilityIdMap: Map[String, List[String]] = outRelations
 		  .groupBy(_.getEndNodeMetadata.get("visibility").asInstanceOf[String])
-		  .mapValues(_.map(_.getEndNodeId).toList)
+		  .view.mapValues(_.map(_.getEndNodeId).toList).toMap
 		(visibilityIdMap.getOrDefault("Default", List()), visibilityIdMap.getOrDefault("Parent", List()))
 	}
 
@@ -299,7 +299,7 @@ object AssessmentManager {
 		val beJobRequestEvent: String = LogTelemetryEventUtil.logInstructionEvent(actor.asJava, context.asJava, objData.asJava, eData)
 		val topic: String = Platform.getString("kafka.topics.instruction", "sunbirddev.learning.job.request")
 		if (StringUtils.isBlank(beJobRequestEvent)) throw new ClientException("BE_JOB_REQUEST_EXCEPTION", "Event is not generated properly.")
-		oec.kafkaClient.send(beJobRequestEvent, topic)
+		org.sunbird.kafka.client.KafkaClient.send(beJobRequestEvent, topic)
 	}
 
 	def generateInstructionEventMetadata(identifier: String, node: Node, requestId: String, featureName: String): (Map[String, AnyRef], Map[String, AnyRef], Map[String, AnyRef], util.Map[String, AnyRef]) = {
