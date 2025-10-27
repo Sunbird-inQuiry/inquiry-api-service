@@ -67,13 +67,9 @@ class AssessmentItemActor @Inject()(implicit oec: OntologyEngineContext) extends
     }
 
     replaceMediaItemsWithVariants(metadata)
-    
-    // Extract all metadata fields and put them directly in the request at root level
-    // Remove the nested metadata structure completely and work directly with request
     request.getRequest.remove("metadata")
     request.getRequest.putAll(metadata)
     
-    // Ensure objectType is at root level for knowledge platform validation
     if (!request.getRequest.containsKey("objectType")) {
       request.getRequest.put("objectType", "AssessmentItem")
     }

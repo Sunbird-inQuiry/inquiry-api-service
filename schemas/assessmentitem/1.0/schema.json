@@ -1,133 +1,381 @@
 {
-  "$id": "assessmentitem-schema.json",
+  "$id": "assessmentItem-schema.json",
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "AssessmentItem",
   "type": "object",
   "required": [
-    "objectType"
+    "name",
+    "code",
+    "type",
+    "qlevel",
+    "itemType",
+    "category"
   ],
   "properties": {
-    "objectType": {
-      "type": "string",
-      "enum": ["AssessmentItem"]
-    },
-    "outRelations": {
-      "type": "array",
-      "description": "Output relations for the assessment item",
-      "items": {
-        "type": "object"
-      }
-    },
-    "mimeType": {
-      "type": "string",
-      "default": "application/vnd.sunbird.assessmentitem"
-    },
-    "framework": {
-      "type": "string",
-      "default": "NCF"
-    },
-    "version": {
-      "type": "integer",
-      "default": 1
-    },
     "name": {
       "type": "string"
     },
     "code": {
       "type": "string"
     },
+    "language": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "English",
+          "Hindi",
+          "Assamese",
+          "Bengali",
+          "Gujarati",
+          "Kannada",
+          "Malayalam",
+          "Marathi",
+          "Nepali",
+          "Odia",
+          "Punjabi",
+          "Tamil",
+          "Telugu",
+          "Urdu",
+          "Sanskrit",
+          "Maithili",
+          "Munda",
+          "Santali",
+          "Juang",
+          "Ho",
+          "Other"
+        ]
+      },
+      "default": [
+        "English"
+      ]
+    },
+    "title": {
+      "type": "string"
+    },
+    "template": {
+      "type": "string"
+    },
+    "template_id": {
+      "type": "string"
+    },
     "type": {
       "type": "string",
-      "enum": ["mcq", "mmcq", "ftb", "mtf", "ordering", "subjective", "speech_question", "canvas_question", "recognition"]
+      "enum": [
+        "embedded",
+        "mcq",
+        "ftb",
+        "mtf",
+        "recognition",
+        "vsa",
+        "sa",
+        "la",
+        "reference",
+        "other"
+      ],
+      "default": ""
+    },
+    "keywords": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     },
     "status": {
       "type": "string",
-      "default": "Draft",
-      "enum": ["Draft", "Review", "Live", "Retired"]
+      "enum": [
+        "Draft",
+        "Review",
+        "Live",
+        "Retired",
+        "Mock",
+        "Reject"
+      ],
+      "default": "Live"
     },
-    "visibility": {
-      "type": "string",
-      "default": "Default",
-      "enum": ["Default", "Parent", "Private", "Protected"]
-    },
-    "channel": {
+    "owner": {
       "type": "string"
     },
-    "body": {
+    "portalOwner": {
       "type": "string"
     },
     "question": {
       "type": "string"
     },
-    "answer": {
-      "type": ["string", "object"]
+    "question_audio": {
+      "type": "string"
     },
-    "options": {
-      "type": "array",
-      "items": {
-        "type": "object"
-      }
-    },
-    "solutions": {
-      "type": "array",
-      "items": {
-        "type": "object"
-      }
-    },
-    "hints": {
-      "type": "array",
-      "items": {
-        "type": "object"
-      }
+    "question_image": {
+      "type": "string"
     },
     "media": {
-      "type": "array",
-      "items": {
-        "type": "object"
-      }
-    },
-    "editorstate": {
       "type": "object"
     },
-    "createdBy": {
-      "type": "string"
+    "model": {
+      "type": "object"
     },
-    "createdFor": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
+    "options": {
+      "type": "object"
     },
-    "board": {
-      "type": "string"
+    "lhs_options": {
+      "type": "object"
     },
-    "medium": {
-      "type": ["string", "array"]
+    "rhs_options": {
+      "type": "object"
+    },
+    "responses": {
+      "type": "object"
+    },
+    "num_answers": {
+      "dataType": "number"
+    },
+    "answer": {
+      "dataType": "object"
+    },
+    "hints": {
+      "dataType": "object"
+    },
+    "qlevel": {
+      "dataType": "string",
+      "enum": [
+        "EASY",
+        "MEDIUM",
+        "DIFFICULT",
+        "RARE"
+      ],
+      "default": "MEDIUM"
+    },
+    "purpose": {
+      "dataType": "string",
+      "enum": [
+        "Knowledge",
+        "Conceptual",
+        "Application",
+        "Problem Solving"
+      ],
+      "default": ""
+    },
+    "depth_of_knowledge": {
+      "dataType": "string",
+      "enum": [
+        "Recall",
+        "Skill",
+        "Strategic Thinking",
+        "Extended Thinking"
+      ],
+      "default": ""
+    },
+    "used_for": {
+      "dataType": "string",
+      "enum": [
+        "assessment",
+        "worksheet"
+      ],
+      "default": ""
+    },
+    "max_score": {
+      "dataType": "number"
+    },
+    "partial_scoring": {
+      "dataType": "boolean"
+    },
+    "feedback": {
+      "dataType": "string"
+    },
+    "max_time": {
+      "dataType": "number"
     },
     "gradeLevel": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    },
-    "subject": {
-      "type": ["string", "array"]
+      "dataType": "array"
     },
     "topic": {
-      "type": "array",
+      "dataType": "array"
+    },
+    "board": {
+      "dataType": "string"
+    },
+    "subject": {
+      "dataType": "string"
+    },
+    "medium": {
+      "dataType": "string"
+    },
+    "source": {
+      "dataType": "string"
+    },
+    "rendering_metadata": {
+      "dataType": "object"
+    },
+    "description": {
+      "dataType": "string"
+    },
+    "learningObjective": {
+      "dataType": "array",
       "items": {
         "type": "string"
       }
     },
-    "copyright": {
-      "type": "string"
+    "example": {
+      "dataType": "string"
     },
-    "license": {
-      "type": "string"
+    "validators": {
+      "dataType": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "references": {
+      "dataType": "string"
+    },
+    "createdBy": {
+      "dataType": "string"
+    },
+    "createdOn": {
+      "dataType": "string"
+    },
+    "lastUpdatedBy": {
+      "dataType": "string"
+    },
+    "lastUpdatedOn": {
+      "dataType": "string"
+    },
+    "version": {
+      "dataType": "number"
+    },
+    "versionDate": {
+      "dataType": "string"
+    },
+    "versionCreatedBy": {
+      "dataType": "string"
+    },
+    "itemType": {
+      "dataType": "string",
+      "enum": [
+        "UNIT",
+        "SET",
+        "DYNAMIC"
+      ],
+      "default": "UNIT"
+    },
+    "category": {
+      "dataType": "string",
+      "enum": [
+        "MCQ",
+        "FTB",
+        "MTF",
+        "VSA",
+        "SA",
+        "LA",
+        "REFERENCE",
+        "CuriosityQuestion"
+      ],
+      "default": "MCQ"
+    },
+    "channel": {
+      "dataType": "string"
+    },
+    "framework": {
+      "dataType": "string"
+    },
+    "isShuffleOption": {
+      "dataType": "boolean"
+    },
+    "evalUnordered": {
+      "dataType": "boolean"
+    },
+    "isPartialScore": {
+      "dataType": "boolean"
+    },
+    "templateType": {
+      "dataType": "string"
+    },
+    "topicData": {
+      "dataType": "string"
+    },
+    "questionTitle": {
+      "dataType": "string"
+    },
+    "appId": {
+      "dataType": "string"
+    },
+    "lastStatusChangedOn": {
+      "dataType": "string"
+    },
+    "consumerId": {
+      "dataType": "string"
+    },
+    "solutions": {
+      "dataType": "string"
+    },
+    "learningOutcome": {
+      "dataType": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "bloomsLevel": {
+      "dataType": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "qumlConfig": {
+      "dataType": "object"
+    },
+    "responseDeclaration": {
+      "dataType": "object"
+    },
+    "templateId": {
+      "dataType": "string"
+    },
+    "maxScore": {
+      "dataType": "number"
+    },
+    "programId": {
+      "dataType": "string"
+    },
+    "program": {
+      "dataType": "string"
+    },
+    "qumlVersion": {
+      "dataType": "number"
+    },
+    "editorState": {
+      "dataType": "string"
+    },
+    "creator": {
+      "dataType": "string"
+    },
+    "createdFor": {
+      "dataType": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "rejectComment": {
+      "dataType": "string"
+    },
+    "organisation": {
+      "dataType": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "body": {
+      "dataType": "string"
+    },
+    "data": {
+      "dataType": "string"
     },
     "author": {
-      "type": "string"
+      "dataType": "string"
+    },
+    "questionType": {
+      "dataType": "string",
+      "enum": [
+        "Registration"
+      ],
+      "default": ""
     }
-  },
-  "additionalProperties": true
+  }
 }
