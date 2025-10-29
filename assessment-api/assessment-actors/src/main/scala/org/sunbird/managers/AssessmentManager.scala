@@ -299,7 +299,7 @@ object AssessmentManager {
 		val beJobRequestEvent: String = LogTelemetryEventUtil.logInstructionEvent(actor.asJava, context.asJava, objData.asJava, eData)
 		val topic: String = Platform.getString("kafka.topics.instruction", "sunbirddev.learning.job.request")
 		if (StringUtils.isBlank(beJobRequestEvent)) throw new ClientException("BE_JOB_REQUEST_EXCEPTION", "Event is not generated properly.")
-		org.sunbird.kafka.client.KafkaClient.send(beJobRequestEvent, topic)
+		oec.kafkaClient.send(beJobRequestEvent, topic)
 	}
 
 	def generateInstructionEventMetadata(identifier: String, node: Node, requestId: String, featureName: String): (Map[String, AnyRef], Map[String, AnyRef], Map[String, AnyRef], util.Map[String, AnyRef]) = {

@@ -11,14 +11,15 @@
     <artifactId>assessment-service</artifactId>
     <packaging>play2</packaging>
 
+    <!-- No additional repositories are required; Maven Central hosts Play 3 artifacts -->
     <repositories>
         <repository>
-            <id>scalaz-bintray</id>
-            <name>Scalaz Bintray - releases</name>
-            <url>https://dl.bintray.com/scalaz/releases/</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
+            <id>maven-central</id>
+            <url>https://repo1.maven.org/maven2/</url>
+        </repository>
+        <repository>
+            <id>play-releases</id>
+            <url>https://repo.playframework.com/</url>
         </repository>
     </repositories>
     <pluginRepositories>
@@ -76,7 +77,7 @@
         </dependency>
         <dependency>
             <groupId>org.playframework</groupId>
-            <artifactId>filters-helpers_${scala.major.version}</artifactId>
+            <artifactId>play-filters-helpers_${scala.major.version}</artifactId>
             <version>${play2.version}</version>
         </dependency>
         <dependency>

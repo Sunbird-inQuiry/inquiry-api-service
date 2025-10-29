@@ -7,6 +7,7 @@ import org.sunbird.common.JsonUtils
 import org.sunbird.common.dto.ResponseHandler
 import play.api.mvc._
 import utils.{ActorNames, ApiId}
+import controllers.v5.BaseController
 
 import scala.concurrent.{ExecutionContext, Future}
 

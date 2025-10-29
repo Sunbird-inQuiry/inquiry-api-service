@@ -1,7 +1,7 @@
 package controllers.v4
 
 import org.apache.pekko.actor.{ActorRef, ActorSystem}
-import controllers.BaseController
+import controllers.v5.BaseController
 import org.sunbird.telemetry.logger.TelemetryManager
 import org.sunbird.utils.AssessmentConstants
 

@@ -2,7 +2,8 @@ package org.sunbird.v5.actors
 
 import org.apache.commons.lang3.StringUtils
 import org.sunbird.`object`.importer.{ImportConfig, ImportManager}
-import org.sunbird.actor.core.BaseActor
+import org.apache.pekko.actor.AbstractActor
+import org.apache.pekko.pattern.pipe
 import org.sunbird.common.dto.{Request, Response, ResponseHandler}
 import org.sunbird.common.exception.{ClientException, ResponseCode}
 import org.sunbird.common.{DateUtils, Platform}
@@ -19,7 +20,7 @@ import scala.collection.JavaConverters
 import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 
-class QuestionActor @Inject()(implicit oec: OntologyEngineContext) extends BaseActor {
+class QuestionActor @Inject()(implicit oec: OntologyEngineContext) extends AbstractActor {
 
   implicit val ec: ExecutionContext = getContext().dispatcher
 
@@ -27,7 +28,7 @@ class QuestionActor @Inject()(implicit oec: OntologyEngineContext) extends BaseA
   private lazy val importMgr = new ImportManager(importConfig)
   val defaultVersion = Platform.config.getNumber("v5_default_qumlVersion")
 
-  override def onReceive(request: Request): Future[Response] = request.getOperation match {
+  def onReceive(request: Request): Future[Response] = request.getOperation match {
     case "createQuestion" => AssessmentV5Manager.create(request)
     case "readQuestion" => read(request)
     case "updateQuestion" => update(request)
@@ -204,4 +205,11 @@ class QuestionActor @Inject()(implicit oec: OntologyEngineContext) extends BaseA
     RequestUtil.restrictProperties(request)
     CopyManager.copy(request)
   }
+
+  override def createReceive(): AbstractActor.Receive =
+    receiveBuilder()
+      .`match`(classOf[Request], (req: Request) => {
+        onReceive(req).pipeTo(sender())
+      })
+      .build()
 }

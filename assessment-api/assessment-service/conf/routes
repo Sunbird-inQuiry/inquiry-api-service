@@ -1,18 +1,18 @@
 # Routes
 # This file defines all application routes (Higher priority routes first)
 # ~~~~
-GET		  /health						    controllers.HealthController.health
-GET       /service/health                   controllers.HealthController.serviceHealth
+GET		  /health						    controllers.HealthController.health()
+GET       /service/health                   controllers.HealthController.serviceHealth()
 
 # ItemSet API's
-POST      /itemset/v3/create                controllers.v3.ItemSetController.create
+POST      /itemset/v3/create                controllers.v3.ItemSetController.create()
 GET       /itemset/v3/read/:identifier      controllers.v3.ItemSetController.read(identifier:String, fields:Option[String])
 PATCH     /itemset/v3/update/:identifier    controllers.v3.ItemSetController.update(identifier:String)
 POST      /itemset/v3/review/:identifier    controllers.v3.ItemSetController.review(identifier:String)
 DELETE    /itemset/v3/retire/:identifier    controllers.v3.ItemSetController.retire(identifier:String)
 
 # Question API's
-POST      /question/v4/create                     controllers.v4.QuestionController.create
+POST      /question/v4/create                     controllers.v4.QuestionController.create()
 GET       /question/v4/read/:identifier           controllers.v4.QuestionController.read(identifier:String, mode:Option[String], fields:Option[String])
 GET       /question/v4/private/read/:identifier   controllers.v4.QuestionController.privateRead(identifier:String, mode:Option[String], fields:Option[String])
 PATCH     /question/v4/update/:identifier         controllers.v4.QuestionController.update(identifier:String)
@@ -26,16 +26,16 @@ POST      /question/v4/reject/:identifier         controllers.v4.QuestionControl
 POST      /question/v4/copy/:identifier           controllers.v4.QuestionController.copy(identifier:String, mode:Option[String])
 
 # QuestionSet API's
-POST      /questionset/v4/create                     controllers.v4.QuestionSetController.create
+POST      /questionset/v4/create                     controllers.v4.QuestionSetController.create()
 GET       /questionset/v4/read/:identifier           controllers.v4.QuestionSetController.read(identifier:String, mode:Option[String], fields:Option[String])
 GET       /questionset/v4/private/read/:identifier   controllers.v4.QuestionSetController.privateRead(identifier:String, mode:Option[String], fields:Option[String])
 PATCH     /questionset/v4/update/:identifier         controllers.v4.QuestionSetController.update(identifier:String)
 POST      /questionset/v4/review/:identifier         controllers.v4.QuestionSetController.review(identifier:String)
 POST      /questionset/v4/publish/:identifier        controllers.v4.QuestionSetController.publish(identifier:String)
 DELETE    /questionset/v4/retire/:identifier         controllers.v4.QuestionSetController.retire(identifier:String)
-PATCH     /questionset/v4/add                        controllers.v4.QuestionSetController.add
-DELETE    /questionset/v4/remove                     controllers.v4.QuestionSetController.remove
-PATCH     /questionset/v4/hierarchy/update           controllers.v4.QuestionSetController.updateHierarchy
+PATCH     /questionset/v4/add                        controllers.v4.QuestionSetController.add()
+DELETE    /questionset/v4/remove                     controllers.v4.QuestionSetController.remove()
+PATCH     /questionset/v4/hierarchy/update           controllers.v4.QuestionSetController.updateHierarchy()
 GET       /questionset/v4/hierarchy/:identifier      controllers.v4.QuestionSetController.getHierarchy(identifier:String, mode:Option[String])
 POST      /questionset/v4/reject/:identifier         controllers.v4.QuestionSetController.reject(identifier:String)
 POST      /questionset/v4/import                     controllers.v4.QuestionSetController.importQuestionSet()
@@ -46,7 +46,7 @@ GET       /questionset/v4/comment/read/:identifier   controllers.v4.QuestionSetC
 
 
 # Question V5 API's
-POST      /question/v5/create                     controllers.v5.QuestionController.create
+POST      /question/v5/create                     controllers.v5.QuestionController.create()
 GET       /question/v5/read/:identifier           controllers.v5.QuestionController.read(identifier:String, mode:Option[String], fields:Option[String])
 GET       /question/v5/private/read/:identifier   controllers.v5.QuestionController.privateRead(identifier:String, mode:Option[String], fields:Option[String])
 PATCH     /question/v5/update/:identifier         controllers.v5.QuestionController.update(identifier:String)
@@ -60,16 +60,16 @@ POST      /question/v5/reject/:identifier         controllers.v5.QuestionControl
 POST      /question/v5/copy/:identifier           controllers.v5.QuestionController.copy(identifier:String, mode:Option[String])
 
 # QuestionSet API's
-POST      /questionset/v5/create                     controllers.v5.QuestionSetController.create
+POST      /questionset/v5/create                     controllers.v5.QuestionSetController.create()
 GET       /questionset/v5/read/:identifier           controllers.v5.QuestionSetController.read(identifier:String, mode:Option[String], fields:Option[String])
 GET       /questionset/v5/private/read/:identifier   controllers.v5.QuestionSetController.privateRead(identifier:String, mode:Option[String], fields:Option[String])
 PATCH     /questionset/v5/update/:identifier         controllers.v5.QuestionSetController.update(identifier:String)
 POST      /questionset/v5/review/:identifier         controllers.v5.QuestionSetController.review(identifier:String)
 POST      /questionset/v5/publish/:identifier        controllers.v5.QuestionSetController.publish(identifier:String)
 DELETE    /questionset/v5/retire/:identifier         controllers.v5.QuestionSetController.retire(identifier:String)
-PATCH     /questionset/v5/add                        controllers.v5.QuestionSetController.add
-DELETE    /questionset/v5/remove                     controllers.v5.QuestionSetController.remove
-PATCH     /questionset/v5/hierarchy/update           controllers.v5.QuestionSetController.updateHierarchy
+PATCH     /questionset/v5/add                        controllers.v5.QuestionSetController.add()
+DELETE    /questionset/v5/remove                     controllers.v5.QuestionSetController.remove()
+PATCH     /questionset/v5/hierarchy/update           controllers.v5.QuestionSetController.updateHierarchy()
 GET       /questionset/v5/hierarchy/:identifier      controllers.v5.QuestionSetController.getHierarchy(identifier:String, mode:Option[String])
 POST      /questionset/v5/reject/:identifier         controllers.v5.QuestionSetController.reject(identifier:String)
 POST      /questionset/v5/import                     controllers.v5.QuestionSetController.importQuestionSet()

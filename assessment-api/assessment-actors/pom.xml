@@ -58,6 +58,11 @@
         </dependency>
         <dependency>
             <groupId>org.apache.pekko</groupId>
+            <artifactId>pekko-actor_${scala.maj.version}</artifactId>
+            <version>1.0.3</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.pekko</groupId>
             <artifactId>pekko-testkit_${scala.maj.version}</artifactId>
             <version>1.0.3</version>
             <scope>test</scope>
