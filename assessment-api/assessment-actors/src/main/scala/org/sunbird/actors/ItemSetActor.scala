@@ -100,7 +100,7 @@ class ItemSetActor @Inject() (implicit oec: OntologyEngineContext) extends Abstr
 	override def createReceive(): AbstractActor.Receive =
 		receiveBuilder()
 			.`match`(classOf[Request], (req: Request) => {
-				onReceive(req).pipeTo(sender())(ec)
+				onReceive(req).pipeTo(sender())
 			})
 			.build()
 }

@@ -26,7 +26,8 @@ class AccessLogFilter @Inject() (implicit ec: ExecutionContext) extends Essentia
 
           val path = requestHeader.uri
           if(!path.contains("/health")){
-            val headers = requestHeader.headers.headers.groupBy(_._1).map { case (k, v) => (k, v.map(_._2)) }.toMap            val appHeaders = headers.filter(header => xHeaderNames.keySet.contains(header._1.toLowerCase))
+            val headers = requestHeader.headers.headers.groupBy(_._1).map { case (k, v) => (k, v.map(_._2)) }.toMap            
+            val appHeaders = headers.filter(header => xHeaderNames.keySet.contains(header._1.toLowerCase))
                 .map(entry => (xHeaderNames.get(entry._1.toLowerCase()).get, entry._2.head))
             val otherDetails = Map[String, Any]("StartTime" -> startTime, "env" -> "assessment",
                 "RemoteAddress" -> requestHeader.remoteAddress,
