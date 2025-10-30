@@ -273,7 +273,7 @@ class QuestionSetActor @Inject()(implicit oec: OntologyEngineContext) extends Ab
   override def createReceive(): AbstractActor.Receive =
     receiveBuilder()
       .`match`(classOf[Request], (req: Request) => {
-        onReceive(req).pipeTo(sender())
+        onReceive(req).pipeTo(sender())(ec)
       })
       .build()
 }

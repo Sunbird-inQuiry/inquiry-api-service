@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>assessment-api</artifactId>
         <groupId>org.sunbird</groupId>
@@ -11,7 +11,6 @@
     <artifactId>assessment-service</artifactId>
     <packaging>play2</packaging>
 
-    <!-- No additional repositories are required; Maven Central hosts Play 3 artifacts -->
     <repositories>
         <repository>
             <id>maven-central</id>
@@ -109,41 +108,41 @@
                     <artifactId>scala-java8-compat_2.12</artifactId>
                 </exclusion>
                 <exclusion>
-      <groupId>org.scala-lang.modules</groupId>
-      <artifactId>scala-parser-combinators_2.12</artifactId>
-    </exclusion>
-    <exclusion>
-      <groupId>org.sunbird</groupId>
-      <artifactId>graph-engine_2.12</artifactId>
-    </exclusion>
-    <exclusion>
-      <groupId>org.sunbird</groupId>
-      <artifactId>graph-core_2.12</artifactId>
-    </exclusion>
-    <exclusion>
-      <groupId>com.twitter</groupId>
-      <artifactId>algebird-core_2.12</artifactId>
-    </exclusion>
-    <exclusion>
-      <groupId>com.twitter</groupId>
-      <artifactId>util-core_2.12</artifactId>
-    </exclusion>
-    <exclusion>
-      <groupId>com.twitter</groupId>
-      <artifactId>util-function_2.12</artifactId>
-    </exclusion>
-    <exclusion>
-      <groupId>com.twitter</groupId>
-      <artifactId>storehaus-cache_2.12</artifactId>
-    </exclusion>
-    <exclusion>
-      <groupId>org.typelevel</groupId>
-      <artifactId>algebra_2.12</artifactId>
-    </exclusion>
-    <exclusion>
-      <groupId>org.typelevel</groupId>
-      <artifactId>cats-kernel_2.12</artifactId>
-    </exclusion>
+                    <groupId>org.scala-lang.modules</groupId>
+                    <artifactId>scala-parser-combinators_2.12</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.sunbird</groupId>
+                    <artifactId>graph-engine_2.12</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.sunbird</groupId>
+                    <artifactId>graph-core_2.12</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.twitter</groupId>
+                    <artifactId>algebird-core_2.12</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.twitter</groupId>
+                    <artifactId>util-core_2.12</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.twitter</groupId>
+                    <artifactId>util-function_2.12</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.twitter</groupId>
+                    <artifactId>storehaus-cache_2.12</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.typelevel</groupId>
+                    <artifactId>algebra_2.12</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.typelevel</groupId>
+                    <artifactId>cats-kernel_2.12</artifactId>
+                </exclusion>
                 <exclusion>
                     <artifactId>slf4j-log4j12</artifactId>
                     <groupId>org.slf4j</groupId>
