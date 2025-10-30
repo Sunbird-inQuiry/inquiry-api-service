@@ -187,3 +187,31 @@ mvn play2:run
 ```shell
 curl http://localhost:9000/health
 ```
+
+### Running Assessment Service (distribution) in local
+1. From the repository root, build all modules ignoring tests:
+```shell
+mvn clean install -DskipTests
+```
+2. Package the assessment service and run the distribution:
+```shell
+cd assessment-api/assessment-service
+mvn play2:dist
+cd target
+tar -xvzf assessment-service-1.0-SNAPSHOT-dist.zip
+cd assessment-service-1.0-SNAPSHOT
+./start
+```
+
+### Port forwarding (Kubernetes)
+If running database dependencies on Kubernetes, you can port-forward services to localhost:
+```shell
+# Neo4j
+kubectl port-forward svc/neo4j 7474:7474 7687:7687 -n <namespace>
+
+# Cassandra
+kubectl port-forward svc/cassandra 9042:9042 -n <namespace>
+
+# Redis
+kubectl port-forward svc/redis 6379:6379 -n <namespace>
+```
