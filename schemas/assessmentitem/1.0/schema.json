@@ -115,7 +115,7 @@
       "type": "object"
     },
     "options": {
-      "type": "object"
+      "dataType": "object"
     },
     "lhs_options": {
       "type": "object"

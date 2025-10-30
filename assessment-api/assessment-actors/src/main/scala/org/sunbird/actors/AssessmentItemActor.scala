@@ -115,8 +115,6 @@ class AssessmentItemActor @Inject()(implicit oec: OntologyEngineContext) extends
         throw new ClientException("ERR_ASSESSMENT_ITEM_UPDATE", "Cannot update retired assessment item: " + existingNode.getIdentifier)
       }
       
-      validateUpdatePermissions(request, existingNode)
-      
       val metadata = if (requestData.containsKey("metadata")) {
         requestData.get("metadata").asInstanceOf[util.Map[String, AnyRef]]
       } else {

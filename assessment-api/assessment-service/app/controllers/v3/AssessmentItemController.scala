@@ -58,12 +58,4 @@ class AssessmentItemController @Inject()(@Named(ActorNames.ASSESSMENT_ITEM_ACTOR
     assessmentItemRequest.getContext.put("identifier", identifier)
     getResult(ApiId.RETIRE_ASSESSMENT_ITEM, assessmentItemActor, assessmentItemRequest)
   }
-
-  def search() = Action.async { implicit request =>
-    val headers = commonHeaders()
-    val body = requestBody()
-    val searchRequest = getRequest(body, headers, AssessmentItemOperations.searchItem.toString)
-    setRequestContext(searchRequest, version, objectType, schemaName)
-    getResult(ApiId.SEARCH_ASSESSMENT_ITEM, assessmentItemActor, searchRequest)
-  }
 }
