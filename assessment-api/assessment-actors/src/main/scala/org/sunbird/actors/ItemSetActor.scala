@@ -16,7 +16,6 @@ import org.sunbird.graph.utils.NodeUtil
 import org.sunbird.parseq.Task
 
 import scala.collection.convert.ImplicitConversions._
-import scala.collection.JavaConverters.seqAsJavaListConverter
 import scala.concurrent.{ExecutionContext, Future}
 
 class ItemSetActor @Inject() (implicit oec: OntologyEngineContext) extends AbstractActor {
