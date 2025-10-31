@@ -5,7 +5,8 @@ import java.util
 import javax.inject.Inject
 import org.apache.commons.collections4.CollectionUtils
 import org.apache.commons.lang3.StringUtils
-import org.sunbird.actor.core.BaseActor
+import org.apache.pekko.actor.AbstractActor
+import org.apache.pekko.pattern.pipe
 import org.sunbird.common.dto.{Request, Response, ResponseHandler}
 import org.sunbird.common.exception.ResponseCode
 import org.sunbird.graph.OntologyEngineContext
@@ -18,11 +19,11 @@ import scala.collection.convert.ImplicitConversions._
 import scala.collection.JavaConverters.seqAsJavaListConverter
 import scala.concurrent.{ExecutionContext, Future}
 
-class ItemSetActor @Inject() (implicit oec: OntologyEngineContext) extends BaseActor {
+class ItemSetActor @Inject() (implicit oec: OntologyEngineContext) extends AbstractActor {
 
 	implicit val ec: ExecutionContext = getContext().dispatcher
 
-	override def onReceive(request: Request): Future[Response] = request.getOperation match {
+	def onReceive(request: Request): Future[Response] = request.getOperation match {
 		case "createItemSet" => create(request)
 		case "readItemSet" => read(request)
 		case "updateItemSet" => update(request)
@@ -96,4 +97,10 @@ class ItemSetActor @Inject() (implicit oec: OntologyEngineContext) extends BaseA
 	}
 
 
+	override def createReceive(): AbstractActor.Receive =
+		receiveBuilder()
+			.`match`(classOf[Request], (req: Request) => {
+				onReceive(req).pipeTo(sender())
+			})
+			.build()
 }

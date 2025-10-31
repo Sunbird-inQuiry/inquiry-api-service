@@ -1,7 +1,7 @@
 package controllers.v5
 
 import org.apache.pekko.actor.ActorRef
-import akka.pattern.Patterns
+import org.apache.pekko.pattern.Patterns
 import org.sunbird.common.DateUtils
 import org.sunbird.common.dto.{Response, ResponseHandler}
 import org.sunbird.common.exception.ResponseCode
@@ -10,7 +10,7 @@ import play.api.mvc.{AbstractController, AnyContent, ControllerComponents, Reque
 import utils.JavaJsonUtils
 
 import java.util.UUID
-import collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.{ExecutionContext, Future}
 
 abstract class BaseController(protected val cc: ControllerComponents)(implicit exec: ExecutionContext) extends AbstractController(cc) {

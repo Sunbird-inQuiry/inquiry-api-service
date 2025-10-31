@@ -22,9 +22,11 @@ class SignalHandler @Inject()(implicit actorSystem: ActorSystem, lifecycle: Defa
             // $COVERAGE-OFF$ Disabling scoverage as this code is impossible to test
             isShuttingDown = true
             println("Termination required, swallowing SIGTERM to allow current requests to finish. : " + System.currentTimeMillis())
-            actorSystem.scheduler.scheduleOnce(STOP_DELAY)(() => {
-                println("ApplicationLifecycle stop triggered... : " + System.currentTimeMillis())
-                lifecycle.stop()
+            actorSystem.scheduler.scheduleOnce(STOP_DELAY, new Runnable {
+                override def run(): Unit = {
+                    println("ApplicationLifecycle stop triggered... : " + System.currentTimeMillis())
+                    lifecycle.stop()
+                }
             })(actorSystem.dispatcher)
             // $COVERAGE-ON
         }

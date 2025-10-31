@@ -180,7 +180,7 @@ class QuestionSetController @Inject()(@Named(ActorNames.QUESTION_SET_V5_ACTOR) q
   def updateComment(identifier: String) = Action.async { implicit request =>
     val headers = commonHeaders()
     val body = requestBody()
-    val commentList = body.getOrElse("comments", new java.util.ArrayList[java.util.Map[String, Object]]()).asInstanceOf[java.util.ArrayList[java.util.Map[String, Object]]].asScala.toList
+    val commentList = body.getOrDefault("comments", new java.util.ArrayList[java.util.Map[String, Object]]()).asInstanceOf[java.util.List[java.util.Map[String, Object]]].asScala.toList
     val filteredComment: String = commentList.headOption.flatMap(comment => Option(comment.asScala.toMap.getOrElse("comment", "").asInstanceOf[String])).getOrElse("")
     val questionSet = new java.util.HashMap().asInstanceOf[java.util.Map[String, Object]]
     questionSet.putAll(headers)
