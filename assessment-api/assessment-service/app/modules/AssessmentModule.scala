@@ -2,10 +2,10 @@ package modules
 
 import com.google.inject.AbstractModule
 import org.sunbird.actors.{HealthActor, ItemSetActor, QuestionActor, QuestionSetActor}
-import play.libs.akka.AkkaGuiceSupport
+import play.libs.pekko.PekkoGuiceSupport
 import utils.ActorNames
 
-class AssessmentModule extends AbstractModule with AkkaGuiceSupport {
+class AssessmentModule extends AbstractModule with PekkoGuiceSupport {
 
     override def configure() = {
 //        super.configure()

@@ -1,6 +1,6 @@
 package controllers.v4
 
-import akka.actor.{ActorRef, ActorSystem}
+import org.apache.pekko.actor.{ActorRef, ActorSystem}
 import controllers.BaseController
 import org.sunbird.telemetry.logger.TelemetryManager
 
@@ -8,8 +8,7 @@ import javax.inject.{Inject, Named}
 import play.api.mvc.ControllerComponents
 import utils.{ActorNames, ApiId, QuestionSetOperations}
 
-import scala.collection.JavaConverters._
-import scala.collection.convert.ImplicitConversions.`map AsScala`
+import scala.jdk.CollectionConverters._
 import scala.concurrent.ExecutionContext
 
 class QuestionSetController @Inject()(@Named(ActorNames.QUESTION_SET_ACTOR) questionSetActor: ActorRef, cc: ControllerComponents, actorSystem: ActorSystem)(implicit exec: ExecutionContext) extends BaseController(cc) {
@@ -181,7 +180,7 @@ class QuestionSetController @Inject()(@Named(ActorNames.QUESTION_SET_ACTOR) ques
 	def updateComment(identifier: String) = Action.async { implicit request =>
 		val headers = commonHeaders()
 		val body = requestBody()
-		val commentList = body.getOrElse("comments", new java.util.ArrayList[java.util.Map[String, Object]]()).asInstanceOf[java.util.ArrayList[java.util.Map[String, Object]]].asScala.toList
+		val commentList = body.getOrDefault("comments", new java.util.ArrayList[java.util.Map[String, Object]]()).asInstanceOf[java.util.List[java.util.Map[String, Object]]].asScala.toList
 		val filteredComment: String = commentList.headOption.flatMap(comment => Option(comment.asScala.toMap.getOrElse("comment", "").asInstanceOf[String])).getOrElse("")
 		val questionSet = new java.util.HashMap().asInstanceOf[java.util.Map[String, Object]]
 		questionSet.putAll(headers)
