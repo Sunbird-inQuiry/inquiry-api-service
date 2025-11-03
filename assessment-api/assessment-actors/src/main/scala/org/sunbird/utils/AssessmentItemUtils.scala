@@ -110,7 +110,7 @@ object AssessmentItemUtils {
     if (requestData.containsKey("metadata")) {
       requestData.get("metadata").asInstanceOf[util.Map[String, AnyRef]]
     } else {
-      throw new ClientException("ERR_ASSESSMENT_ITEM_CREATE", "Assessment Item metadata is missing")
+      throw new ClientException("ERR_ASSESSMENT_ITEM", "Assessment Item metadata is missing")
     }
   }
 

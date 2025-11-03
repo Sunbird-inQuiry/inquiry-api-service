@@ -67,28 +67,16 @@ class AssessmentItemActor @Inject()(implicit oec: OntologyEngineContext) extends
   def update(request: Request): Future[Response] = {
     val requestData = request.getRequest
     request.getRequest.put("identifier", request.getContext.get("identifier"))
-    val skipValidation = AssessmentItemUtils.getSkipValidation(requestData)
     DataNode.read(request).flatMap(existingNode => {
       if (NodeUtil.isRetired(existingNode)) {
         throw new ClientException("ERR_ASSESSMENT_ITEM_UPDATE", "Cannot update retired assessment item: " + existingNode.getIdentifier)
       }
-      val metadata = if (requestData.containsKey("metadata")) {
-        requestData.get("metadata").asInstanceOf[util.Map[String, AnyRef]]
-      } else {
-        throw new ClientException("ERR_ASSESSMENT_ITEM_UPDATE", "Assessment Item metadata is missing")
-      }
-      if (!metadata.containsKey("framework")) {
-        val existingFramework = existingNode.getMetadata.get("framework")
-        if (existingFramework != null) {
-          metadata.put("framework", existingFramework)
-        }
-      }
-      if (metadata.containsKey("level")) {
-        metadata.remove("level")
-      }
-      if (!skipValidation) {
-        AssessmentItemValidator.validateAssessmentItemRequest(requestData, "ASSESSMENT_ITEM_UPDATE")
-      }
+      val skipValidation = AssessmentItemUtils.getSkipValidation(requestData)
+      val metadata = AssessmentItemUtils.extractMetadata(requestData)
+      AssessmentItemUtils.populateDefaults(metadata)
+      AssessmentItemUtils.replaceMediaItemsWithVariants(metadata)
+      AssessmentItemUtils.flattenMetadataToRequest(request, metadata)
+      if (!skipValidation) AssessmentItemValidator.validateAssessmentItemRequest(requestData, "ASSESSMENT_ITEM_UPDATE")
       AssessmentItemUtils.replaceMediaItemsWithVariants(metadata)
       DataNode.update(request).map { node =>
         ResponseHandler.OK.put("identifier", node.getIdentifier.replace(".img", ""), "versionKey" -> node.getMetadata.get("versionKey"))
