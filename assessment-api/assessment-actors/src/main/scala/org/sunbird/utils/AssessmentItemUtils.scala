@@ -4,6 +4,7 @@ import org.apache.commons.lang3.StringUtils
 import org.sunbird.common.Platform
 import org.sunbird.common.exception.ClientException
 import org.sunbird.common.dto.Request
+import org.sunbird.graph.OntologyEngineContext
 import org.sunbird.graph.dac.model.Node
 import org.sunbird.graph.nodes.DataNode
 import org.sunbird.telemetry.logger.TelemetryManager
@@ -11,7 +12,7 @@ import org.sunbird.utils.JavaJsonUtils
 
 import java.util
 import scala.collection.JavaConverters._
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 object AssessmentItemUtils {
   def validateRetirePermissions(request: Request, node: Node): Unit = {
@@ -34,7 +35,7 @@ object AssessmentItemUtils {
     }
   }
 
-  def replaceMediaItemsWithVariants(assessmentItem: util.Map[String, AnyRef]): Unit = {
+  def replaceMediaItemsWithVariants(assessmentItem: util.Map[String, AnyRef])(implicit oec: OntologyEngineContext, ec: ExecutionContext): Unit = {
     val media = assessmentItem.get("media")
     if (media != null && StringUtils.isNotBlank(media.toString)) {
       val mediaList = if (media.isInstanceOf[String]) {
@@ -63,7 +64,7 @@ object AssessmentItemUtils {
     }
   }
 
-  def processMediaItem(mediaItem: java.util.Map[String, Object], resolution: String): Option[java.util.Map[String, Object]] = {
+  def processMediaItem(mediaItem: java.util.Map[String, Object], resolution: String)(implicit oec: OntologyEngineContext, ec: ExecutionContext): Option[java.util.Map[String, Object]] = {
     var assetId = mediaItem.get("asset_id")
     if (assetId == null) {
       assetId = mediaItem.get("assetId")
