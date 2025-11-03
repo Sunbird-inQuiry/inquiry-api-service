@@ -12,7 +12,7 @@ POST      /itemset/v3/review/:identifier    controllers.v3.ItemSetController.rev
 DELETE    /itemset/v3/retire/:identifier    controllers.v3.ItemSetController.retire(identifier:String)
 
 # Assessment Item API's
-POST      /assessment/v3/items/create         controllers.v3.AssessmentItemController.create
+POST      /assessment/v3/items/create         controllers.v3.AssessmentItemController.create()
 GET       /assessment/v3/items/read/:id       controllers.v3.AssessmentItemController.read(id:String, ifields:Option[String], fields:Option[String])
 PATCH     /assessment/v3/items/update/:id     controllers.v3.AssessmentItemController.update(id:String)
 DELETE    /assessment/v3/items/retire/:id     controllers.v3.AssessmentItemController.retire(id:String)
