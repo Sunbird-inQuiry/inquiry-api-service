@@ -2,7 +2,6 @@ package org.sunbird.validators
 
 import org.apache.commons.lang3.StringUtils
 import org.sunbird.common.exception.ClientException
-import org.sunbird.telemetry.logger.TelemetryManager
 import org.sunbird.utils.JavaJsonUtils
 
 import java.util
@@ -22,19 +21,13 @@ object AssessmentItemValidator {
 
   def validateAssessmentItem(assessmentItem: util.Map[String, AnyRef]): List[String] = {
     val errorMessages = scala.collection.mutable.ListBuffer[String]()
-    
-    // Debug logging
-    TelemetryManager.info(s"AssessmentItemValidator: Received request with keys: ${assessmentItem.keySet()}")
-    
-    // Extract metadata - the actual assessment item properties are inside metadata in Sunbird Learning Platform structure
     val metadata = if (assessmentItem.containsKey("metadata")) {
       assessmentItem.get("metadata").asInstanceOf[util.Map[String, AnyRef]]
     } else {
-      assessmentItem // If no metadata wrapper, use the request directly
+      assessmentItem
     }
     
     val itemType = metadata.get("type")
-    TelemetryManager.info(s"AssessmentItemValidator: Extracted type from metadata: $itemType")
     
     val numAnswers = if (isNotBlank(metadata, "num_answers")) {
       Some(metadata.get("num_answers").asInstanceOf[Int])
@@ -120,7 +113,6 @@ object AssessmentItemValidator {
       }
     }.recover {
       case e: Exception =>
-        TelemetryManager.error("invalid responses definition: " + e.getMessage, e)
         errorMessages += "invalid responses definition"
     }
   }
@@ -182,31 +174,20 @@ object AssessmentItemValidator {
       assessmentItem.get("num_answers").asInstanceOf[Int]
     } else 0
     
-    TelemetryManager.info(s"checkJsonList: Checking property '$propertyName' for item type: $itemType")
-    
     if (assessmentItem.get(propertyName) == null) {
       errorMessages += s"item $propertyName is missing."
     } else {
       val propertyValue = assessmentItem.get(propertyName)
-      TelemetryManager.info(s"checkJsonList: Property '$propertyName' value type: ${propertyValue.getClass.getSimpleName}, value: $propertyValue")
-      
       Try {
         val values = if (propertyValue.isInstanceOf[util.List[_]]) {
-          // Already a List, cast it directly
-          TelemetryManager.info(s"checkJsonList: Property '$propertyName' is already a List")
           propertyValue.asInstanceOf[java.util.List[java.util.Map[String, Object]]]
         } else {
-          // String representation, deserialize it
-          TelemetryManager.info(s"checkJsonList: Property '$propertyName' is a string, deserializing")
           JavaJsonUtils.deserialize[java.util.List[java.util.Map[String, Object]]](propertyValue.toString)
         }
-        
-        TelemetryManager.info(s"checkJsonList: Successfully processed '$propertyName' to list with ${values.size()} items")
         
         var answerCount = 0
         
         values.asScala.zipWithIndex.foreach { case (value, index) =>
-          TelemetryManager.info(s"checkJsonList: Processing $propertyName item $index with keys: ${value.keySet()}")
           keys.foreach { key =>
             if (!value.containsKey(key)) {
               errorMessages += s"invalid assessment item property: $propertyName. $key is missing."
@@ -242,7 +223,6 @@ object AssessmentItemValidator {
         }
       }.recover {
         case e: Exception =>
-          TelemetryManager.error(s"checkJsonList: Failed to process '$propertyName': ${e.getMessage}", e)
           errorMessages += s"invalid assessment item property: $propertyName."
       }
     }

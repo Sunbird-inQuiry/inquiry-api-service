@@ -9,7 +9,6 @@ import scala.collection.JavaConverters._
 class AssessmentItemValidatorSpec extends FlatSpec with Matchers {
 
   "AssessmentItemValidator" should "handle nested assessment_item.metadata structure" in {
-    // This mimics the structure from the Actor's extractAssessmentItemData
     val assessmentItem = new util.HashMap[String, AnyRef]()
     val metadata = new util.HashMap[String, AnyRef]()
     
@@ -19,11 +18,7 @@ class AssessmentItemValidatorSpec extends FlatSpec with Matchers {
     
     assessmentItem.put("objectType", "AssessmentItem")
     assessmentItem.put("metadata", metadata)
-
-    // Should not throw "Assessment Type is Null" error
     val errors = AssessmentItemValidator.validateAssessmentItem(assessmentItem)
-    
-    // Should have validation errors for missing options, but not for null type
     errors should not contain "Assessment Type is Null"
   }
 
@@ -32,11 +27,7 @@ class AssessmentItemValidatorSpec extends FlatSpec with Matchers {
     metadata.put("type", "mcq")
     metadata.put("name", "Test Question")
     metadata.put("code", "TEST_Q1")
-
-    // Should not throw "Assessment Type is Null" error
     val errors = AssessmentItemValidator.validateAssessmentItem(metadata)
-    
-    // Should have validation errors for missing options, but not for null type
     errors should not contain "Assessment Type is Null"
   }
 
@@ -52,11 +43,7 @@ class AssessmentItemValidatorSpec extends FlatSpec with Matchers {
     assessmentItem.put("objectType", "AssessmentItem")
     assessmentItem.put("metadata", metadata)
     requestData.put("assessment_item", assessmentItem)
-
-    // Should not throw "Assessment Type is Null" error
     val errors = AssessmentItemValidator.validateAssessmentItem(requestData)
-    
-    // Should have validation errors for missing options, but not for null type
     errors should not contain "Assessment Type is Null"
   }
 
@@ -66,7 +53,6 @@ class AssessmentItemValidatorSpec extends FlatSpec with Matchers {
     
     metadata.put("name", "Test Question")
     metadata.put("code", "TEST_Q1")
-    // No type field
     
     assessmentItem.put("objectType", "AssessmentItem")
     assessmentItem.put("metadata", metadata)
