@@ -29,15 +29,11 @@ class AssessmentItemActor @Inject()(implicit oec: OntologyEngineContext) extends
     case "readItem" => read(request)
     case "updateItem" => update(request)
     case "retireItem" => retire(request)
-//    case "searchItem" => search(request)
     case _ => ERROR(request.getOperation)
   }
 
   def create(request: Request): Future[Response] = {
     val requestData = request.getRequest
-    
-    TelemetryManager.info(s"AssessmentItemActor.create: Received requestData with keys: ${requestData.keySet()}")
-    
     val skipValidation = requestData.getOrDefault("skipValidation", false.asInstanceOf[AnyRef]).asInstanceOf[Boolean]
     
     val metadata = if (requestData.containsKey("metadata")) {
@@ -46,7 +42,6 @@ class AssessmentItemActor @Inject()(implicit oec: OntologyEngineContext) extends
       throw new ClientException("ERR_ASSESSMENT_ITEM_CREATE", "Assessment Item metadata is missing")
     }
     
-    // Ensure objectType is present in metadata
     if (!metadata.containsKey("objectType")) {
       metadata.put("objectType", "AssessmentItem")
     }
@@ -75,12 +70,8 @@ class AssessmentItemActor @Inject()(implicit oec: OntologyEngineContext) extends
     }
     
     if (!skipValidation) {
-      TelemetryManager.info(s"AssessmentItemActor.create: Calling validator with request keys: ${request.getRequest.keySet()}")
       AssessmentItemValidator.validateAssessmentItemRequest(request.getRequest, "ASSESSMENT_ITEM_CREATE")
     }
-    
-    println("Before creating DataNode - request : " + request)
-    println("Before creating DataNode - request.getObjectType : " + request.getObjectType)
     DataNode.create(request).map { node =>
       ResponseHandler.OK.put("identifier", node.getIdentifier.replace(".img", ""))
     }
@@ -131,8 +122,6 @@ class AssessmentItemActor @Inject()(implicit oec: OntologyEngineContext) extends
       if (metadata.containsKey("level")) {
         metadata.remove("level")
       }
-
-      val externalProps = handleExternalProperties(metadata)
       
       if (!skipValidation) {
         AssessmentItemValidator.validateAssessmentItemRequest(requestData, "ASSESSMENT_ITEM_UPDATE")
@@ -165,31 +154,6 @@ class AssessmentItemActor @Inject()(implicit oec: OntologyEngineContext) extends
     })
   }
 
-//  def search(request: Request): Future[Response] = {
-//    DataNode.search(request).map(nodes => {
-//      if (nodes != null && !nodes.isEmpty) {
-//        val assessmentItems = nodes.asScala.toList.map { node =>
-//          val metadata = NodeUtil.serialize(node, null,
-//            node.getObjectType.toLowerCase.replace("image", ""),
-//            request.getContext.get("version").asInstanceOf[String])
-//          metadata.put("identifier", node.getIdentifier.replace(".img", ""))
-//          metadata
-//        }.asJava
-//
-//        ResponseHandler.OK.put("assessment_items", assessmentItems)
-//      } else {
-//        ResponseHandler.OK.put("assessment_items", new util.ArrayList[util.Map[String, AnyRef]]())
-//      }
-//    })
-//  }
-
-  private def validateUpdatePermissions(request: Request, existingNode: Node): Unit = {
-    val currentStatus = existingNode.getMetadata.getOrDefault("status", "Draft").asInstanceOf[String]
-    if (StringUtils.equalsIgnoreCase(currentStatus, "Live")) {
-      throw new ClientException("ERR_ASSESSMENT_ITEM_UPDATE", "Cannot update live assessment item. Please create a new version.")
-    }
-  }
-
   private def validateRetirePermissions(request: Request, node: Node): Unit = {
     val currentStatus = node.getMetadata.getOrDefault("status", "Draft").asInstanceOf[String]
     if (StringUtils.equalsIgnoreCase(currentStatus, "Processing")) {
@@ -210,21 +174,6 @@ class AssessmentItemActor @Inject()(implicit oec: OntologyEngineContext) extends
     }
   }
 
-  private def handleExternalProperties(metadata: util.Map[String, AnyRef]): util.Map[String, AnyRef] = {
-    // Define external properties based on config (same as Cassandra table columns)
-    val externalPropsList = List("body", "editorstate", "question", "solutions")
-    
-    val externalProps = new util.HashMap[String, AnyRef]()
-    
-    externalPropsList.foreach { prop =>
-      if (metadata.containsKey(prop) && metadata.get(prop) != null) {
-        externalProps.put(prop, metadata.get(prop))
-        metadata.remove(prop)
-      }
-    }
-    
-    externalProps
-  }
   
   private def replaceMediaItemsWithVariants(assessmentItem: util.Map[String, AnyRef]): Unit = {
     
