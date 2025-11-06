@@ -77,7 +77,6 @@ class AssessmentItemActor @Inject()(implicit oec: OntologyEngineContext) extends
       AssessmentItemUtils.replaceMediaItemsWithVariants(metadata)
       AssessmentItemUtils.flattenMetadataToRequest(request, metadata)
       if (!skipValidation) AssessmentItemValidator.validateAssessmentItemRequest(requestData, "ASSESSMENT_ITEM_UPDATE")
-      AssessmentItemUtils.replaceMediaItemsWithVariants(metadata)
       DataNode.update(request).map { node =>
         ResponseHandler.OK.putAll(Map("identifier" -> node.getIdentifier.replace(".img", ""), "versionKey" -> node.getMetadata.get("versionKey")).asJava)
       }
