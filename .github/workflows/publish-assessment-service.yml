@@ -71,7 +71,7 @@ jobs:
           echo "IMAGE_TAG=${BUILD_TAG}" >> $GITHUB_ENV
 
       - name: Build Docker image
-        run: docker build -t $IMAGE_NAME:$IMAGE_TAG .
+        run: docker build -f build/assessment-service/Dockerfile -t $IMAGE_NAME:$IMAGE_TAG .
 
       - name: Push Docker image
         run: docker push $IMAGE_NAME:$IMAGE_TAG
