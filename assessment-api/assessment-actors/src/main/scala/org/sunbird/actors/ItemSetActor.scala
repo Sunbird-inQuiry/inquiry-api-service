@@ -15,6 +15,7 @@ import org.sunbird.graph.nodes.DataNode
 import org.sunbird.graph.utils.NodeUtil
 import org.sunbird.parseq.Task
 
+import scala.jdk.CollectionConverters._
 import scala.collection.convert.ImplicitConversions._
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -38,7 +39,7 @@ class ItemSetActor @Inject() (implicit oec: OntologyEngineContext) extends Abstr
 
 	def read(request: Request): Future[Response] = {
 		val fields = request.getRequest.getOrDefault("fields", "").asInstanceOf[String]
-		  .split(",").filter((field: String) => StringUtils.isNotBlank(field) && !StringUtils.equalsIgnoreCase(field, "null")).toList.asJava
+		  	.split(",").filter((field: String) => StringUtils.isNotBlank(field) && !StringUtils.equalsIgnoreCase(field, "null")).toList.asJava
 		request.getRequest.put("fields", fields)
 		DataNode.read(request).map(node => {
 			val metadata = NodeUtil.serialize(node, fields, request.getContext.get("schemaName").asInstanceOf[String], request.getContext.get("version").asInstanceOf[String])
