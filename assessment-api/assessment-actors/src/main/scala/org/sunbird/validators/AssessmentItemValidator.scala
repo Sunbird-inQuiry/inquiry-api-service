@@ -122,14 +122,23 @@ object AssessmentItemValidator {
     val lhsKeys = Array("value", "index")
     val rhsOptions = "rhs_options"
     val rhsKeys = Array("value")
-    
-    if (assessmentItem.get(lhsOptions) == null) {
+
+    def parseOptions(opt: AnyRef): java.util.List[java.util.Map[String, Object]] = {
+      opt match {
+        case l: java.util.List[_] => l.asInstanceOf[java.util.List[java.util.Map[String, Object]]]
+        case s: String => JavaJsonUtils.deserialize[java.util.List[java.util.Map[String, Object]]](s)
+        case _ => null
+      }
+    }
+
+    val lhsValue = assessmentItem.get(lhsOptions)
+    if (lhsValue == null) {
       errorMessages += s"item $lhsOptions is missing."
     } else {
       Try {
-        val values = JavaJsonUtils.deserialize[java.util.List[java.util.Map[String, Object]]](assessmentItem.get(lhsOptions).toString)
+        val values = parseOptions(lhsValue)
+        if (values == null) throw new Exception("Invalid lhs_options format")
         val option1 = scala.collection.mutable.ListBuffer[Object]()
-        
         values.asScala.zipWithIndex.foreach { case (value, index) =>
           lhsKeys.foreach { key =>
             if (!value.containsKey(key)) {
@@ -149,11 +158,13 @@ object AssessmentItemValidator {
         case _ => errorMessages += s"invalid assessment item property: $lhsOptions."
       }
     }
-    if (assessmentItem.get(rhsOptions) == null) {
+    val rhsValue = assessmentItem.get(rhsOptions)
+    if (rhsValue == null) {
       errorMessages += s"item $rhsOptions is missing."
     } else {
       Try {
-        val values = JavaJsonUtils.deserialize[java.util.List[java.util.Map[String, Object]]](assessmentItem.get(rhsOptions).toString)
+        val values = parseOptions(rhsValue)
+        if (values == null) throw new Exception("Invalid rhs_options format")
         values.asScala.foreach { value =>
           rhsKeys.foreach { key =>
             if (!value.containsKey(key)) {
