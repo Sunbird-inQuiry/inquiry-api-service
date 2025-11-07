@@ -59,6 +59,10 @@ class AssessmentItemActor @Inject()(implicit oec: OntologyEngineContext) extends
       }
       
       val metadata: util.Map[String, AnyRef] = NodeUtil.serialize(node, fields, node.getObjectType.toLowerCase.replace("image", ""), request.getContext.get("version").asInstanceOf[String]) 
+      // Ensure body is always included in the response
+      val bodyValue = node.getMetadata.get("body")
+      if (bodyValue != null) metadata.put("body", bodyValue)
+      TelemetryManager.info("AssessmentItem read metadata", Map("identifier" -> node.getIdentifier.replace(".img", ""), "fields" -> fields, "metadata" -> metadata).asJava.asInstanceOf[java.util.Map[String, AnyRef]])
       metadata.put("identifier", node.getIdentifier.replace(".img", ""))
       ResponseHandler.OK.put("assessment_item", metadata)
     })
