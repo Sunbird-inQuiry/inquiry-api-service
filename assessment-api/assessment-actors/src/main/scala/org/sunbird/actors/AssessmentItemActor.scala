@@ -52,13 +52,11 @@ class AssessmentItemActor @Inject()(implicit oec: OntologyEngineContext) extends
     val requestedFields: util.List[String] = fieldsParam.split(",")
       .filter(field => StringUtils.isNotBlank(field) && !StringUtils.equalsIgnoreCase(field, "null"))
       .toList.asJava
-    // Get external props to ensure body and other external fields are fetched
     val extPropNameList: util.List[String] = DefinitionNode.getExternalProps(
       request.getContext.get("graph_id").asInstanceOf[String],
       request.getContext.get("version").asInstanceOf[String],
       request.getContext.get("schemaName").asInstanceOf[String]
     ).asJava
-    // Pass external props to DataNode.read to fetch external data (like body from Cassandra)
     request.getRequest.put("fields", extPropNameList)
     
     DataNode.read(request).map(node => {
@@ -67,13 +65,10 @@ class AssessmentItemActor @Inject()(implicit oec: OntologyEngineContext) extends
       }
       
       val metadata: util.Map[String, AnyRef] = NodeUtil.serialize(node, requestedFields, node.getObjectType.toLowerCase.replace("image", ""), request.getContext.get("version").asInstanceOf[String]) 
-      // Ensure body is always included: check externalData first (where it's typically stored), then metadata
       val externalData = node.getExternalData
       val bodyFromExternal = if (externalData != null && externalData.containsKey("body")) externalData.get("body") else null
       val bodyValue = if (bodyFromExternal != null) bodyFromExternal else node.getMetadata.get("body")
-      TelemetryManager.info("AssessmentItem read body", Map("identifier" -> node.getIdentifier.replace(".img", ""), "body" -> bodyValue, "hasExternalData" -> (externalData != null)).asJava.asInstanceOf[java.util.Map[String, AnyRef]])
       if (bodyValue != null) metadata.put("body", bodyValue)
-      TelemetryManager.info("AssessmentItem read metadata", Map("identifier" -> node.getIdentifier.replace(".img", ""), "fields" -> requestedFields, "metadata" -> metadata).asJava.asInstanceOf[java.util.Map[String, AnyRef]])
       metadata.put("identifier", node.getIdentifier.replace(".img", ""))
       ResponseHandler.OK.put("assessment_item", metadata)
     })

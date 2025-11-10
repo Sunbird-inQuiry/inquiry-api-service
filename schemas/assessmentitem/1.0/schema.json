@@ -118,10 +118,10 @@
       "dataType": "object"
     },
     "lhs_options": {
-      "type": "object"
+      "dataType": "object"
     },
     "rhs_options": {
-      "type": "object"
+      "dataType": "object"
     },
     "responses": {
       "type": "object"
@@ -260,13 +260,13 @@
     "category": {
       "dataType": "string",
       "enum": [
-        "MCQ",
-        "FTB",
-        "MTF",
-        "VSA",
-        "SA",
-        "LA",
-        "REFERENCE",
+        "MCQ", "mcq",
+        "FTB", "ftb",
+        "MTF", "mtf",
+        "VSA", "vsa",
+        "SA", "sa",
+        "LA", "la",
+        "REFERENCE", "reference",
         "CuriosityQuestion"
       ],
       "default": "MCQ"
