@@ -57,7 +57,8 @@ class AssessmentItemActor @Inject()(implicit oec: OntologyEngineContext) extends
       request.getContext.get("version").asInstanceOf[String],
       request.getContext.get("schemaName").asInstanceOf[String]
     ).asJava
-    request.getRequest.put("fields", extPropNameList)
+    val mergedFields: util.List[String] = (requestedFields.asScala ++ extPropNameList.asScala).distinct.asJava
+    request.getRequest.put("fields", mergedFields)
     
     DataNode.read(request).map(node => {
       if (NodeUtil.isRetired(node)) {
