@@ -260,14 +260,15 @@
     "category": {
       "dataType": "string",
       "enum": [
-        "MCQ", "mcq",
-        "FTB", "ftb",
-        "MTF", "mtf",
-        "VSA", "vsa",
-        "SA", "sa",
-        "LA", "la",
-        "REFERENCE", "reference",
-        "CuriosityQuestion"
+        "MCQ",
+        "FTB",
+        "MTF",
+        "VSA",
+        "SA",
+        "LA",
+        "REFERENCE",
+        "CuriosityQuestion",
+        "mcq"
       ],
       "default": "MCQ"
     },
