@@ -8,6 +8,7 @@ import org.sunbird.common.Platform
 import org.sunbird.graph.OntologyEngineContext
 import org.sunbird.graph.dac.model.Node
 import org.sunbird.graph.nodes.DataNode
+import org.sunbird.graph.schema.DefinitionNode
 import org.sunbird.graph.utils.NodeUtil
 import org.sunbird.telemetry.logger.TelemetryManager
 import org.sunbird.utils.RequestUtil
@@ -48,17 +49,27 @@ class AssessmentItemActor @Inject()(implicit oec: OntologyEngineContext) extends
 
   def read(request: Request): Future[Response] = {
     val fieldsParam = Option(request.get("fields")).map(_.asInstanceOf[String]).getOrElse("")
-    val fields: util.List[String] = fieldsParam.split(",")
+    val requestedFields: util.List[String] = fieldsParam.split(",")
       .filter(field => StringUtils.isNotBlank(field) && !StringUtils.equalsIgnoreCase(field, "null"))
       .toList.asJava
-    request.getRequest.put("fields", fields)
+    val extPropNameList: util.List[String] = DefinitionNode.getExternalProps(
+      request.getContext.get("graph_id").asInstanceOf[String],
+      request.getContext.get("version").asInstanceOf[String],
+      request.getContext.get("schemaName").asInstanceOf[String]
+    ).asJava
+    val mergedFields: util.List[String] = (requestedFields.asScala ++ extPropNameList.asScala).distinct.asJava
+    request.getRequest.put("fields", mergedFields)
     
     DataNode.read(request).map(node => {
       if (NodeUtil.isRetired(node)) {
         throw new ResourceNotFoundException("ERR_ASSESSMENT_ITEM_NOT_FOUND", "Assessment Item not found with identifier: " + node.getIdentifier)
       }
       
-      val metadata: util.Map[String, AnyRef] = NodeUtil.serialize(node, fields, node.getObjectType.toLowerCase.replace("image", ""), request.getContext.get("version").asInstanceOf[String]) 
+      val metadata: util.Map[String, AnyRef] = NodeUtil.serialize(node, requestedFields, node.getObjectType.toLowerCase.replace("image", ""), request.getContext.get("version").asInstanceOf[String]) 
+      val externalData = node.getExternalData
+      val bodyFromExternal = if (externalData != null && externalData.containsKey("body")) externalData.get("body") else null
+      val bodyValue = if (bodyFromExternal != null) bodyFromExternal else node.getMetadata.get("body")
+      if (bodyValue != null) metadata.put("body", bodyValue)
       metadata.put("identifier", node.getIdentifier.replace(".img", ""))
       ResponseHandler.OK.put("assessment_item", metadata)
     })
