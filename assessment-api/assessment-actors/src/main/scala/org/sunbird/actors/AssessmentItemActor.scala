@@ -43,7 +43,7 @@ class AssessmentItemActor @Inject()(implicit oec: OntologyEngineContext) extends
     AssessmentItemUtils.flattenMetadataToRequest(request, metadata)
     if (!skipValidation) AssessmentItemValidator.validateAssessmentItemRequest(requestData, "ASSESSMENT_ITEM_CREATE")
     DataNode.create(request).map { node =>
-      ResponseHandler.OK.putAll(Map("identifier" -> node.getIdentifier.replace(".img", ""), "versionKey" -> node.getMetadata.get("versionKey")).asJava)
+      ResponseHandler.OK.putAll(Map("identifier" -> node.getIdentifier.replace(".img", ""), "node_id" -> node.getIdentifier.replace(".img", ""), "versionKey" -> node.getMetadata.get("versionKey")).asJava)
     }
   }
 
@@ -106,7 +106,7 @@ class AssessmentItemActor @Inject()(implicit oec: OntologyEngineContext) extends
       val updateRequest = new Request(request)
       val identifiers = java.util.Arrays.asList(identifier, identifier + ".img")
       updateRequest.put("identifiers", identifiers)
-      val date = Platform.getString("date.format", java.time.format.DateTimeFormatter.ISO_INSTANT.format(java.time.Instant.now()))
+      val date = DateUtils.formatCurrentDate
       val updateMetadata: util.Map[String, AnyRef] = Map(
         "prevStatus" -> node.getMetadata.get("status"),
         "status" -> "Retired",
