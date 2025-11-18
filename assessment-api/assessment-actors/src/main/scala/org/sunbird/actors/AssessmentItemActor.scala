@@ -90,7 +90,7 @@ class AssessmentItemActor @Inject()(implicit oec: OntologyEngineContext) extends
       AssessmentItemUtils.flattenMetadataToRequest(request, metadata)
       if (!skipValidation) AssessmentItemValidator.validateAssessmentItemRequest(requestData, "ASSESSMENT_ITEM_UPDATE")
       DataNode.update(request).map { node =>
-        ResponseHandler.OK.putAll(Map("identifier" -> node.getIdentifier.replace(".img", ""), "versionKey" -> node.getMetadata.get("versionKey")).asJava)
+        ResponseHandler.OK.putAll(Map("identifier" -> node.getIdentifier.replace(".img", ""), "node_id" -> node.getIdentifier.replace(".img", ""), "versionKey" -> node.getMetadata.get("versionKey")).asJava)
       }
     })
   }
@@ -116,7 +116,7 @@ class AssessmentItemActor @Inject()(implicit oec: OntologyEngineContext) extends
       ).asJava
       updateRequest.put("metadata", updateMetadata)
       DataNode.bulkUpdate(updateRequest).map(_ => {
-        ResponseHandler.OK.putAll(Map("identifier" -> node.getIdentifier.replace(".img", ""), "versionKey" -> node.getMetadata.get("versionKey")).asJava)
+        ResponseHandler.OK.putAll(Map("identifier" -> node.getIdentifier.replace(".img", ""), "node_id" -> node.getIdentifier.replace(".img", ""), "versionKey" -> node.getMetadata.get("versionKey")).asJava)
       })
     })
   }
