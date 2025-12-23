@@ -1,6 +1,6 @@
 package org.sunbird.actors.v5
 
-import akka.actor.Props
+import org.apache.pekko.actor.Props
 import org.scalamock.scalatest.MockFactory
 import org.sunbird.actors.{BaseSpec, CopySpec}
 import org.sunbird.common.dto.{Request, Response}

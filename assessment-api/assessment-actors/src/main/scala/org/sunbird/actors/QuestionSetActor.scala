@@ -1,32 +1,33 @@
 package org.sunbird.actors
 
-import java.util
-import javax.inject.Inject
 import org.apache.commons.collections4.CollectionUtils
 import org.apache.commons.lang3.StringUtils
 import org.sunbird.`object`.importer.{ImportConfig, ImportManager}
-import org.sunbird.actor.core.BaseActor
+import org.apache.pekko.actor.AbstractActor
+import org.apache.pekko.pattern.pipe
 import org.sunbird.cache.impl.RedisCache
-import org.sunbird.common.{DateUtils, Platform}
 import org.sunbird.common.dto.{Request, Response, ResponseHandler}
-import org.sunbird.common.exception.ClientException
+import org.sunbird.common.exception.ResponseCode
+import org.sunbird.common.{DateUtils, Platform}
 import org.sunbird.graph.OntologyEngineContext
-import org.sunbird.graph.nodes.DataNode
 import org.sunbird.graph.dac.model.Node
+import org.sunbird.graph.nodes.DataNode
 import org.sunbird.managers.HierarchyManager.hierarchyPrefix
 import org.sunbird.managers.{AssessmentManager, CopyManager, HierarchyManager, UpdateHierarchyManager}
 import org.sunbird.utils.RequestUtil
 
+import java.util
+import javax.inject.Inject
 import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 
-class QuestionSetActor @Inject()(implicit oec: OntologyEngineContext) extends BaseActor {
+class QuestionSetActor @Inject()(implicit oec: OntologyEngineContext) extends AbstractActor {
 
 	implicit val ec: ExecutionContext = getContext().dispatcher
 	private lazy val importConfig = getImportConfig()
 	private lazy val importMgr = new ImportManager(importConfig)
 
-	override def onReceive(request: Request): Future[Response] = request.getOperation match {
+	def onReceive(request: Request): Future[Response] = request.getOperation match {
 		case "createQuestionSet" => AssessmentManager.create(request, "ERR_QUESTION_SET_CREATE")
 		case "readQuestionSet" => AssessmentManager.read(request, "questionset")
 		case "readPrivateQuestionSet" => AssessmentManager.privateRead(request, "questionset")
@@ -44,7 +45,7 @@ class QuestionSetActor @Inject()(implicit oec: OntologyEngineContext) extends Ba
 		case "copyQuestionSet" => copy(request)
 		case "updateCommentQuestionSet" => updateComment(request)
 		case "readCommentQuestionSet" => AssessmentManager.readComment(request, "comments")
-		case _ => ERROR(request.getOperation)
+		case _ => Future(ResponseHandler.ERROR(ResponseCode.CLIENT_ERROR, "INVALID_OPERATION", "Operation '" + request.getOperation + "' not supported"))
 	}
 
 	def update(request: Request): Future[Response] = {
@@ -70,6 +71,8 @@ class QuestionSetActor @Inject()(implicit oec: OntologyEngineContext) extends Ba
 
 	def publish(request: Request): Future[Response] = {
 		val lastPublishedBy: String = request.getRequest.getOrDefault("lastPublishedBy", "").asInstanceOf[String]
+		val requestId = request.getContext().getOrDefault("requestId","").asInstanceOf[String]
+		val featureName = request.getContext().getOrDefault("featureName","").asInstanceOf[String]
 		request.getRequest.put("identifier", request.getContext.get("identifier"))
 		request.put("mode", "edit")
 		AssessmentManager.getValidatedNodeForPublish(request, "ERR_QUESTION_SET_PUBLISH").flatMap(node => {
@@ -77,7 +80,7 @@ class QuestionSetActor @Inject()(implicit oec: OntologyEngineContext) extends Ba
 				AssessmentManager.validateQuestionSetHierarchy(request, hierarchyString.asInstanceOf[String], node.getMetadata.getOrDefault("createdBy", "").asInstanceOf[String])
 				if(StringUtils.isNotBlank(lastPublishedBy))
 					node.getMetadata.put("lastPublishedBy", lastPublishedBy)
-				AssessmentManager.pushInstructionEvent(node.getIdentifier, node)
+				AssessmentManager.pushInstructionEvent(node.getIdentifier, node, requestId, featureName)
 				ResponseHandler.OK.putAll(Map[String, AnyRef]("identifier" -> node.getIdentifier.replace(".img", ""), "message" -> "QuestionSet is successfully sent for Publish").asJava)
 			})
 		})
@@ -184,4 +187,11 @@ class QuestionSetActor @Inject()(implicit oec: OntologyEngineContext) extends Ba
 			}
 		}
 	}
+
+	override def createReceive(): AbstractActor.Receive =
+		receiveBuilder()
+			.`match`(classOf[Request], (req: Request) => {
+				onReceive(req).pipeTo(sender())
+			})
+			.build()
 }

@@ -1,12 +1,13 @@
 package controllers.v5
 
-import akka.actor.{ActorRef, ActorSystem}
+import org.apache.pekko.actor.{ActorRef, ActorSystem}
 import org.sunbird.common.Platform
+import org.sunbird.telemetry.logger.TelemetryManager
 import play.api.mvc.ControllerComponents
 import utils.{ActorNames, ApiId, QuestionSetOperations}
 
 import javax.inject.{Inject, Named}
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.collection.convert.ImplicitConversions.`map AsScala`
 import scala.concurrent.ExecutionContext
 
@@ -70,10 +71,15 @@ class QuestionSetController @Inject()(@Named(ActorNames.QUESTION_SET_V5_ACTOR) q
 
   def publish(identifier: String) = Action.async { implicit request =>
     val headers = commonHeaders()
+    val headerMap = getRequestHeader("X-Request-Id", "requestId")
+    val featureMap = getRequestHeader("X-Feature-Name", "featureName", "QuestionsetPublish")
+    headerMap.putAll(featureMap)
+    TelemetryManager.info(s"ENTRY:assessment: QuestionSet Publish V2 API | Request URL: ${request.uri} : Request Received For Identifier: ${identifier}", Map("requestId" -> headerMap.get("requestId").asInstanceOf[String], "cdata" -> Map("type" -> "Feature", "id" -> featureMap.get("featureName").asInstanceOf[String]).asJava).asJava.asInstanceOf[java.util.Map[String, AnyRef]])
     val body = requestBody()
     val questionSet = body.getOrDefault("questionset", new java.util.HashMap()).asInstanceOf[java.util.Map[String, Object]];
     questionSet.putAll(headers)
-    val questionSetRequest = getRequest(questionSet, headers, QuestionSetOperations.publishQuestionSet.toString)
+    headerMap.putAll(headers)
+    val questionSetRequest = getRequest(questionSet, headerMap, QuestionSetOperations.publishQuestionSet.toString)
     setRequestContext(questionSetRequest, defaultVersion, objectType, schemaName)
     questionSetRequest.getContext.put("identifier", identifier)
     getResult(ApiId.PUBLISH_QUESTION_SET, questionSetActor, questionSetRequest)
@@ -174,7 +180,7 @@ class QuestionSetController @Inject()(@Named(ActorNames.QUESTION_SET_V5_ACTOR) q
   def updateComment(identifier: String) = Action.async { implicit request =>
     val headers = commonHeaders()
     val body = requestBody()
-    val commentList = body.getOrElse("comments", new java.util.ArrayList[java.util.Map[String, Object]]()).asInstanceOf[java.util.ArrayList[java.util.Map[String, Object]]].asScala.toList
+    val commentList = body.getOrDefault("comments", new java.util.ArrayList[java.util.Map[String, Object]]()).asInstanceOf[java.util.List[java.util.Map[String, Object]]].asScala.toList
     val filteredComment: String = commentList.headOption.flatMap(comment => Option(comment.asScala.toMap.getOrElse("comment", "").asInstanceOf[String])).getOrElse("")
     val questionSet = new java.util.HashMap().asInstanceOf[java.util.Map[String, Object]]
     questionSet.putAll(headers)

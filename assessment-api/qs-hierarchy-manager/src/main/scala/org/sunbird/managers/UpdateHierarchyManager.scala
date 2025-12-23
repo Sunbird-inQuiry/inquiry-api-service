@@ -19,7 +19,7 @@ import org.sunbird.telemetry.logger.TelemetryManager
 import org.sunbird.utils.{HierarchyConstants, HierarchyErrorCodes}
 
 import scala.collection.convert.ImplicitConversions._
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -50,7 +50,7 @@ object UpdateHierarchyManager {
                               val response = ResponseHandler.OK()
                               response.put(HierarchyConstants.IDENTIFIER, rootId)
                               idMap.remove(rootId)
-                              response.put(HierarchyConstants.IDENTIFIERS, mapAsJavaMap(idMap))
+                              response.put(HierarchyConstants.IDENTIFIERS, idMap.asJava)
                               if (request.getContext.getOrDefault("shouldImageDelete", false.asInstanceOf[AnyRef]).asInstanceOf[Boolean])
                                   deleteHierarchy(request)
                               Future(response)
@@ -464,8 +464,11 @@ object UpdateHierarchyManager {
         updatedHierarchy.put(HierarchyConstants.CHILDREN, children)
         val req = new Request(request)
         req.getContext.put(HierarchyConstants.IDENTIFIER, rootId)
+        val prevStatus = node.getMetadata().getOrDefault("status", "").asInstanceOf[String]
         val metadata = cleanUpRootData(node)
         req.getRequest.putAll(metadata)
+        if(StringUtils.isNotBlank(prevStatus) && List("Live","Unlisted").contains(prevStatus))
+            req.getRequest.put("prevStatus", prevStatus)
         req.put(HierarchyConstants.HIERARCHY, ScalaJsonUtils.serialize(updatedHierarchy))
         req.put(HierarchyConstants.IDENTIFIER, rootId)
         req.put(HierarchyConstants.CHILDREN, new java.util.ArrayList())
@@ -519,7 +522,7 @@ object UpdateHierarchyManager {
 
 
     def sortByIndex(childrenMaps: java.util.List[java.util.Map[String, AnyRef]]): java.util.List[java.util.Map[String, AnyRef]] = {
-        bufferAsJavaList(childrenMaps.sortBy(_.get("index").asInstanceOf[Int]))
+        childrenMaps.sortBy(_.get("index").asInstanceOf[Int]).asJava
     }
 
 

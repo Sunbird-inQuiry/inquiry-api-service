@@ -13,8 +13,7 @@ import org.sunbird.graph.nodes.DataNode
 import org.sunbird.graph.utils.{NodeUtil, ScalaJsonUtils}
 
 import scala.collection.convert.ImplicitConversions._
-import scala.collection.JavaConverters._
-import scala.collection.JavaConverters
+import scala.jdk.CollectionConverters._
 import scala.concurrent.{ExecutionContext, Future}
 import com.mashape.unirest.http.HttpResponse
 import com.mashape.unirest.http.Unirest
@@ -55,7 +54,7 @@ object HierarchyManager {
                 val rootNodeMap =  NodeUtil.serialize(rootNode, java.util.Arrays.asList("childNodes", "originData"), schemaName, schemaVersion)
                 val childNodes: List[String] = rootNodeMap.get("childNodes") match {
                     case x: Array[String] => x.asInstanceOf[Array[String]].toList
-                    case y: util.List[String] => y.asInstanceOf[util.List[String]].toList
+                    case y: util.List[String] => y.asInstanceOf[util.List[String]].asScala.toList
                 }
                 if(!childNodes.contains(unitId)) {
                     Future{ResponseHandler.ERROR(ResponseCode.RESOURCE_NOT_FOUND, ResponseCode.RESOURCE_NOT_FOUND.name(), "collectionId " + unitId + " does not exist")}
@@ -95,7 +94,7 @@ object HierarchyManager {
                 val rootNodeMap =  NodeUtil.serialize(rootNode, java.util.Arrays.asList("childNodes", "originData"), schemaName, schemaVersion)
                 val childNodes: List[String] = rootNodeMap.get("childNodes") match {
                     case x: Array[String] => x.asInstanceOf[Array[String]].toList
-                    case y: util.List[String] => y.asInstanceOf[util.List[String]].toList
+                    case y: util.List[String] => y.asInstanceOf[util.List[String]].asScala.toList
                 }
                 if(!childNodes.contains(unitId)) {
                     Future{ResponseHandler.ERROR(ResponseCode.RESOURCE_NOT_FOUND, ResponseCode.RESOURCE_NOT_FOUND.name(), "collectionId " + unitId + " does not exist")}
@@ -133,7 +132,7 @@ object HierarchyManager {
                             }
                         })
                         TelemetryManager.info("updated branchingLogic for node " + rootNode.getIdentifier + " is : " + rootNode.getMetadata.get(HierarchyConstants.BRANCHING_LOGIC))
-                    } else if (StringUtils.equalsIgnoreCase("add", operation) && request.getRequest.getOrDefault(HierarchyConstants.BRANCHING_LOGIC, new util.HashMap[String, AnyRef]()).asInstanceOf[util.Map[String, AnyRef]].nonEmpty)
+                    } else if (StringUtils.equalsIgnoreCase("add", operation) && !request.getRequest.getOrDefault(HierarchyConstants.BRANCHING_LOGIC, new util.HashMap[String, AnyRef]()).asInstanceOf[util.Map[String, AnyRef]].isEmpty)
                         throw new ClientException("ERR_BRANCHING_LOGIC", s"Branching Is Not Enabled For ${rootNode.getIdentifier}. Please Enable Branching Or Remove branchingLogic from Request.")
                     val requestContextVersion = request.getContext.getOrDefault("version", "1.0").asInstanceOf[String].toDouble
                     if (requestContextVersion != 1.0 && requestContextVersion >= 1.1) {
@@ -245,7 +244,7 @@ object HierarchyManager {
         val redisHierarchy = if(Platform.getBoolean("questionset.cache.enable", false)) RedisCache.get(hierarchyPrefix + request.get("rootId")) else ""
 
         val hierarchyFuture = if (StringUtils.isNotEmpty(redisHierarchy)) {
-            Future(mapAsJavaMap(Map("questionSet" -> JsonUtils.deserialize(redisHierarchy, classOf[java.util.Map[String, AnyRef]]))))
+            Future(Map("questionSet" -> JsonUtils.deserialize(redisHierarchy, classOf[java.util.Map[String, AnyRef]])).asJava)
         } else getCassandraHierarchy(request)
         hierarchyFuture.map(result => {
             if (!result.isEmpty) {
@@ -279,7 +278,7 @@ object HierarchyManager {
         }
         if(StringUtils.equalsAnyIgnoreCase(operation, "add") && MapUtils.isNotEmpty(branchingLogic)) {
             if(!children.containsAll(branchingLogic.keySet()))
-                throw new ClientException(ErrorCodes.ERR_BAD_REQUEST.name(), "Branch Rule Found For The Node Which Is Not A Children Having Identifier : "+branchingLogic.keySet().toList.diff(children.toList).asJava)
+                throw new ClientException(ErrorCodes.ERR_BAD_REQUEST.name(), "Branch Rule Found For The Node Which Is Not A Children Having Identifier : "+branchingLogic.keySet().asScala.toList.diff(children.asScala.toList).asJava)
         }
     }
 
@@ -297,13 +296,13 @@ object HierarchyManager {
         req.put("identifiers", leafNodes)
         DataNode.list(req).map(nodes => {
             if(nodes.size() != leafNodes.size()) {
-                val filteredList = leafNodes.toList.filter(id => !nodes.contains(id))
+                val filteredList = leafNodes.asScala.toList.filter(id => !nodes.contains(id))
                 throw new ClientException(ErrorCodes.ERR_BAD_REQUEST.name(), "Children which are not available are: " + filteredList)
             } else {
                 val invalidNodes = nodes.filterNot(node => ASSESSMENT_OBJECT_TYPES.contains(node.getObjectType))
                 if (CollectionUtils.isNotEmpty(invalidNodes))
                     throw new ClientException(ErrorCodes.ERR_BAD_REQUEST.name(), s"Children must be of types $ASSESSMENT_OBJECT_TYPES for ids:  ${invalidNodes.map(_.getIdentifier)}")
-                else nodes.toList
+                else nodes.asScala.toList
             }
         })
     }
@@ -324,12 +323,12 @@ object HierarchyManager {
     }
 
     def addChildrenToUnit(children: java.util.List[java.util.Map[String,AnyRef]], unitId:String, leafNodes: java.util.List[java.util.Map[String, AnyRef]], leafNodeIds: java.util.List[String], request: Request): Unit = {
-        val childNodes = children.filter(child => ("Parent".equalsIgnoreCase(child.get("visibility").asInstanceOf[String]) && unitId.equalsIgnoreCase(child.get("identifier").asInstanceOf[String]))).toList
+        val childNodes = children.asScala.filter(child => ("Parent".equalsIgnoreCase(child.get("visibility").asInstanceOf[String]) && unitId.equalsIgnoreCase(child.get("identifier").asInstanceOf[String]))).toList
         if(null != childNodes && !childNodes.isEmpty){
             val child = childNodes.get(0)
             if (isBranchingEnabled(child, request, "add")) {
                 TelemetryManager.info(s"Branching Found for ${child.get("identifier")}. Branching Rules Are : ${child.get(HierarchyConstants.BRANCHING_LOGIC)}")
-                val childrenIds: List[String] = child.getOrDefault(HierarchyConstants.CHILDREN, new util.ArrayList[java.util.Map[String, AnyRef]]()).asInstanceOf[util.ArrayList[java.util.Map[String, AnyRef]]].toList.map(child => child.get("identifier").asInstanceOf[String])
+                val childrenIds: List[String] = child.getOrDefault(HierarchyConstants.CHILDREN, new util.ArrayList[java.util.Map[String, AnyRef]]()).asInstanceOf[util.ArrayList[java.util.Map[String, AnyRef]]].asScala.toList.map(child => child.get("identifier").asInstanceOf[String])
                 leafNodeIds.foreach(nodeId => {
                     val updatedBranching = addBranching(nodeId, child.getOrDefault(HierarchyConstants.BRANCHING_LOGIC, new util.HashMap()).asInstanceOf[java.util.Map[String, AnyRef]], request, childrenIds)
                     if (MapUtils.isNotEmpty(updatedBranching)) {
@@ -337,7 +336,7 @@ object HierarchyManager {
                     }
                 })
                 TelemetryManager.info(s"Branching Updated for ${child.get("identifier")}. Updated Branching Rules Are : ${child.get(HierarchyConstants.BRANCHING_LOGIC)}")
-            } else if(request.getRequest.getOrDefault(HierarchyConstants.BRANCHING_LOGIC, new util.HashMap[String, AnyRef]()).asInstanceOf[util.Map[String, AnyRef]].nonEmpty)
+            } else if(!request.getRequest.getOrDefault(HierarchyConstants.BRANCHING_LOGIC, new util.HashMap[String, AnyRef]()).asInstanceOf[util.Map[String, AnyRef]].isEmpty)
                 throw new ClientException("ERR_BRANCHING_LOGIC", s"Branching Is Not Enabled For ${unitId}. Please Enable Branching Or Remove branchingLogic from Request.")
             val childList = child.get("children").asInstanceOf[java.util.List[java.util.Map[String,AnyRef]]]
             val restructuredChildren: java.util.List[java.util.Map[String,AnyRef]] = restructureUnit(childList, leafNodes, leafNodeIds, (child.get("depth").asInstanceOf[Integer] + 1), unitId)
@@ -351,7 +350,7 @@ object HierarchyManager {
     }
 
     def removeChildrenFromUnit(children: java.util.List[java.util.Map[String, AnyRef]], unitId: String, leafNodeIds: java.util.List[String]):Unit = {
-        val childNodes = children.filter(child => ("Parent".equalsIgnoreCase(child.get("visibility").asInstanceOf[String]) && unitId.equalsIgnoreCase(child.get("identifier").asInstanceOf[String]))).toList
+        val childNodes = children.asScala.filter(child => ("Parent".equalsIgnoreCase(child.get("visibility").asInstanceOf[String]) && unitId.equalsIgnoreCase(child.get("identifier").asInstanceOf[String]))).toList
         if(null != childNodes && !childNodes.isEmpty){
             val child = childNodes.get(0)
             if (isBranchingEnabled(child, new Request(), "remove")) {
@@ -365,15 +364,15 @@ object HierarchyManager {
                 TelemetryManager.info(s"Branching Updated for ${child.get("identifier")}. Updated Branching Rules Are : ${child.get(HierarchyConstants.BRANCHING_LOGIC)}")
             }
             if(null != child.get("children") && !child.get("children").asInstanceOf[java.util.List[java.util.Map[String,AnyRef]]].isEmpty) {
-                var filteredLeafNodes = child.get("children").asInstanceOf[java.util.List[java.util.Map[String,AnyRef]]].filter(existingLeafNode => {
+                var filteredLeafNodes = child.get("children").asInstanceOf[java.util.List[java.util.Map[String,AnyRef]]].asScala.filter(existingLeafNode => {
                     !leafNodeIds.contains(existingLeafNode.get("identifier").asInstanceOf[String])
-                })
+                }).toList
                 var index: Integer = 1
-                filteredLeafNodes.toList.sortBy(x => x.get("index").asInstanceOf[Integer]).foreach(node => {
+                filteredLeafNodes.sortBy(x => x.get("index").asInstanceOf[Integer]).foreach(node => {
                     node.put("index", index)
                     index += 1
                 })
-                child.put("children", filteredLeafNodes)
+                child.put("children", filteredLeafNodes.asJava)
             }
         } else {
             for(child <- children) {
@@ -394,7 +393,7 @@ object HierarchyManager {
             childNodes.removeAll(leafNodes)
         if(request.getRequest.containsKey(HierarchyConstants.BRANCHING_LOGIC))
             req.put(HierarchyConstants.BRANCHING_LOGIC, request.get(HierarchyConstants.BRANCHING_LOGIC).asInstanceOf[java.util.Map[String, AnyRef]])
-        req.put("childNodes", childNodes.distinct.toArray)
+        req.put("childNodes", childNodes.asScala.distinct.toArray)
         req.getContext.put("identifier", rootNode.getIdentifier.replaceAll(imgSuffix, ""))
         req.getContext.put("skipValidation", java.lang.Boolean.TRUE)
         DataNode.update(req)
@@ -426,7 +425,7 @@ object HierarchyManager {
         val childNodes = new java.util.ArrayList[String]()
         val nodeChildNodes: List[String] = rootNode.getMetadata.getOrDefault("childNodes", Array[String]()) match {
             case x: Array[String] => x.asInstanceOf[Array[String]].toList
-            case y: util.List[String] => y.asInstanceOf[util.List[String]].toList
+            case y: util.List[String] => y.asInstanceOf[util.List[String]].asScala.toList
         }
         childNodes.addAll(nodeChildNodes)
         if("add".equalsIgnoreCase(operation)){
@@ -445,7 +444,7 @@ object HierarchyManager {
         val req = new Request()
         req.setContext(request.getContext)
         req.getContext.put(HierarchyConstants.IDENTIFIER, rootNode.getIdentifier)
-        req.put(HierarchyConstants.CHILD_NODES, childNodes.distinct.toArray)
+        req.put(HierarchyConstants.CHILD_NODES, childNodes.asScala.distinct.toArray)
         req.put(HierarchyConstants.HIERARCHY, ScalaJsonUtils.serialize(updatedHierarchy))
         DataNode.update(req)
     }
@@ -454,19 +453,19 @@ object HierarchyManager {
         var maxIndex:Integer = 0
         var leafNodeMap: java.util.Map[String, java.util.Map[String, AnyRef]] =  new util.HashMap[String, java.util.Map[String, AnyRef]]()
         for(leafNode <- leafNodes){
-            leafNodeMap.put(leafNode.get("identifier").asInstanceOf[String], JavaConverters.mapAsJavaMapConverter(leafNode).asJava)
+            leafNodeMap.put(leafNode.get("identifier").asInstanceOf[String], leafNode)
         }
         var filteredLeafNodes: java.util.List[java.util.Map[String, AnyRef]] = new util.ArrayList[java.util.Map[String, AnyRef]]()
         if(null != childList && !childList.isEmpty) {
-            val childMap:Map[String, java.util.Map[String, AnyRef]] = childList.toList.map(f => f.get("identifier").asInstanceOf[String] -> f).toMap
+            val childMap:Map[String, java.util.Map[String, AnyRef]] = childList.asScala.toList.map(f => f.get("identifier").asInstanceOf[String] -> f).toMap
             val existingLeafNodes = childMap.filter(p => leafNodeIds.contains(p._1))
             existingLeafNodes.map(en => {
                 leafNodeMap.get(en._1).put("index", en._2.get("index").asInstanceOf[Integer])
             })
-            filteredLeafNodes = bufferAsJavaList(childList.filter(existingLeafNode => {
+            filteredLeafNodes = childList.asScala.filter(existingLeafNode => {
                 !leafNodeIds.contains(existingLeafNode.get("identifier").asInstanceOf[String])
-            }))
-            maxIndex = childMap.values.toList.map(child => child.get("index").asInstanceOf[Integer]).toList.max.asInstanceOf[Integer]
+            }).toList.asJava
+            maxIndex = childMap.values.map(child => child.get("index").asInstanceOf[Integer]).max.asInstanceOf[Integer]
         }
         leafNodeIds.foreach(id => {
             var node = leafNodeMap.getOrDefault(id, new util.HashMap[String, AnyRef]())
@@ -521,7 +520,7 @@ object HierarchyManager {
         hierarchy.map(hierarchy => {
             if (!hierarchy.isEmpty) {
                 if (StringUtils.isNotEmpty(hierarchy.getOrDefault("status", "").asInstanceOf[String]) && statusList.contains(hierarchy.getOrDefault("status", "").asInstanceOf[String])) {
-                    val hierarchyMap = mapAsJavaMap(hierarchy)
+                    val hierarchyMap = hierarchy.asJava
                     rootHierarchy.put("questionSet", hierarchyMap)
                     RedisCache.set(hierarchyPrefix + request.get("rootId"), JsonUtils.serialize(hierarchyMap))
                     Future(rootHierarchy)
@@ -536,8 +535,8 @@ object HierarchyManager {
                             val parentHierarchy = fetchHierarchy(request, response.get("identifier").asInstanceOf[String])
                             parentHierarchy.map(hierarchy => {
                                 if (!hierarchy.isEmpty) {
-                                    if (StringUtils.isNoneEmpty(hierarchy.getOrDefault("status", "").asInstanceOf[String]) && statusList.contains(hierarchy.getOrDefault("status", "").asInstanceOf[String]) && CollectionUtils.isNotEmpty(mapAsJavaMap(hierarchy).get("children").asInstanceOf[util.ArrayList[util.HashMap[String, AnyRef]]])) {
-                                        val bookmarkHierarchy = filterBookmarkHierarchy(mapAsJavaMap(hierarchy).get("children").asInstanceOf[util.ArrayList[util.Map[String, AnyRef]]], request.get("rootId").asInstanceOf[String])
+                                    if (StringUtils.isNoneEmpty(hierarchy.getOrDefault("status", "").asInstanceOf[String]) && statusList.contains(hierarchy.getOrDefault("status", "").asInstanceOf[String]) && CollectionUtils.isNotEmpty(hierarchy.asJava.get("children").asInstanceOf[util.ArrayList[util.HashMap[String, AnyRef]]])) {
+                                        val bookmarkHierarchy = filterBookmarkHierarchy(hierarchy.asJava.get("children").asInstanceOf[util.ArrayList[util.Map[String, AnyRef]]], request.get("rootId").asInstanceOf[String])
                                         if (!bookmarkHierarchy.isEmpty) {
                                             rootHierarchy.put("questionSet", hierarchy)
                                             RedisCache.set(hierarchyPrefix + request.get("rootId"), JsonUtils.serialize(hierarchy))
@@ -599,15 +598,15 @@ object HierarchyManager {
 
     def filterBookmarkHierarchy(children: util.List[util.Map[String, AnyRef]], bookmarkId: String)(implicit ec: ExecutionContext): util.Map[String, AnyRef] = {
         if (CollectionUtils.isNotEmpty(children)) {
-            val response = children.filter(_.get("identifier") == bookmarkId).toList
+            val response = children.asScala.filter(_.get("identifier") == bookmarkId).toList
             if (CollectionUtils.isNotEmpty(response)) {
                 response.get(0)
             } else {
-                val nextChildren = bufferAsJavaList(children.flatMap(child => {
+                val nextChildren = children.flatMap(child => {
                     if (!child.isEmpty && CollectionUtils.isNotEmpty(child.get("children").asInstanceOf[util.List[util.Map[String, AnyRef]]]))
                         child.get("children").asInstanceOf[util.List[util.Map[String, AnyRef]]]
                     else new util.ArrayList[util.Map[String, AnyRef]]
-                }))
+                }).asJava
                 filterBookmarkHierarchy(nextChildren, bookmarkId)
             }
         } else {
@@ -619,8 +618,8 @@ object HierarchyManager {
         if (StringUtils.isNotEmpty(identifier)) {
             val parentHierarchy = fetchHierarchy(request, identifier + imgSuffix)
             parentHierarchy.map(hierarchy => {
-                if (!hierarchy.isEmpty && CollectionUtils.isNotEmpty(mapAsJavaMap(hierarchy).get("children").asInstanceOf[util.ArrayList[util.Map[String, AnyRef]]])) {
-                    val bookmarkHierarchy = filterBookmarkHierarchy(mapAsJavaMap(hierarchy).get("children").asInstanceOf[util.ArrayList[util.Map[String, AnyRef]]], request.get("rootId").asInstanceOf[String])
+                if (!hierarchy.isEmpty && CollectionUtils.isNotEmpty(hierarchy.asJava.get("children").asInstanceOf[util.ArrayList[util.Map[String, AnyRef]]])) {
+                    val bookmarkHierarchy = filterBookmarkHierarchy(hierarchy.asJava.get("children").asInstanceOf[util.ArrayList[util.Map[String, AnyRef]]], request.get("rootId").asInstanceOf[String])
                     if (!bookmarkHierarchy.isEmpty) {
                         bookmarkHierarchy
                     } else {
@@ -636,7 +635,7 @@ object HierarchyManager {
     }
 
     def updateLatestLeafNodes(children: util.List[util.Map[String, AnyRef]], leafNodeMap: util.Map[String, AnyRef]): List[Any] = {
-        children.toList.map(content => {
+        children.asScala.toList.map(content => {
             if(StringUtils.equalsIgnoreCase("Default", content.getOrDefault("visibility", "").asInstanceOf[String])) {
                 val metadata: util.Map[String, AnyRef] = leafNodeMap.getOrDefault(content.get("identifier").asInstanceOf[String], new java.util.HashMap[String, AnyRef]()).asInstanceOf[util.Map[String, AnyRef]]
                 if(HierarchyConstants.RETIRED_STATUS.equalsIgnoreCase(metadata.getOrDefault("status", HierarchyConstants.RETIRED_STATUS).asInstanceOf[String])){
@@ -651,7 +650,7 @@ object HierarchyManager {
     }
 
     def fetchAllLeafNodes(children: util.List[util.Map[String, AnyRef]], leafNodeIds: util.List[String]): List[Any] = {
-        children.toList.map(content => {
+        children.asScala.toList.map(content => {
             if(StringUtils.equalsIgnoreCase("Default", content.getOrDefault("visibility", "").asInstanceOf[String])) {
                 leafNodeIds.add(content.get("identifier").asInstanceOf[String])
                 leafNodeIds
@@ -671,18 +670,18 @@ object HierarchyManager {
             })
             request.put("identifiers", leafNodeIds)
             DataNode.list(request).map(nodes => {
-                val leafNodeMap: Map[String, AnyRef] = nodes.toList.map(node => (node.getIdentifier, NodeUtil.serialize(node, null, node.getObjectType.toLowerCase.replace("image", ""), HierarchyConstants.SCHEMA_VERSION, true).asInstanceOf[AnyRef])).toMap
-                val imageNodeIds: util.List[String] = JavaConverters.seqAsJavaListConverter(leafNodeIds.toList.map(id => id + HierarchyConstants.IMAGE_SUFFIX)).asJava
+                val leafNodeMap: Map[String, AnyRef] = nodes.asScala.toList.map(node => (node.getIdentifier, NodeUtil.serialize(node, null, node.getObjectType.toLowerCase.replace("image", ""), HierarchyConstants.SCHEMA_VERSION, true).asInstanceOf[AnyRef])).toMap
+                val imageNodeIds: util.List[String] = leafNodeIds.asScala.toList.map(id => id + HierarchyConstants.IMAGE_SUFFIX).asJava
                 request.put("identifiers", imageNodeIds)
                 DataNode.list(request).map(imageNodes => {
-                    val imageLeafNodeMap: Map[String, AnyRef] = imageNodes.toList.map(imageNode => {
+                    val imageLeafNodeMap: Map[String, AnyRef] = imageNodes.asScala.toList.map(imageNode => {
                         val identifier = imageNode.getIdentifier.replaceAll(HierarchyConstants.IMAGE_SUFFIX, "")
                         val metadata = NodeUtil.serialize(imageNode, null, imageNode.getObjectType.toLowerCase.replace("image", ""), HierarchyConstants.SCHEMA_VERSION, true)
                         metadata.replace("identifier", identifier)
                         (identifier, metadata.asInstanceOf[AnyRef])
                     }).toMap
                     val updatedMap = leafNodeMap ++ imageLeafNodeMap
-                    JavaConverters.mapAsJavaMapConverter(updatedMap).asJava
+                    updatedMap.asJava
                 })
             }).flatMap(f => f)
         } else {
@@ -705,7 +704,7 @@ object HierarchyManager {
             val source: java.util.List[String] = obj.getOrDefault(HierarchyConstants.SOURCE, new java.util.ArrayList[String]()).asInstanceOf[java.util.List[String]]
             val target: java.util.List[String] = obj.getOrDefault(HierarchyConstants.TARGET, new java.util.ArrayList[String]()).asInstanceOf[java.util.List[String]]
             val preCondition: java.util.Map[String, AnyRef] = obj.getOrDefault(HierarchyConstants.PRE_CONDITION, new util.HashMap[String, AnyRef]()).asInstanceOf[java.util.Map[String, AnyRef]]
-            if ((source.nonEmpty && preCondition.nonEmpty) && target.isEmpty) {
+            if ((!source.isEmpty && !preCondition.isEmpty) && target.isEmpty) {
                 val parentObj: java.util.Map[String, AnyRef] = branchingLogic.getOrDefault(source.get(0), new util.HashMap[String, AnyRef]()).asInstanceOf[java.util.Map[String, AnyRef]]
                 val pTarget = parentObj.getOrDefault(HierarchyConstants.TARGET, new java.util.ArrayList[String]()).asInstanceOf[java.util.List[String]]
                 pTarget.remove(identifier)
@@ -713,7 +712,7 @@ object HierarchyManager {
                 branchingLogic.put(source.get(0), parentObj)
                 branchingLogic.remove(identifier)
             } else if (source.isEmpty && preCondition.isEmpty) {
-                if (target.nonEmpty)
+                if (!target.isEmpty)
                     throw new ClientException("ERR_BRANCHING_LOGIC", s"Dependent Children Found! Please Remove Children With Identifiers ${target} For Node : ${identifier}")
                 else branchingLogic.remove(identifier)
             }
@@ -723,22 +722,22 @@ object HierarchyManager {
 
     def addBranching(identifier: String, branchingLogic: java.util.Map[String, AnyRef], request: Request, childrenIds: List[String]): java.util.Map[String, AnyRef] = {
         val reqBranching: util.Map[String, AnyRef] = request.getRequest.getOrDefault(HierarchyConstants.BRANCHING_LOGIC, new util.HashMap[String, AnyRef]()).asInstanceOf[util.Map[String, AnyRef]]
-        if (reqBranching.nonEmpty) {
-            val sourceIds: List[String] = reqBranching.flatMap(entry => entry._2.asInstanceOf[util.Map[String, AnyRef]].get(HierarchyConstants.SOURCE).asInstanceOf[util.ArrayList[String]]).toList
+        if (!reqBranching.isEmpty) {
+            val sourceIds: List[String] = reqBranching.asScala.flatMap(entry => entry._2.asInstanceOf[util.Map[String, AnyRef]].get(HierarchyConstants.SOURCE).asInstanceOf[util.ArrayList[String]].asScala).toList
             if (!childrenIds.containsAll(sourceIds))
                 throw new ClientException("ERR_BRANCHING_LOGIC", s"Source With Identifiers ${sourceIds.diff(childrenIds).asJava} Not Found! Please Provide Valid Source Identifier.")
         }
         val updatedBranchingLogic = new util.HashMap[String, AnyRef]()
         updatedBranchingLogic.putAll(branchingLogic)
-        reqBranching.map(entry => {
+        reqBranching.asScala.map(entry => {
             val obj = entry._2.asInstanceOf[java.util.Map[String, AnyRef]]
             val source: java.util.List[String] = obj.getOrDefault(HierarchyConstants.SOURCE, new java.util.ArrayList[String]()).asInstanceOf[java.util.List[String]]
-            if (source.nonEmpty && source.size > 1)
+            if (!source.isEmpty && source.size > 1)
                 throw new ClientException("ERR_BRANCHING_LOGIC", "An Object Can't Depend On More Than 1 Object")
             if (branchingLogic.contains(source.get(0))) {
                 val parentObj = branchingLogic.getOrDefault(source.get(0), new util.HashMap[String, AnyRef]()).asInstanceOf[java.util.Map[String, AnyRef]]
                 val pSource: java.util.List[String] = parentObj.getOrDefault(HierarchyConstants.SOURCE, new java.util.ArrayList[String]()).asInstanceOf[java.util.List[String]]
-                if (pSource.nonEmpty)
+                if (!pSource.isEmpty)
                     throw new ClientException("ERR_BRANCHING_LOGIC", s"${source.get(0)} Is Already Children Of ${pSource.get(0)}. So It Can't Be Parent For ${entry._1}")
                 val pTarget: java.util.List[String] = parentObj.getOrDefault(HierarchyConstants.TARGET, new java.util.ArrayList[String]()).asInstanceOf[java.util.List[String]]
                 pTarget.add(entry._1)

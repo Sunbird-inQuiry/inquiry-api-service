@@ -34,6 +34,8 @@ object AssessmentConstants {
   val COPY_TYPE_DEEP: String = "deep"
   val QUESTION_MIME_TYPE: String = "application/vnd.sunbird.question"
   val QUESTION_SCHEMA_NAME: String = "question"
+  val ASSESSMENT_ITEM_MIME_TYPE: String = "application/vnd.ekstep.ecml-archive"
+  val ASSESSMENT_ITEM_SCHEMA_NAME: String = "assessmentitem"
   val VISIBILITY_PARENT: String = "Parent"
   val VISIBILITY_DEFAULT: String = "Default"
   val BRANCHING_LOGIC: String = "branchingLogic"
